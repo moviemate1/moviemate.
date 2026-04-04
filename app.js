@@ -677,6 +677,7 @@ async function handleAuthSubmit(event) {
     updateAuthTrigger();
     updateMemberBanner();
     closeAuthModal(true);
+    window.location.reload();
   } catch (error) {
     showMessage("#authMessage", formatAuthError(error));
   }
