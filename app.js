@@ -3,6 +3,7 @@ import {
   createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -338,6 +339,11 @@ function showMessage(selector, text) {
 }
 
 async function addTitle(form) {
+  if (!currentUser) {
+    openAuthModal("signup", "Join MovieMate to suggest a movie or series.");
+    return false;
+  }
+
   const formData = new FormData(form);
   const title = formData.get("title")?.toString().trim() || "";
   const type = formData.get("type")?.toString().trim() || "Movie";
@@ -358,6 +364,7 @@ async function addTitle(form) {
   };
 
   await setDoc(doc(db, MOVIES_COLLECTION, newTitle.id), newTitle);
+  return true;
 }
 
 async function updateRating(titleId, value) {
@@ -539,9 +546,22 @@ function switchAuthMode(mode) {
   });
 
   const submit = document.querySelector("#authSubmit");
+  const confirmGroup = document.querySelector("#confirmPasswordGroup");
+  const confirmInput = document.querySelector("#authConfirmPassword");
+  const forgotPasswordBtn = document.querySelector("#forgotPasswordBtn");
 
   if (submit) {
     submit.textContent = mode === "login" ? "Login" : "Create Account";
+  }
+
+  if (confirmGroup && confirmInput) {
+    const showConfirm = mode === "signup";
+    confirmGroup.classList.toggle("hidden", !showConfirm);
+    confirmInput.required = showConfirm;
+  }
+
+  if (forgotPasswordBtn) {
+    forgotPasswordBtn.classList.toggle("hidden", mode !== "login");
   }
 
   showMessage(
@@ -573,7 +593,11 @@ function openAuthModal(mode = "login", messageText = "") {
   }
 }
 
-function closeAuthModal() {
+function closeAuthModal(force = false) {
+  if (!currentUser && !force) {
+    return;
+  }
+
   const modal = document.querySelector("#authModal");
   const form = document.querySelector("#authForm");
 
@@ -596,17 +620,39 @@ async function handleAuthSubmit(event) {
 
   const email = document.querySelector("#authEmail")?.value.trim() || "";
   const password = document.querySelector("#authPassword")?.value || "";
+  const confirmPassword = document.querySelector("#authConfirmPassword")?.value || "";
 
   try {
     if (authMode === "signup") {
+      if (password !== confirmPassword) {
+        showMessage("#authMessage", "Passwords do not match.");
+        return;
+      }
+
       await createUserWithEmailAndPassword(auth, email, password);
     } else {
       await signInWithEmailAndPassword(auth, email, password);
     }
 
-    closeAuthModal();
+    closeAuthModal(true);
   } catch (error) {
     showMessage("#authMessage", error.message || "Authentication failed.");
+  }
+}
+
+async function handleForgotPassword() {
+  const email = document.querySelector("#authEmail")?.value.trim() || "";
+
+  if (!email) {
+    showMessage("#authMessage", "Enter your email first, then click Forgot password.");
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showMessage("#authMessage", "Password reset email sent. Check your inbox.");
+  } catch (error) {
+    showMessage("#authMessage", error.message || "Could not send reset email.");
   }
 }
 
@@ -703,7 +749,12 @@ function setupSuggestForm() {
     event.preventDefault();
 
     try {
-      await addTitle(form);
+      const added = await addTitle(form);
+
+      if (!added) {
+        return;
+      }
+
       form.reset();
       showMessage("#formMessage", "Title added. It is now live in the MovieMate collection.");
       await renderHomePage();
@@ -731,6 +782,7 @@ function setupAuth() {
   document.querySelector("#authClose")?.addEventListener("click", closeAuthModal);
   document.querySelector("#authBackdrop")?.addEventListener("click", closeAuthModal);
   document.querySelector("#authForm")?.addEventListener("submit", handleAuthSubmit);
+  document.querySelector("#forgotPasswordBtn")?.addEventListener("click", handleForgotPassword);
 
   document.querySelectorAll(".auth-tab").forEach((tab) => {
     tab.addEventListener("click", () => {

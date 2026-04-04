@@ -59,6 +59,20 @@
             <input id="authPassword" name="password" type="password" minlength="6" required />
           </label>
 
+          <label class="input-group hidden" id="confirmPasswordGroup">
+            <span>Confirm password</span>
+            <input
+              id="authConfirmPassword"
+              name="confirmPassword"
+              type="password"
+              minlength="6"
+            />
+          </label>
+
+          <button class="text-link-btn" id="forgotPasswordBtn" type="button">
+            Forgot password?
+          </button>
+
           <button class="primary-btn" id="authSubmit" type="submit">Login</button>
           <p class="form-message" id="authMessage" aria-live="polite"></p>
         </form>

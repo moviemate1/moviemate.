@@ -619,6 +619,15 @@ select {
   gap: 16px;
 }
 
+.text-link-btn {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: #ff9aa0;
+  padding: 0;
+  cursor: pointer;
+}
+
 .not-found {
   text-align: center;
   padding: 80px 20px;
