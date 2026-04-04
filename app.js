@@ -21,7 +21,7 @@ const BASE_TITLES = [
     title: "Moonlight Echo",
     type: "Movie",
     genre: "Drama",
-    language: "English",
+    language: ["English"],
     description:
       "A grieving radio host forms an unexpected bond with a late-night caller whose secrets reshape both of their lives.",
     image:
@@ -40,7 +40,7 @@ const BASE_TITLES = [
     title: "Neon Run",
     type: "Movie",
     genre: "Action",
-    language: "English",
+    language: ["English"],
     description:
       "An ex-getaway driver returns to the city underworld for one final rescue mission racing against sunrise.",
     image:
@@ -53,7 +53,7 @@ const BASE_TITLES = [
     title: "Orbit of Us",
     type: "Movie",
     genre: "Sci-Fi",
-    language: "English",
+    language: ["English", "Japanese"],
     description:
       "Two astronauts stranded near Jupiter unravel a memory-altering signal that may rewrite humanity's future.",
     image:
@@ -66,7 +66,7 @@ const BASE_TITLES = [
     title: "Winter House",
     type: "Series",
     genre: "Thriller",
-    language: "Hindi",
+    language: ["Hindi"],
     description:
       "A family retreat in the mountains turns sinister when every room begins revealing a different version of the truth.",
     image:
@@ -79,7 +79,7 @@ const BASE_TITLES = [
     title: "Wildflower Summer",
     type: "Series",
     genre: "Romance",
-    language: "Korean",
+    language: ["Korean"],
     description:
       "A documentary filmmaker revisits her hometown and rediscovers first love while capturing its final harvest festival.",
     image:
@@ -130,13 +130,18 @@ function formatDate(timestamp) {
 
 function normalizeTitle(docLike) {
   const data = typeof docLike.data === "function" ? docLike.data() : docLike;
+  const languages = Array.isArray(data.language)
+    ? data.language
+    : data.language
+      ? [data.language]
+      : ["English"];
 
   return {
     id: data.id || docLike.id,
     title: data.title || "",
     type: data.type || "Movie",
     genre: data.genre || "",
-    language: data.language || "English",
+    language: languages,
     description: data.description || "",
     image: data.image || "",
     likes: Number(data.likes || 0),
@@ -176,7 +181,7 @@ function movieCardTemplate(title) {
         <div class="movie-header">
           <div>
             <h3>${escapeHtml(title.title)}</h3>
-            <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)} • ${escapeHtml(title.language)}</p>
+            <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)} • ${escapeHtml(title.language.join(", "))}</p>
           </div>
           <span class="rating-pill"><strong>${title.likes}</strong> likes</span>
         </div>
@@ -264,7 +269,7 @@ function filterTitles(titles) {
       title.description.toLowerCase().includes(searchValue);
     const typeMatch = typeValue === "all" || title.type === typeValue;
     const genreMatch = genreValue === "all" || title.genre === genreValue;
-    const languageMatch = languageValue === "all" || title.language === languageValue;
+    const languageMatch = languageValue === "all" || title.language.includes(languageValue);
 
     return titleMatch && typeMatch && genreMatch && languageMatch;
   });
@@ -287,7 +292,7 @@ async function renderHomePage() {
   );
   populateSelect(
     "#languageFilter",
-    [...new Set(titles.map((title) => title.language))].sort(),
+    [...new Set(titles.flatMap((title) => title.language))].sort(),
     "languages"
   );
   renderFeaturedTitles(titles);
@@ -299,7 +304,9 @@ async function addTitle(form) {
   const title = formData.get("title")?.toString().trim() || "";
   const type = formData.get("type")?.toString().trim() || "Movie";
   const genre = formData.get("genre")?.toString().trim() || "";
-  const language = formData.get("language")?.toString().trim() || "";
+  const language = Array.from(form.querySelector("#languageInput")?.selectedOptions || [])
+    .map((option) => option.value)
+    .filter(Boolean);
   const description = formData.get("description")?.toString().trim() || "";
   const image = formData.get("image")?.toString().trim() || "";
 
@@ -308,7 +315,7 @@ async function addTitle(form) {
     title,
     type,
     genre,
-    language,
+    language: language.length ? language : ["English"],
     description,
     image,
     likes: 0,
@@ -401,7 +408,7 @@ async function renderDetailsPage() {
           </div>
           <div class="detail-stat-card">
             <p class="movie-meta">Language</p>
-            <strong>${escapeHtml(title.language)}</strong>
+            <strong>${escapeHtml(title.language.join(", "))}</strong>
           </div>
           <div class="detail-stat-card">
             <p class="movie-meta">Likes</p>

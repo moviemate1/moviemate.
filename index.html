@@ -151,9 +151,8 @@
               </label>
 
               <label class="input-group">
-                <span>Language</span>
-                <select name="language" required>
-                  <option value="">Select a language</option>
+                <span>Language or languages</span>
+                <select name="language" id="languageInput" multiple required>
                   <option value="English">English</option>
                   <option value="Hindi">Hindi</option>
                   <option value="Japanese">Japanese</option>
@@ -192,7 +191,7 @@
               <p class="form-message" id="formMessage" aria-live="polite"></p>
             </div>
             <p class="form-message">
-              Tip: Use the title's main language and a short, clear description so other users can discover it faster.
+              Tip: Hold `Command` on Mac or `Ctrl` on Windows to select more than one language.
             </p>
           </form>
         </section>
