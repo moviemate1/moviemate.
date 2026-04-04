@@ -104,6 +104,22 @@ let authMode = "login";
 let currentUser = null;
 let titlesCache = [];
 
+function getReturnUrl() {
+  return `${window.location.pathname.split("/").pop() || "index.html"}${window.location.search || ""}`;
+}
+
+function getLoginUrl(mode = "login", message = "") {
+  const params = new URLSearchParams();
+  params.set("mode", mode);
+  params.set("return", getReturnUrl());
+
+  if (message) {
+    params.set("message", message);
+  }
+
+  return `login.html?${params.toString()}`;
+}
+
 function slugify(value) {
   return value
     .toLowerCase()
@@ -354,6 +370,11 @@ function updateMemberBanner() {
   }
 }
 
+function getPostAuthRedirect() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("return") || "index.html";
+}
+
 async function addTitle(form) {
   if (!currentUser) {
     openAuthModal("signup", "Join MovieMate to suggest a movie or series.");
@@ -593,6 +614,11 @@ function openAuthModal(mode = "login", messageText = "") {
     return;
   }
 
+  if (document.body.dataset.page !== "login") {
+    window.location.href = getLoginUrl(mode, messageText);
+    return;
+  }
+
   switchAuthMode(mode);
 
   const modal = document.querySelector("#authModal");
@@ -677,7 +703,7 @@ async function handleAuthSubmit(event) {
     updateAuthTrigger();
     updateMemberBanner();
     closeAuthModal(true);
-    window.location.reload();
+    window.location.href = getPostAuthRedirect();
   } catch (error) {
     showMessage("#authMessage", formatAuthError(error));
   }
@@ -810,17 +836,26 @@ function setupSuggestForm() {
 
 function setupAuth() {
   updateAuthTrigger();
-  switchAuthMode("login");
+  const params = new URLSearchParams(window.location.search);
+  switchAuthMode(params.get("mode") || "login");
+
+  const authMessage = params.get("message");
+  if (authMessage) {
+    showMessage("#authMessage", authMessage);
+  }
 
   document.querySelector("#authTrigger")?.addEventListener("click", async () => {
     const trigger = document.querySelector("#authTrigger");
 
     if (trigger?.dataset.authAction === "logout") {
       await signOut(auth);
+      if (document.body.dataset.page === "login") {
+        window.location.href = "index.html";
+      }
       return;
     }
 
-    openAuthModal("login");
+    window.location.href = getLoginUrl("login");
   });
 
   document.querySelector("#authClose")?.addEventListener("click", closeAuthModal);
@@ -842,6 +877,10 @@ async function init() {
   onAuthStateChanged(auth, async (user) => {
     currentUser = user ? { email: user.email, uid: user.uid } : null;
     await rerenderCurrentPage();
+
+    if (currentUser && document.body.dataset.page === "login") {
+      window.location.href = getPostAuthRedirect();
+    }
   });
 
   if (document.body.dataset.page === "home") {
