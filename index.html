@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MovieMate | Discover Your Next Favorite Movie</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-page="home">
+    <div class="page-shell">
+      <header class="hero">
+        <nav class="topbar">
+          <a class="brand" href="index.html">MovieMate</a>
+          <div class="topbar-actions">
+            <a class="ghost-link" href="#browse">Browse</a>
+            <a class="cta-link" href="#suggest">Suggest a Movie</a>
+          </div>
+        </nav>
+
+        <div class="hero-content">
+          <div class="hero-copy">
+            <p class="eyebrow">Curated picks for every mood</p>
+            <h1>Find, rate, and share movies worth recommending.</h1>
+            <p class="hero-text">
+              Explore a Netflix-inspired collection, surface fan favorites, and
+              help friends discover something unforgettable.
+            </p>
+            <div class="hero-actions">
+              <a class="primary-btn" href="#browse">Explore Movies</a>
+              <a class="secondary-btn" href="#suggest">Add a Recommendation</a>
+            </div>
+          </div>
+
+          <section class="featured-panel" aria-labelledby="featured-heading">
+            <div class="panel-header">
+              <p class="panel-label">Featured Tonight</p>
+              <h2 id="featured-heading">Top picks from the MovieMate community</h2>
+            </div>
+            <div class="featured-grid" id="featuredMovies"></div>
+          </section>
+        </div>
+      </header>
+
+      <main>
+        <section class="section" id="browse">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Browse collection</p>
+              <h2>Search, filter, and rate any title</h2>
+            </div>
+            <p class="section-copy">
+              Narrow the list by title, genre, or average rating to find your
+              next watch faster.
+            </p>
+          </div>
+
+          <div class="controls-card">
+            <label class="input-group">
+              <span>Search by title</span>
+              <input
+                id="searchInput"
+                type="search"
+                placeholder="Search movies, moods, or keywords"
+              />
+            </label>
+
+            <label class="input-group">
+              <span>Genre</span>
+              <select id="genreFilter">
+                <option value="all">All genres</option>
+              </select>
+            </label>
+
+            <label class="input-group">
+              <span>Minimum rating</span>
+              <select id="ratingFilter">
+                <option value="0">Any rating</option>
+                <option value="4.5">4.5+</option>
+                <option value="4">4.0+</option>
+                <option value="3">3.0+</option>
+                <option value="2">2.0+</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="movie-grid" id="movieGrid"></div>
+          <p class="empty-state hidden" id="emptyState">
+            No movies match these filters yet. Try another genre or add a new
+            recommendation.
+          </p>
+        </section>
+
+        <section class="section suggest-section" id="suggest">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Suggest a movie</p>
+              <h2>Share a film others should not miss</h2>
+            </div>
+            <p class="section-copy">
+              Add a title, short overview, genre, and poster image to expand the
+              collection.
+            </p>
+          </div>
+
+          <form class="suggest-form" id="suggestForm">
+            <div class="form-grid">
+              <label class="input-group">
+                <span>Movie title</span>
+                <input id="titleInput" name="title" type="text" required />
+              </label>
+
+              <label class="input-group">
+                <span>Genre</span>
+                <input
+                  id="genreInput"
+                  name="genre"
+                  type="text"
+                  placeholder="Sci-Fi, Drama, Action"
+                  required
+                />
+              </label>
+
+              <label class="input-group form-span">
+                <span>Description</span>
+                <textarea
+                  id="descriptionInput"
+                  name="description"
+                  rows="5"
+                  placeholder="What makes this movie worth recommending?"
+                  required
+                ></textarea>
+              </label>
+
+              <label class="input-group form-span">
+                <span>Poster image URL</span>
+                <input
+                  id="imageInput"
+                  name="image"
+                  type="url"
+                  placeholder="https://images.example.com/poster.jpg"
+                  required
+                />
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button class="primary-btn" type="submit">Add to MovieMate</button>
+              <p class="form-message" id="formMessage" aria-live="polite"></p>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
