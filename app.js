@@ -9,7 +9,8 @@ import {
   increment,
   runTransaction,
   serverTimestamp,
-  setDoc
+  setDoc,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -31,6 +32,9 @@ const BASE_TITLES = [
       "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=900&q=80",
     likes: 12,
     dislikes: 2,
+    approved: true,
+    pinned: true,
+    trending: true,
     comments: [
       {
         name: "Riya",
@@ -51,6 +55,9 @@ const BASE_TITLES = [
       "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80",
     likes: 18,
     dislikes: 3,
+    approved: true,
+    pinned: false,
+    trending: true,
     comments: []
   },
   {
@@ -65,6 +72,9 @@ const BASE_TITLES = [
       "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=900&q=80",
     likes: 20,
     dislikes: 4,
+    approved: true,
+    pinned: true,
+    trending: false,
     comments: []
   },
   {
@@ -79,6 +89,9 @@ const BASE_TITLES = [
       "https://images.unsplash.com/photo-1513106580091-1d82408b8cd6?auto=format&fit=crop&w=900&q=80",
     likes: 9,
     dislikes: 1,
+    approved: true,
+    pinned: false,
+    trending: false,
     comments: []
   },
   {
@@ -93,6 +106,9 @@ const BASE_TITLES = [
       "https://images.unsplash.com/photo-1518131678677-a16a0df1f0cb?auto=format&fit=crop&w=900&q=80",
     likes: 14,
     dislikes: 2,
+    approved: true,
+    pinned: false,
+    trending: true,
     comments: []
   }
 ];
@@ -162,8 +178,26 @@ function normalizeTitle(docLike) {
     image: data.image || "",
     likes: Number(data.likes || 0),
     dislikes: Number(data.dislikes || 0),
-    comments: Array.isArray(data.comments) ? data.comments : []
+    approved: data.approved !== false,
+    pinned: Boolean(data.pinned),
+    trending: Boolean(data.trending),
+    comments: Array.isArray(data.comments)
+      ? data.comments.map((comment, index) => ({
+          id: comment.id || `${data.id || docLike.id}-comment-${index}`,
+          name: comment.name || "Anonymous",
+          text: comment.text || "",
+          createdAt: comment.createdAt || null
+        }))
+      : []
   };
+}
+
+function getVisibleTitles(titles) {
+  return titles.filter((title) => title.approved);
+}
+
+function getPendingTitles(titles) {
+  return titles.filter((title) => !title.approved);
 }
 
 function getStoredReactions() {
@@ -230,6 +264,10 @@ function reactionButtonsTemplate(title) {
   `;
 }
 
+function ownerActionButton(label, action, titleId, active = false) {
+  return `<button class="owner-action-btn ${active ? "active" : ""}" data-action="${action}" data-id="${titleId}" type="button">${label}</button>`;
+}
+
 async function seedTitlesIfNeeded() {
   const snapshot = await getDocs(collection(db, TITLES_COLLECTION));
 
@@ -257,9 +295,19 @@ async function fetchTitles() {
 function movieCardTemplate(title) {
   const ownerControls = isOwnerMode()
     ? `
+        <div class="owner-actions">
+          ${ownerActionButton("Edit", "edit", title.id)}
+          ${ownerActionButton(title.pinned ? "Pinned" : "Pin", "pin", title.id, title.pinned)}
+          ${ownerActionButton(title.trending ? "Trending" : "Trend", "trend", title.id, title.trending)}
+        </div>
         <button class="danger-btn delete-title-btn" data-id="${title.id}" type="button">Delete Title</button>
       `
     : "";
+
+  const badges = `
+    ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
+    ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
+  `;
 
   return `
     <article class="movie-card">
@@ -269,6 +317,7 @@ function movieCardTemplate(title) {
           <div>
             <h3>${escapeHtml(title.title)}</h3>
             <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)} • ${escapeHtml(title.language.join(", "))}</p>
+            <div class="status-row">${badges}</div>
           </div>
           <span class="rating-pill"><strong>${getReactionStats(title).likePercent}%</strong> liked</span>
         </div>
@@ -284,11 +333,17 @@ function movieCardTemplate(title) {
 }
 
 function featuredCardTemplate(title) {
+  const badges = `
+    ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
+    ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
+  `;
+
   return `
     <a class="featured-card" href="details.html?id=${title.id}">
       <img class="featured-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
       <div class="featured-copy">
         <h3>${escapeHtml(title.title)}</h3>
+        <div class="status-row">${badges}</div>
         <div class="movie-actions">
           <span class="genre-pill">${escapeHtml(title.type)}</span>
           <span class="rating-pill"><strong>${getReactionStats(title).likePercent}%</strong> liked</span>
@@ -298,7 +353,30 @@ function featuredCardTemplate(title) {
   `;
 }
 
+function pendingCardTemplate(title) {
+  return `
+    <article class="community-card pending-card">
+      <p class="eyebrow">Awaiting approval</p>
+      <h3>${escapeHtml(title.title)}</h3>
+      <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)} • ${escapeHtml(title.language.join(", "))}</p>
+      <p class="section-copy">${escapeHtml(title.description)}</p>
+      <div class="owner-actions">
+        ${ownerActionButton("Approve", "approve", title.id)}
+        ${ownerActionButton("Edit", "edit", title.id)}
+        ${ownerActionButton("Pin", "pin", title.id, title.pinned)}
+        ${ownerActionButton("Trend", "trend", title.id, title.trending)}
+        <button class="danger-btn delete-title-btn" data-id="${title.id}" type="button">Delete Title</button>
+      </div>
+    </article>
+  `;
+}
+
 function commentTemplate(comment) {
+  const commentId = escapeHtml(comment.id || "");
+  const ownerControls = isOwnerMode()
+    ? `<button class="danger-btn comment-delete-btn" data-comment-id="${commentId}" type="button">Delete Comment</button>`
+    : "";
+
   return `
     <article class="comment-card">
       <div class="comment-meta">
@@ -306,6 +384,7 @@ function commentTemplate(comment) {
         <span>${escapeHtml(formatDate(comment.createdAt))}</span>
       </div>
       <p>${escapeHtml(comment.text)}</p>
+      ${ownerControls}
     </article>
   `;
 }
@@ -329,8 +408,37 @@ function renderFeaturedTitles(titles) {
     return;
   }
 
-  const featured = [...titles].sort((a, b) => b.likes - a.likes).slice(0, 4);
+  const featured = [...titles]
+    .sort((a, b) => {
+      if (Number(b.pinned) !== Number(a.pinned)) {
+        return Number(b.pinned) - Number(a.pinned);
+      }
+
+      if (Number(b.trending) !== Number(a.trending)) {
+        return Number(b.trending) - Number(a.trending);
+      }
+
+      return b.likes - a.likes;
+    })
+    .slice(0, 4);
   container.innerHTML = featured.map(featuredCardTemplate).join("");
+}
+
+function renderOwnerPanel(titles) {
+  const panel = document.querySelector("#ownerPanel");
+  const grid = document.querySelector("#pendingGrid");
+  const emptyState = document.querySelector("#pendingEmptyState");
+
+  if (!panel || !grid || !emptyState) {
+    return;
+  }
+
+  const ownerActive = isOwnerMode();
+  const pendingTitles = getPendingTitles(titles);
+
+  panel.classList.toggle("hidden", !ownerActive);
+  grid.innerHTML = ownerActive ? pendingTitles.map(pendingCardTemplate).join("") : "";
+  emptyState.classList.toggle("hidden", !ownerActive || pendingTitles.length > 0);
 }
 
 function renderTitleGrid(titles) {
@@ -373,18 +481,20 @@ function showMessage(selector, text) {
 
 async function renderHomePage() {
   const titles = await fetchTitles();
+  const visibleTitles = getVisibleTitles(titles);
   populateSelect(
     "#genreFilter",
-    [...new Set(titles.map((title) => title.genre))].sort(),
+    [...new Set(visibleTitles.map((title) => title.genre))].sort(),
     "genres"
   );
   populateSelect(
     "#languageFilter",
-    [...new Set(titles.flatMap((title) => title.language))].sort(),
+    [...new Set(visibleTitles.flatMap((title) => title.language))].sort(),
     "languages"
   );
-  renderFeaturedTitles(titles);
-  renderTitleGrid(filterTitles(titles));
+  renderFeaturedTitles(visibleTitles);
+  renderTitleGrid(filterTitles(visibleTitles));
+  renderOwnerPanel(titles);
 }
 
 async function addTitle(form) {
@@ -408,11 +518,71 @@ async function addTitle(form) {
     image,
     likes: 0,
     dislikes: 0,
+    approved: false,
+    pinned: false,
+    trending: false,
     comments: [],
     createdAt: serverTimestamp()
   };
 
   await setDoc(doc(db, TITLES_COLLECTION, newTitle.id), newTitle);
+}
+
+async function updateTitleStatus(titleId, updates) {
+  await updateDoc(doc(db, TITLES_COLLECTION, titleId), updates);
+}
+
+async function editTitle(titleId) {
+  const title = titlesCache.find((item) => item.id === titleId);
+
+  if (!title) {
+    return;
+  }
+
+  const titleValue = window.prompt("Edit title", title.title);
+  if (!titleValue) {
+    return;
+  }
+
+  const typeValue = window.prompt("Edit type: Movie or Series", title.type);
+  if (!typeValue) {
+    return;
+  }
+
+  const genreValue = window.prompt("Edit genre", title.genre);
+  if (!genreValue) {
+    return;
+  }
+
+  const languageValue = window.prompt(
+    "Edit languages with commas, for example English, Hindi",
+    title.language.join(", ")
+  );
+  if (!languageValue) {
+    return;
+  }
+
+  const descriptionValue = window.prompt("Edit description", title.description);
+  if (!descriptionValue) {
+    return;
+  }
+
+  const imageValue = window.prompt("Edit poster image URL", title.image);
+  if (!imageValue) {
+    return;
+  }
+
+  await updateTitleStatus(titleId, {
+    title: titleValue.trim(),
+    type: typeValue.trim(),
+    genre: genreValue.trim(),
+    language: languageValue
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+    description: descriptionValue.trim(),
+    image: imageValue.trim()
+  });
 }
 
 async function reactToTitle(titleId, nextReaction) {
@@ -484,6 +654,7 @@ async function addComment(titleId, form) {
     transaction.update(titleRef, {
       comments: [
         {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           name,
           text,
           createdAt: new Date().toISOString()
@@ -494,6 +665,23 @@ async function addComment(titleId, form) {
   });
 
   return true;
+}
+
+async function deleteComment(titleId, commentId) {
+  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(titleRef);
+
+    if (!snapshot.exists()) {
+      throw new Error("Title not found.");
+    }
+
+    const data = normalizeTitle(snapshot);
+    transaction.update(titleRef, {
+      comments: data.comments.filter((comment) => comment.id !== commentId)
+    });
+  });
 }
 
 async function renderDetailsPage() {
@@ -519,13 +707,30 @@ async function renderDetailsPage() {
   }
 
   const title = normalizeTitle(snapshot);
+
+  if (!title.approved && !isOwnerMode()) {
+    target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
+    return;
+  }
+
   const stats = getReactionStats(title);
   const ownerControls = isOwnerMode()
     ? `
+        <div class="owner-actions">
+          ${ownerActionButton("Edit", "edit", title.id)}
+          ${ownerActionButton(title.approved ? "Approved" : "Approve", "approve", title.id, title.approved)}
+          ${ownerActionButton(title.pinned ? "Pinned" : "Pin", "pin", title.id, title.pinned)}
+          ${ownerActionButton(title.trending ? "Trending" : "Trend", "trend", title.id, title.trending)}
+        </div>
         <button class="danger-btn delete-title-btn" data-id="${title.id}" type="button">Delete Title</button>
         <p class="owner-badge">Owner mode is active</p>
       `
     : "";
+  const badges = `
+    ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
+    ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
+    ${!title.approved ? '<span class="status-pill status-pending">Pending</span>' : ""}
+  `;
 
   target.innerHTML = `
     <section class="detail-card">
@@ -533,6 +738,7 @@ async function renderDetailsPage() {
       <div class="detail-copy">
         <p class="eyebrow">Title Details</p>
         <h1>${escapeHtml(title.title)}</h1>
+        <div class="status-row">${badges}</div>
         <div class="detail-stats">
           <div class="detail-stat-card">
             <p class="movie-meta">Type</p>
@@ -641,6 +847,68 @@ function setupDeleteButtons() {
   });
 }
 
+function setupOwnerActionButtons() {
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest(".owner-action-btn");
+
+    if (!button || !isOwnerMode()) {
+      return;
+    }
+
+    const { action, id } = button.dataset;
+
+    if (action === "approve") {
+      await updateTitleStatus(id, { approved: true });
+    }
+
+    if (action === "pin") {
+      const title = titlesCache.find((item) => item.id === id);
+      await updateTitleStatus(id, { pinned: !title?.pinned });
+    }
+
+    if (action === "trend") {
+      const title = titlesCache.find((item) => item.id === id);
+      await updateTitleStatus(id, { trending: !title?.trending });
+    }
+
+    if (action === "edit") {
+      await editTitle(id);
+    }
+
+    if (document.body.dataset.page === "home") {
+      await renderHomePage();
+    } else {
+      await renderDetailsPage();
+    }
+  });
+}
+
+function setupCommentDeleteButtons() {
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest(".comment-delete-btn");
+
+    if (!button || !isOwnerMode() || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const titleId = params.get("id");
+
+    if (!titleId) {
+      return;
+    }
+
+    const confirmed = window.confirm("Delete this comment permanently?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    await deleteComment(titleId, button.dataset.commentId);
+    await renderDetailsPage();
+  });
+}
+
 function updateOwnerToggle() {
   const button = document.querySelector("#ownerToggle");
 
@@ -742,7 +1010,7 @@ function setupSuggestForm() {
     event.preventDefault();
     await addTitle(form);
     form.reset();
-    showMessage("#formMessage", "Your suggestion is now live on MovieMate.");
+    showMessage("#formMessage", "Your suggestion has been sent for owner review.");
     await renderHomePage();
   });
 }
@@ -750,6 +1018,8 @@ function setupSuggestForm() {
 async function init() {
   setupLikeButtons();
   setupDeleteButtons();
+  setupCommentDeleteButtons();
+  setupOwnerActionButtons();
   setupOwnerMode();
 
   if (document.body.dataset.page === "home") {

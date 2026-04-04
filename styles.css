@@ -471,9 +471,72 @@ button.ghost-link {
   justify-content: space-between;
 }
 
+.status-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.status-pinned {
+  background: rgba(255, 204, 77, 0.14);
+  border-color: rgba(255, 204, 77, 0.35);
+  color: #ffe29a;
+}
+
+.status-trending {
+  background: rgba(255, 111, 60, 0.14);
+  border-color: rgba(255, 111, 60, 0.35);
+  color: #ffc3aa;
+}
+
+.status-pending {
+  background: rgba(118, 173, 255, 0.14);
+  border-color: rgba(118, 173, 255, 0.35);
+  color: #cbdfff;
+}
+
 .owner-toggle.active {
   border-color: rgba(36, 201, 111, 0.55);
   background: rgba(36, 201, 111, 0.14);
+}
+
+.owner-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.owner-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.owner-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.owner-action-btn.active {
+  background: rgba(36, 201, 111, 0.16);
+  border-color: rgba(36, 201, 111, 0.5);
 }
 
 .owner-badge {

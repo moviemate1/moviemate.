@@ -188,13 +188,27 @@
             </div>
 
             <div class="form-actions">
-              <button class="primary-btn" type="submit">Publish Suggestion</button>
+              <button class="primary-btn" type="submit">Send Suggestion</button>
               <p class="form-message" id="formMessage" aria-live="polite"></p>
             </div>
             <p class="form-message">
               Tip: Choose one language or tick multiple if the title is available in more than one.
             </p>
           </form>
+        </section>
+
+        <section class="section owner-panel hidden" id="ownerPanel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Owner controls</p>
+              <h2>Pending suggestions and homepage control</h2>
+            </div>
+            <p class="section-copy">
+              Review public suggestions, approve what should go live, and mark standout titles as featured or trending.
+            </p>
+          </div>
+          <div class="owner-grid" id="pendingGrid"></div>
+          <p class="empty-state hidden" id="pendingEmptyState">No pending suggestions right now.</p>
         </section>
       </main>
 
