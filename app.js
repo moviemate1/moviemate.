@@ -338,6 +338,22 @@ function showMessage(selector, text) {
   }
 }
 
+function updateMemberBanner() {
+  const banner = document.querySelector("#memberBanner");
+
+  if (!banner) {
+    return;
+  }
+
+  if (currentUser) {
+    banner.textContent = `Logged in as ${currentUser.email}. You can now rate, comment, and suggest titles.`;
+    banner.classList.remove("hidden");
+  } else {
+    banner.textContent = "";
+    banner.classList.add("hidden");
+  }
+}
+
 async function addTitle(form) {
   if (!currentUser) {
     openAuthModal("signup", "Join MovieMate to suggest a movie or series.");
@@ -658,6 +674,8 @@ async function handleAuthSubmit(event) {
       await signInWithEmailAndPassword(auth, email, password);
     }
 
+    updateAuthTrigger();
+    updateMemberBanner();
     closeAuthModal(true);
   } catch (error) {
     showMessage("#authMessage", formatAuthError(error));
@@ -682,6 +700,7 @@ async function handleForgotPassword() {
 
 async function rerenderCurrentPage() {
   updateAuthTrigger();
+  updateMemberBanner();
 
   if (document.body.dataset.page === "home") {
     await renderHomePage();

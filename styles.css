@@ -264,6 +264,16 @@ select {
   padding-top: 28px;
 }
 
+.member-banner {
+  margin-top: 4px;
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(14, 90, 49, 0.28);
+  color: #d9ffe8;
+  box-shadow: var(--shadow);
+}
+
 .section-heading {
   display: flex;
   justify-content: space-between;
