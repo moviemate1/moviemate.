@@ -594,10 +594,6 @@ function openAuthModal(mode = "login", messageText = "") {
 }
 
 function closeAuthModal(force = false) {
-  if (!currentUser && !force) {
-    return;
-  }
-
   const modal = document.querySelector("#authModal");
   const form = document.querySelector("#authForm");
 
@@ -613,6 +609,34 @@ function closeAuthModal(force = false) {
   }
 
   showMessage("#authMessage", "");
+}
+
+function formatAuthError(error) {
+  const code = error?.code || "";
+
+  switch (code) {
+    case "auth/invalid-email":
+      return "Please enter a valid email address.";
+    case "auth/user-not-found":
+    case "auth/invalid-credential":
+      return "Email or password is incorrect.";
+    case "auth/wrong-password":
+      return "Email or password is incorrect.";
+    case "auth/email-already-in-use":
+      return "This email already has an account. Please log in instead.";
+    case "auth/weak-password":
+      return "Password should be at least 6 characters.";
+    case "auth/missing-password":
+      return "Please enter your password.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Please wait and try again.";
+    case "auth/network-request-failed":
+      return "Network error. Check your internet connection and try again.";
+    case "auth/unauthorized-domain":
+      return "This website domain is not authorized in Firebase yet.";
+    default:
+      return error?.message || "Authentication failed.";
+  }
 }
 
 async function handleAuthSubmit(event) {
@@ -636,7 +660,7 @@ async function handleAuthSubmit(event) {
 
     closeAuthModal(true);
   } catch (error) {
-    showMessage("#authMessage", error.message || "Authentication failed.");
+    showMessage("#authMessage", formatAuthError(error));
   }
 }
 
@@ -652,7 +676,7 @@ async function handleForgotPassword() {
     await sendPasswordResetEmail(auth, email);
     showMessage("#authMessage", "Password reset email sent. Check your inbox.");
   } catch (error) {
-    showMessage("#authMessage", error.message || "Could not send reset email.");
+    showMessage("#authMessage", formatAuthError(error));
   }
 }
 
@@ -682,7 +706,7 @@ function setupRatings() {
     try {
       await updateRating(titleId, rating);
     } catch (error) {
-      alert(error.message || "Could not save rating.");
+      alert(formatAuthError(error));
     }
   });
 }
@@ -714,7 +738,7 @@ function setupCommentForm(titleId) {
       showMessage("#commentMessage", "Your comment is now live on this title page.");
       await renderDetailsPage();
     } catch (error) {
-      showMessage("#commentMessage", error.message || "Could not post comment.");
+      showMessage("#commentMessage", formatAuthError(error));
     }
   });
 }
@@ -759,7 +783,7 @@ function setupSuggestForm() {
       showMessage("#formMessage", "Title added. It is now live in the MovieMate collection.");
       await renderHomePage();
     } catch (error) {
-      showMessage("#formMessage", error.message || "Could not add title.");
+      showMessage("#formMessage", formatAuthError(error));
     }
   });
 }
