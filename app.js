@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -14,6 +15,8 @@ import { firebaseConfig } from "./firebase-config.js";
 
 const TITLES_COLLECTION = "moviemate_titles";
 const REACTIONS_STORAGE_KEY = "moviemate_reactions";
+const OWNER_MODE_KEY = "moviemate_owner_mode";
+const OWNER_PASSCODE = "1A2b3456@";
 
 const BASE_TITLES = [
   {
@@ -99,6 +102,14 @@ const db = getFirestore(app);
 
 let titlesCache = [];
 
+function isOwnerMode() {
+  return localStorage.getItem(OWNER_MODE_KEY) === "true";
+}
+
+function setOwnerMode(enabled) {
+  localStorage.setItem(OWNER_MODE_KEY, enabled ? "true" : "false");
+}
+
 function slugify(value) {
   return value
     .toLowerCase()
@@ -180,6 +191,10 @@ function setReaction(titleId, reaction) {
   localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(reactions));
 }
 
+function clearReaction(titleId) {
+  setReaction(titleId, "");
+}
+
 function getReactionStats(title) {
   const likes = Number(title.likes || 0);
   const dislikes = Number(title.dislikes || 0);
@@ -240,6 +255,12 @@ async function fetchTitles() {
 }
 
 function movieCardTemplate(title) {
+  const ownerControls = isOwnerMode()
+    ? `
+        <button class="danger-btn delete-title-btn" data-id="${title.id}" type="button">Delete Title</button>
+      `
+    : "";
+
   return `
     <article class="movie-card">
       <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
@@ -255,6 +276,7 @@ function movieCardTemplate(title) {
         ${reactionButtonsTemplate(title)}
         <div class="movie-actions">
           <a class="details-link" href="details.html?id=${title.id}">View Details →</a>
+          ${ownerControls}
         </div>
       </div>
     </article>
@@ -434,6 +456,11 @@ async function reactToTitle(titleId, nextReaction) {
   return true;
 }
 
+async function deleteTitle(titleId) {
+  await deleteDoc(doc(db, TITLES_COLLECTION, titleId));
+  clearReaction(titleId);
+}
+
 async function addComment(titleId, form) {
   const formData = new FormData(form);
   const name = formData.get("name")?.toString().trim() || "Anonymous";
@@ -493,6 +520,12 @@ async function renderDetailsPage() {
 
   const title = normalizeTitle(snapshot);
   const stats = getReactionStats(title);
+  const ownerControls = isOwnerMode()
+    ? `
+        <button class="danger-btn delete-title-btn" data-id="${title.id}" type="button">Delete Title</button>
+        <p class="owner-badge">Owner mode is active</p>
+      `
+    : "";
 
   target.innerHTML = `
     <section class="detail-card">
@@ -521,6 +554,7 @@ async function renderDetailsPage() {
         <p class="detail-overview">${escapeHtml(title.description)}</p>
         <div class="detail-actions">
           ${reactionButtonsTemplate(title)}
+          ${ownerControls}
         </div>
       </div>
     </section>
@@ -573,6 +607,83 @@ function setupLikeButtons() {
     if (!changed) {
       return;
     }
+
+    if (document.body.dataset.page === "home") {
+      await renderHomePage();
+    } else {
+      await renderDetailsPage();
+    }
+  });
+}
+
+function setupDeleteButtons() {
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest(".delete-title-btn");
+
+    if (!button || !isOwnerMode()) {
+      return;
+    }
+
+    const confirmed = window.confirm("Delete this title permanently from MovieMate?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    await deleteTitle(button.dataset.id);
+
+    if (document.body.dataset.page === "home") {
+      await renderHomePage();
+      return;
+    }
+
+    window.location.href = "index.html";
+  });
+}
+
+function updateOwnerToggle() {
+  const button = document.querySelector("#ownerToggle");
+
+  if (!button) {
+    return;
+  }
+
+  const active = isOwnerMode();
+  button.classList.toggle("active", active);
+  button.textContent = active ? "Owner Unlocked" : "Owner Mode";
+}
+
+function setupOwnerMode() {
+  const button = document.querySelector("#ownerToggle");
+
+  if (!button) {
+    return;
+  }
+
+  updateOwnerToggle();
+
+  button.addEventListener("click", async () => {
+    if (isOwnerMode()) {
+      setOwnerMode(false);
+      updateOwnerToggle();
+
+      if (document.body.dataset.page === "home") {
+        await renderHomePage();
+      } else {
+        await renderDetailsPage();
+      }
+      return;
+    }
+
+    const passcode = window.prompt("Enter your owner passcode to unlock delete controls:");
+
+    if (passcode !== OWNER_PASSCODE) {
+      window.alert("Incorrect passcode.");
+      return;
+    }
+
+    setOwnerMode(true);
+    updateOwnerToggle();
 
     if (document.body.dataset.page === "home") {
       await renderHomePage();
@@ -638,6 +749,8 @@ function setupSuggestForm() {
 
 async function init() {
   setupLikeButtons();
+  setupDeleteButtons();
+  setupOwnerMode();
 
   if (document.body.dataset.page === "home") {
     setupFilters();
