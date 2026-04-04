@@ -56,7 +56,7 @@
             </div>
             <p class="section-copy">
               Explore community suggestions for movies and series across genres,
-              languages, and platforms.
+              languages, and platforms with easy filters and quick actions.
             </p>
           </div>
 
@@ -103,7 +103,7 @@
               <h2>Share a movie or series with the community</h2>
             </div>
             <p class="section-copy">
-              Add the title, type, genre, language, description, and poster to grow MovieMate.
+              Add the title, type, genre, language, description, and poster to help others find something great to watch.
             </p>
           </div>
 
@@ -129,7 +129,18 @@
 
               <label class="input-group">
                 <span>Language</span>
-                <input name="language" type="text" placeholder="English, Hindi, Korean" required />
+                <select name="language" required>
+                  <option value="">Select a language</option>
+                  <option value="English">English</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Japanese">Japanese</option>
+                  <option value="Nepali">Nepali</option>
+                  <option value="Korean">Korean</option>
+                  <option value="Tamil">Tamil</option>
+                  <option value="Telugu">Telugu</option>
+                  <option value="Spanish">Spanish</option>
+                  <option value="Other">Other</option>
+                </select>
               </label>
 
               <label class="input-group form-span">
@@ -137,7 +148,7 @@
                 <textarea
                   name="description"
                   rows="5"
-                  placeholder="Why should people watch this title?"
+                  placeholder="Why should people watch this movie or series?"
                   required
                 ></textarea>
               </label>
@@ -157,6 +168,9 @@
               <button class="primary-btn" type="submit">Publish Suggestion</button>
               <p class="form-message" id="formMessage" aria-live="polite"></p>
             </div>
+            <p class="form-message">
+              Tip: Use the title's main language and a short, clear description so other users can discover it faster.
+            </p>
           </form>
         </section>
       </main>

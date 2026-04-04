@@ -182,7 +182,7 @@ function movieCardTemplate(title) {
         </div>
         <p class="movie-description">${escapeHtml(title.description)}</p>
         <div class="movie-actions">
-          <a class="details-link" href="details.html?id=${title.id}">View Details</a>
+          <a class="details-link" href="details.html?id=${title.id}">View Details →</a>
           <button class="secondary-btn like-btn" data-id="${title.id}" type="button">Like</button>
         </div>
       </div>
