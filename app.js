@@ -304,8 +304,8 @@ async function addTitle(form) {
   const title = formData.get("title")?.toString().trim() || "";
   const type = formData.get("type")?.toString().trim() || "Movie";
   const genre = formData.get("genre")?.toString().trim() || "";
-  const language = Array.from(form.querySelector("#languageInput")?.selectedOptions || [])
-    .map((option) => option.value)
+  const language = Array.from(form.querySelectorAll('input[name="language"]:checked'))
+    .map((input) => input.value)
     .filter(Boolean);
   const description = formData.get("description")?.toString().trim() || "";
   const image = formData.get("image")?.toString().trim() || "";

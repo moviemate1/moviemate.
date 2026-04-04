@@ -150,20 +150,20 @@
                 <input name="genre" type="text" placeholder="Drama, Thriller, Romance" required />
               </label>
 
-              <label class="input-group">
+              <fieldset class="input-group language-group">
                 <span>Language or languages</span>
-                <select name="language" id="languageInput" multiple required>
-                  <option value="English">English</option>
-                  <option value="Hindi">Hindi</option>
-                  <option value="Japanese">Japanese</option>
-                  <option value="Nepali">Nepali</option>
-                  <option value="Korean">Korean</option>
-                  <option value="Tamil">Tamil</option>
-                  <option value="Telugu">Telugu</option>
-                  <option value="Spanish">Spanish</option>
-                  <option value="Other">Other</option>
-                </select>
-              </label>
+                <div class="language-options" id="languageInput">
+                  <label class="check-option"><input type="checkbox" name="language" value="English" /> English</label>
+                  <label class="check-option"><input type="checkbox" name="language" value="Hindi" /> Hindi</label>
+                  <label class="check-option"><input type="checkbox" name="language" value="Japanese" /> Japanese</label>
+                  <label class="check-option"><input type="checkbox" name="language" value="Nepali" /> Nepali</label>
+                  <label class="check-option"><input type="checkbox" name="language" value="Korean" /> Korean</label>
+                  <label class="check-option"><input type="checkbox" name="language" value="Tamil" /> Tamil</label>
+                  <label class="check-option"><input type="checkbox" name="language" value="Telugu" /> Telugu</label>
+                  <label class="check-option"><input type="checkbox" name="language" value="Spanish" /> Spanish</label>
+                  <label class="check-option"><input type="checkbox" name="language" value="Other" /> Other</label>
+                </div>
+              </fieldset>
 
               <label class="input-group form-span">
                 <span>Description</span>
@@ -191,7 +191,7 @@
               <p class="form-message" id="formMessage" aria-live="polite"></p>
             </div>
             <p class="form-message">
-              Tip: Hold `Command` on Mac or `Ctrl` on Windows to select more than one language.
+              Tip: Choose one language or tick multiple if the title is available in more than one.
             </p>
           </form>
         </section>
