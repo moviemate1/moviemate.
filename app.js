@@ -1,25 +1,19 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import {
-  createUserWithEmailAndPassword,
-  getAuth,
-  onAuthStateChanged,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signOut
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import {
   collection,
   doc,
   getDoc,
   getDocs,
   getFirestore,
+  increment,
   runTransaction,
   serverTimestamp,
-  setDoc
+  setDoc,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const MOVIES_COLLECTION = "moviemate_titles";
+const TITLES_COLLECTION = "moviemate_titles";
 
 const BASE_TITLES = [
   {
@@ -27,23 +21,31 @@ const BASE_TITLES = [
     title: "Moonlight Echo",
     type: "Movie",
     genre: "Drama",
+    language: "English",
     description:
       "A grieving radio host forms an unexpected bond with a late-night caller whose secrets reshape both of their lives.",
     image:
       "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=900&q=80",
-    ratings: [5, 4, 5, 4],
-    comments: []
+    likes: 12,
+    comments: [
+      {
+        name: "Riya",
+        text: "Warm, emotional, and beautifully written.",
+        createdAt: "2026-04-05T00:00:00.000Z"
+      }
+    ]
   },
   {
     id: "neon-run",
     title: "Neon Run",
     type: "Movie",
     genre: "Action",
+    language: "English",
     description:
       "An ex-getaway driver returns to the city underworld for one final rescue mission racing against sunrise.",
     image:
       "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80",
-    ratings: [4, 5, 4, 4, 5],
+    likes: 18,
     comments: []
   },
   {
@@ -51,23 +53,12 @@ const BASE_TITLES = [
     title: "Orbit of Us",
     type: "Movie",
     genre: "Sci-Fi",
+    language: "English",
     description:
       "Two astronauts stranded near Jupiter unravel a memory-altering signal that may rewrite humanity's future.",
     image:
       "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=900&q=80",
-    ratings: [5, 5, 4],
-    comments: []
-  },
-  {
-    id: "the-last-laugh-club",
-    title: "The Last Laugh Club",
-    type: "Movie",
-    genre: "Comedy",
-    description:
-      "A washed-up comic and a fearless newcomer team up for a comeback tour full of chaos, healing, and very bad motels.",
-    image:
-      "https://images.unsplash.com/photo-1518932945647-7a1c969f8be2?auto=format&fit=crop&w=900&q=80",
-    ratings: [4, 3, 4, 5],
+    likes: 20,
     comments: []
   },
   {
@@ -75,11 +66,12 @@ const BASE_TITLES = [
     title: "Winter House",
     type: "Series",
     genre: "Thriller",
+    language: "Hindi",
     description:
       "A family retreat in the mountains turns sinister when every room begins revealing a different version of the truth.",
     image:
       "https://images.unsplash.com/photo-1513106580091-1d82408b8cd6?auto=format&fit=crop&w=900&q=80",
-    ratings: [3, 4, 4],
+    likes: 9,
     comments: []
   },
   {
@@ -87,21 +79,19 @@ const BASE_TITLES = [
     title: "Wildflower Summer",
     type: "Series",
     genre: "Romance",
+    language: "Korean",
     description:
       "A documentary filmmaker revisits her hometown and rediscovers first love while capturing its final harvest festival.",
     image:
       "https://images.unsplash.com/photo-1518131678677-a16a0df1f0cb?auto=format&fit=crop&w=900&q=80",
-    ratings: [5, 4, 4, 5, 5],
+    likes: 14,
     comments: []
   }
 ];
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
 
-let authMode = "login";
-let currentUser = null;
 let titlesCache = [];
 
 function slugify(value) {
@@ -110,20 +100,6 @@ function slugify(value) {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
-}
-
-function averageRating(ratings = []) {
-  if (!ratings.length) {
-    return 0;
-  }
-
-  const total = ratings.reduce((sum, rating) => sum + rating, 0);
-  return total / ratings.length;
-}
-
-function formatRating(ratings) {
-  const average = averageRating(ratings);
-  return average ? average.toFixed(1) : "New";
 }
 
 function escapeHtml(value) {
@@ -148,9 +124,7 @@ function formatDate(timestamp) {
   return date.toLocaleString("en-IN", {
     day: "numeric",
     month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
+    year: "numeric"
   });
 }
 
@@ -161,16 +135,17 @@ function normalizeTitle(docLike) {
     id: data.id || docLike.id,
     title: data.title || "",
     type: data.type || "Movie",
-    genre: data.genre || "Drama",
+    genre: data.genre || "",
+    language: data.language || "English",
     description: data.description || "",
     image: data.image || "",
-    ratings: Array.isArray(data.ratings) ? data.ratings : [],
+    likes: Number(data.likes || 0),
     comments: Array.isArray(data.comments) ? data.comments : []
   };
 }
 
 async function seedTitlesIfNeeded() {
-  const snapshot = await getDocs(collection(db, MOVIES_COLLECTION));
+  const snapshot = await getDocs(collection(db, TITLES_COLLECTION));
 
   if (!snapshot.empty) {
     return;
@@ -178,7 +153,7 @@ async function seedTitlesIfNeeded() {
 
   await Promise.all(
     BASE_TITLES.map((title) =>
-      setDoc(doc(db, MOVIES_COLLECTION, title.id), {
+      setDoc(doc(db, TITLES_COLLECTION, title.id), {
         ...title,
         createdAt: serverTimestamp()
       })
@@ -188,26 +163,9 @@ async function seedTitlesIfNeeded() {
 
 async function fetchTitles() {
   await seedTitlesIfNeeded();
-  const snapshot = await getDocs(collection(db, MOVIES_COLLECTION));
+  const snapshot = await getDocs(collection(db, TITLES_COLLECTION));
   titlesCache = snapshot.docs.map(normalizeTitle);
   return titlesCache;
-}
-
-function createStarMarkup(titleId, ratings) {
-  const rounded = Math.round(averageRating(ratings));
-  const locked = !currentUser;
-
-  return Array.from({ length: 5 }, (_, index) => {
-    const value = index + 1;
-    const activeClass = value <= rounded ? "active" : "";
-    const lockClass = locked ? "locked" : "";
-
-    return `
-      <button class="star-btn ${activeClass} ${lockClass}" type="button" data-rate="${value}" data-id="${titleId}" aria-label="Rate ${value} star${value > 1 ? "s" : ""}">
-        ★
-      </button>
-    `;
-  }).join("");
 }
 
 function movieCardTemplate(title) {
@@ -218,19 +176,14 @@ function movieCardTemplate(title) {
         <div class="movie-header">
           <div>
             <h3>${escapeHtml(title.title)}</h3>
-            <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)}</p>
+            <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)} • ${escapeHtml(title.language)}</p>
           </div>
-          <span class="rating-pill"><strong>${formatRating(title.ratings)}</strong> / 5</span>
+          <span class="rating-pill"><strong>${title.likes}</strong> likes</span>
         </div>
         <p class="movie-description">${escapeHtml(title.description)}</p>
-        <div class="rating-row">
-          <span class="movie-meta">Rate this title:</span>
-          <div class="stars">${createStarMarkup(title.id, title.ratings)}</div>
-        </div>
-        <p class="auth-note">${currentUser ? `Signed in as ${escapeHtml(currentUser.email)}` : "Login required to rate or comment."}</p>
         <div class="movie-actions">
           <a class="details-link" href="details.html?id=${title.id}">View Details</a>
-          <span class="movie-meta">${title.ratings.length} vote${title.ratings.length === 1 ? "" : "s"}</span>
+          <button class="secondary-btn like-btn" data-id="${title.id}" type="button">Like</button>
         </div>
       </div>
     </article>
@@ -245,7 +198,7 @@ function featuredCardTemplate(title) {
         <h3>${escapeHtml(title.title)}</h3>
         <div class="movie-actions">
           <span class="genre-pill">${escapeHtml(title.type)}</span>
-          <span class="rating-pill"><strong>${formatRating(title.ratings)}</strong> / 5</span>
+          <span class="rating-pill"><strong>${title.likes}</strong> likes</span>
         </div>
       </div>
     </a>
@@ -256,7 +209,7 @@ function commentTemplate(comment) {
   return `
     <article class="comment-card">
       <div class="comment-meta">
-        <strong>${escapeHtml(comment.email)}</strong>
+        <strong>${escapeHtml(comment.name || "Anonymous")}</strong>
         <span>${escapeHtml(formatDate(comment.createdAt))}</span>
       </div>
       <p>${escapeHtml(comment.text)}</p>
@@ -264,18 +217,16 @@ function commentTemplate(comment) {
   `;
 }
 
-function populateGenres(titles, selectedGenre = "all") {
-  const select = document.querySelector("#genreFilter");
+function populateSelect(selectId, values, label) {
+  const select = document.querySelector(selectId);
 
   if (!select) {
     return;
   }
 
-  const genres = [...new Set(titles.map((title) => title.genre))].sort();
-  select.innerHTML = `<option value="all">All genres</option>${genres
-    .map((genre) => `<option value="${escapeHtml(genre)}">${escapeHtml(genre)}</option>`)
+  select.innerHTML = `<option value="all">All ${label}</option>${values
+    .map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)
     .join("")}`;
-  select.value = genres.includes(selectedGenre) ? selectedGenre : "all";
 }
 
 function renderFeaturedTitles(titles) {
@@ -285,10 +236,7 @@ function renderFeaturedTitles(titles) {
     return;
   }
 
-  const featured = [...titles]
-    .sort((a, b) => averageRating(b.ratings) - averageRating(a.ratings))
-    .slice(0, 4);
-
+  const featured = [...titles].sort((a, b) => b.likes - a.likes).slice(0, 4);
   container.innerHTML = featured.map(featuredCardTemplate).join("");
 }
 
@@ -308,7 +256,7 @@ function filterTitles(titles) {
   const searchValue = document.querySelector("#searchInput")?.value.trim().toLowerCase() || "";
   const typeValue = document.querySelector("#typeFilter")?.value || "all";
   const genreValue = document.querySelector("#genreFilter")?.value || "all";
-  const ratingValue = Number(document.querySelector("#ratingFilter")?.value || 0);
+  const languageValue = document.querySelector("#languageFilter")?.value || "all";
 
   return titles.filter((title) => {
     const titleMatch =
@@ -316,18 +264,10 @@ function filterTitles(titles) {
       title.description.toLowerCase().includes(searchValue);
     const typeMatch = typeValue === "all" || title.type === typeValue;
     const genreMatch = genreValue === "all" || title.genre === genreValue;
-    const ratingMatch = averageRating(title.ratings) >= ratingValue;
+    const languageMatch = languageValue === "all" || title.language === languageValue;
 
-    return titleMatch && typeMatch && genreMatch && ratingMatch;
+    return titleMatch && typeMatch && genreMatch && languageMatch;
   });
-}
-
-async function renderHomePage() {
-  const titles = await fetchTitles();
-  const selectedGenre = document.querySelector("#genreFilter")?.value || "all";
-  populateGenres(titles, selectedGenre);
-  renderFeaturedTitles(titles);
-  renderTitleGrid(filterTitles(titles));
 }
 
 function showMessage(selector, text) {
@@ -338,32 +278,28 @@ function showMessage(selector, text) {
   }
 }
 
-function updateMemberBanner() {
-  const banner = document.querySelector("#memberBanner");
-
-  if (!banner) {
-    return;
-  }
-
-  if (currentUser) {
-    banner.textContent = `Logged in as ${currentUser.email}. You can now rate, comment, and suggest titles.`;
-    banner.classList.remove("hidden");
-  } else {
-    banner.textContent = "";
-    banner.classList.add("hidden");
-  }
+async function renderHomePage() {
+  const titles = await fetchTitles();
+  populateSelect(
+    "#genreFilter",
+    [...new Set(titles.map((title) => title.genre))].sort(),
+    "genres"
+  );
+  populateSelect(
+    "#languageFilter",
+    [...new Set(titles.map((title) => title.language))].sort(),
+    "languages"
+  );
+  renderFeaturedTitles(titles);
+  renderTitleGrid(filterTitles(titles));
 }
 
 async function addTitle(form) {
-  if (!currentUser) {
-    openAuthModal("signup", "Join MovieMate to suggest a movie or series.");
-    return false;
-  }
-
   const formData = new FormData(form);
   const title = formData.get("title")?.toString().trim() || "";
   const type = formData.get("type")?.toString().trim() || "Movie";
   const genre = formData.get("genre")?.toString().trim() || "";
+  const language = formData.get("language")?.toString().trim() || "";
   const description = formData.get("description")?.toString().trim() || "";
   const image = formData.get("image")?.toString().trim() || "";
 
@@ -372,48 +308,34 @@ async function addTitle(form) {
     title,
     type,
     genre,
+    language,
     description,
     image,
-    ratings: [],
+    likes: 0,
     comments: [],
     createdAt: serverTimestamp()
   };
 
-  await setDoc(doc(db, MOVIES_COLLECTION, newTitle.id), newTitle);
-  return true;
+  await setDoc(doc(db, TITLES_COLLECTION, newTitle.id), newTitle);
 }
 
-async function updateRating(titleId, value) {
-  if (!currentUser) {
-    openAuthModal("login", "Please log in with your email before rating a title.");
-    return;
-  }
-
-  const titleRef = doc(db, MOVIES_COLLECTION, titleId);
-
-  await runTransaction(db, async (transaction) => {
-    const snapshot = await transaction.get(titleRef);
-
-    if (!snapshot.exists()) {
-      throw new Error("Title not found.");
-    }
-
-    const data = normalizeTitle(snapshot);
-    transaction.update(titleRef, {
-      ratings: [...data.ratings, value]
-    });
+async function likeTitle(titleId) {
+  await updateDoc(doc(db, TITLES_COLLECTION, titleId), {
+    likes: increment(1)
   });
-
-  await rerenderCurrentPage();
 }
 
-async function addComment(titleId, text) {
-  if (!currentUser) {
-    openAuthModal("login", "Please log in with your email before leaving a comment.");
+async function addComment(titleId, form) {
+  const formData = new FormData(form);
+  const name = formData.get("name")?.toString().trim() || "Anonymous";
+  const text = formData.get("comment")?.toString().trim() || "";
+
+  if (!text) {
+    showMessage("#commentMessage", "Please write a review or comment first.");
     return false;
   }
 
-  const titleRef = doc(db, MOVIES_COLLECTION, titleId);
+  const titleRef = doc(db, TITLES_COLLECTION, titleId);
 
   await runTransaction(db, async (transaction) => {
     const snapshot = await transaction.get(titleRef);
@@ -426,7 +348,7 @@ async function addComment(titleId, text) {
     transaction.update(titleRef, {
       comments: [
         {
-          email: currentUser.email,
+          name,
           text,
           createdAt: new Date().toISOString()
         },
@@ -449,26 +371,14 @@ async function renderDetailsPage() {
   const titleId = params.get("id");
 
   if (!titleId) {
-    target.innerHTML = `
-      <section class="not-found">
-        <h1>Title not found</h1>
-        <p class="detail-overview">The title you requested could not be found in this collection.</p>
-        <a class="primary-btn" href="index.html">Return home</a>
-      </section>
-    `;
+    target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
     return;
   }
 
-  const snapshot = await getDoc(doc(db, MOVIES_COLLECTION, titleId));
+  const snapshot = await getDoc(doc(db, TITLES_COLLECTION, titleId));
 
   if (!snapshot.exists()) {
-    target.innerHTML = `
-      <section class="not-found">
-        <h1>Title not found</h1>
-        <p class="detail-overview">The title you requested could not be found in this collection.</p>
-        <a class="primary-btn" href="index.html">Return home</a>
-      </section>
-    `;
+    target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
     return;
   }
 
@@ -490,47 +400,49 @@ async function renderDetailsPage() {
             <strong>${escapeHtml(title.genre)}</strong>
           </div>
           <div class="detail-stat-card">
-            <p class="movie-meta">Average rating</p>
-            <strong>${formatRating(title.ratings)} / 5</strong>
+            <p class="movie-meta">Language</p>
+            <strong>${escapeHtml(title.language)}</strong>
           </div>
           <div class="detail-stat-card">
-            <p class="movie-meta">Community votes</p>
-            <strong>${title.ratings.length}</strong>
+            <p class="movie-meta">Likes</p>
+            <strong>${title.likes}</strong>
           </div>
         </div>
         <p class="detail-overview">${escapeHtml(title.description)}</p>
         <div class="detail-actions">
-          <span class="movie-meta">Rate this title:</span>
-          <div class="stars">${createStarMarkup(title.id, title.ratings)}</div>
+          <button class="primary-btn like-btn" data-id="${title.id}" type="button">Like This Title</button>
         </div>
-        <p class="auth-note">${currentUser ? `Signed in as ${escapeHtml(currentUser.email)}` : "Login with your email to rate and comment."}</p>
       </div>
     </section>
 
     <section class="comment-section">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Community comments</p>
+          <p class="eyebrow">Reviews and comments</p>
           <h2>What viewers are saying</h2>
         </div>
-        <p class="section-copy">
-          ${currentUser ? "Share your take with the MovieMate community." : "Please log in first to join the conversation."}
-        </p>
+        <p class="section-copy">Reviews and comments are open for everyone.</p>
       </div>
 
       <form class="suggest-form comment-form" id="commentForm">
-        <label class="input-group">
-          <span>Your comment</span>
-          <textarea name="comment" rows="4" placeholder="Write your review or reaction here" ${currentUser ? "" : "disabled"}></textarea>
-        </label>
+        <div class="form-grid">
+          <label class="input-group">
+            <span>Your name</span>
+            <input name="name" type="text" placeholder="Your name" />
+          </label>
+          <label class="input-group form-span">
+            <span>Your review or comment</span>
+            <textarea name="comment" rows="4" placeholder="Share your thoughts on this title"></textarea>
+          </label>
+        </div>
         <div class="form-actions">
-          <button class="primary-btn" type="submit" ${currentUser ? "" : "disabled"}>Post Comment</button>
+          <button class="primary-btn" type="submit">Post Review</button>
           <p class="form-message" id="commentMessage" aria-live="polite"></p>
         </div>
       </form>
 
       <div class="comment-list">
-        ${title.comments.length ? title.comments.map(commentTemplate).join("") : '<p class="empty-state">No comments yet. Be the first to share a review.</p>'}
+        ${title.comments.length ? title.comments.map(commentTemplate).join("") : '<p class="empty-state">No reviews yet. Be the first to write one.</p>'}
       </div>
     </section>
   `;
@@ -538,194 +450,20 @@ async function renderDetailsPage() {
   setupCommentForm(title.id);
 }
 
-function updateAuthTrigger() {
-  const trigger = document.querySelector("#authTrigger");
-
-  if (!trigger) {
-    return;
-  }
-
-  if (currentUser) {
-    trigger.textContent = `Logout (${currentUser.email})`;
-    trigger.dataset.authAction = "logout";
-  } else {
-    trigger.textContent = "Login / Signup";
-    trigger.dataset.authAction = "open";
-  }
-}
-
-function switchAuthMode(mode) {
-  authMode = mode;
-
-  document.querySelectorAll(".auth-tab").forEach((tab) => {
-    tab.classList.toggle("active", tab.dataset.authMode === mode);
-  });
-
-  const submit = document.querySelector("#authSubmit");
-  const confirmGroup = document.querySelector("#confirmPasswordGroup");
-  const confirmInput = document.querySelector("#authConfirmPassword");
-  const forgotPasswordBtn = document.querySelector("#forgotPasswordBtn");
-
-  if (submit) {
-    submit.textContent = mode === "login" ? "Login" : "Create Account";
-  }
-
-  if (confirmGroup && confirmInput) {
-    const showConfirm = mode === "signup";
-    confirmGroup.classList.toggle("hidden", !showConfirm);
-    confirmInput.required = showConfirm;
-  }
-
-  if (forgotPasswordBtn) {
-    forgotPasswordBtn.classList.toggle("hidden", mode !== "login");
-  }
-
-  showMessage(
-    "#authMessage",
-    mode === "login"
-      ? "Use your email to access ratings and comments."
-      : "Create a MovieMate account with your email."
-  );
-}
-
-function openAuthModal(mode = "login", messageText = "") {
-  if (currentUser) {
-    return;
-  }
-
-  switchAuthMode(mode);
-
-  const modal = document.querySelector("#authModal");
-
-  if (!modal) {
-    return;
-  }
-
-  modal.classList.remove("hidden");
-  modal.setAttribute("aria-hidden", "false");
-
-  if (messageText) {
-    showMessage("#authMessage", messageText);
-  }
-}
-
-function closeAuthModal(force = false) {
-  const modal = document.querySelector("#authModal");
-  const form = document.querySelector("#authForm");
-
-  if (!modal) {
-    return;
-  }
-
-  modal.classList.add("hidden");
-  modal.setAttribute("aria-hidden", "true");
-
-  if (form) {
-    form.reset();
-  }
-
-  showMessage("#authMessage", "");
-}
-
-function formatAuthError(error) {
-  const code = error?.code || "";
-
-  switch (code) {
-    case "auth/invalid-email":
-      return "Please enter a valid email address.";
-    case "auth/user-not-found":
-    case "auth/invalid-credential":
-      return "Email or password is incorrect.";
-    case "auth/wrong-password":
-      return "Email or password is incorrect.";
-    case "auth/email-already-in-use":
-      return "This email already has an account. Please log in instead.";
-    case "auth/weak-password":
-      return "Password should be at least 6 characters.";
-    case "auth/missing-password":
-      return "Please enter your password.";
-    case "auth/too-many-requests":
-      return "Too many attempts. Please wait and try again.";
-    case "auth/network-request-failed":
-      return "Network error. Check your internet connection and try again.";
-    case "auth/unauthorized-domain":
-      return "This website domain is not authorized in Firebase yet.";
-    default:
-      return error?.message || "Authentication failed.";
-  }
-}
-
-async function handleAuthSubmit(event) {
-  event.preventDefault();
-
-  const email = document.querySelector("#authEmail")?.value.trim() || "";
-  const password = document.querySelector("#authPassword")?.value || "";
-  const confirmPassword = document.querySelector("#authConfirmPassword")?.value || "";
-
-  try {
-    if (authMode === "signup") {
-      if (password !== confirmPassword) {
-        showMessage("#authMessage", "Passwords do not match.");
-        return;
-      }
-
-      await createUserWithEmailAndPassword(auth, email, password);
-    } else {
-      await signInWithEmailAndPassword(auth, email, password);
-    }
-
-    updateAuthTrigger();
-    updateMemberBanner();
-    closeAuthModal(true);
-  } catch (error) {
-    showMessage("#authMessage", formatAuthError(error));
-  }
-}
-
-async function handleForgotPassword() {
-  const email = document.querySelector("#authEmail")?.value.trim() || "";
-
-  if (!email) {
-    showMessage("#authMessage", "Enter your email first, then click Forgot password.");
-    return;
-  }
-
-  try {
-    await sendPasswordResetEmail(auth, email);
-    showMessage("#authMessage", "Password reset email sent. Check your inbox.");
-  } catch (error) {
-    showMessage("#authMessage", formatAuthError(error));
-  }
-}
-
-async function rerenderCurrentPage() {
-  updateAuthTrigger();
-  updateMemberBanner();
-
-  if (document.body.dataset.page === "home") {
-    await renderHomePage();
-  }
-
-  if (document.body.dataset.page === "details") {
-    await renderDetailsPage();
-  }
-}
-
-function setupRatings() {
+function setupLikeButtons() {
   document.addEventListener("click", async (event) => {
-    const star = event.target.closest(".star-btn");
+    const button = event.target.closest(".like-btn");
 
-    if (!star) {
+    if (!button) {
       return;
     }
 
-    const titleId = star.dataset.id;
-    const rating = Number(star.dataset.rate);
+    await likeTitle(button.dataset.id);
 
-    try {
-      await updateRating(titleId, rating);
-    } catch (error) {
-      alert(formatAuthError(error));
+    if (document.body.dataset.page === "home") {
+      await renderHomePage();
+    } else {
+      await renderDetailsPage();
     }
   });
 }
@@ -739,33 +477,20 @@ function setupCommentForm(titleId) {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const text = new FormData(form).get("comment")?.toString().trim() || "";
+    const added = await addComment(titleId, form);
 
-    if (!text) {
-      showMessage("#commentMessage", "Please write a comment before submitting.");
+    if (!added) {
       return;
     }
 
-    try {
-      const added = await addComment(titleId, text);
-
-      if (!added) {
-        return;
-      }
-
-      form.reset();
-      showMessage("#commentMessage", "Your comment is now live on this title page.");
-      await renderDetailsPage();
-    } catch (error) {
-      showMessage("#commentMessage", formatAuthError(error));
-    }
+    form.reset();
+    showMessage("#commentMessage", "Your review is now live.");
+    await renderDetailsPage();
   });
 }
 
 function setupFilters() {
-  const controls = ["#searchInput", "#typeFilter", "#genreFilter", "#ratingFilter"];
-
-  controls.forEach((selector) => {
+  ["#searchInput", "#typeFilter", "#genreFilter", "#languageFilter"].forEach((selector) => {
     const element = document.querySelector(selector);
 
     if (!element) {
@@ -790,58 +515,15 @@ function setupSuggestForm() {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-
-    try {
-      const added = await addTitle(form);
-
-      if (!added) {
-        return;
-      }
-
-      form.reset();
-      showMessage("#formMessage", "Title added. It is now live in the MovieMate collection.");
-      await renderHomePage();
-    } catch (error) {
-      showMessage("#formMessage", formatAuthError(error));
-    }
-  });
-}
-
-function setupAuth() {
-  updateAuthTrigger();
-  switchAuthMode("login");
-
-  document.querySelector("#authTrigger")?.addEventListener("click", async () => {
-    const trigger = document.querySelector("#authTrigger");
-
-    if (trigger?.dataset.authAction === "logout") {
-      await signOut(auth);
-      return;
-    }
-
-    openAuthModal("login");
-  });
-
-  document.querySelector("#authClose")?.addEventListener("click", closeAuthModal);
-  document.querySelector("#authBackdrop")?.addEventListener("click", closeAuthModal);
-  document.querySelector("#authForm")?.addEventListener("submit", handleAuthSubmit);
-  document.querySelector("#forgotPasswordBtn")?.addEventListener("click", handleForgotPassword);
-
-  document.querySelectorAll(".auth-tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      switchAuthMode(tab.dataset.authMode);
-    });
+    await addTitle(form);
+    form.reset();
+    showMessage("#formMessage", "Your suggestion is now live on MovieMate.");
+    await renderHomePage();
   });
 }
 
 async function init() {
-  setupAuth();
-  setupRatings();
-
-  onAuthStateChanged(auth, async (user) => {
-    currentUser = user ? { email: user.email, uid: user.uid } : null;
-    await rerenderCurrentPage();
-  });
+  setupLikeButtons();
 
   if (document.body.dataset.page === "home") {
     setupFilters();
@@ -856,6 +538,6 @@ async function init() {
 
 init().catch((error) => {
   console.error(error);
-  showMessage("#formMessage", "Firebase setup is incomplete. Add your Firebase config first.");
-  showMessage("#authMessage", "Firebase setup is incomplete. Add your Firebase config first.");
+  showMessage("#formMessage", "Could not load MovieMate right now.");
+  showMessage("#commentMessage", "Could not load comments right now.");
 });
