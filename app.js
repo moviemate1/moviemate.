@@ -8,12 +8,12 @@ import {
   increment,
   runTransaction,
   serverTimestamp,
-  setDoc,
-  updateDoc
+  setDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const TITLES_COLLECTION = "moviemate_titles";
+const REACTIONS_STORAGE_KEY = "moviemate_reactions";
 
 const BASE_TITLES = [
   {
@@ -27,6 +27,7 @@ const BASE_TITLES = [
     image:
       "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=900&q=80",
     likes: 12,
+    dislikes: 2,
     comments: [
       {
         name: "Riya",
@@ -46,6 +47,7 @@ const BASE_TITLES = [
     image:
       "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80",
     likes: 18,
+    dislikes: 3,
     comments: []
   },
   {
@@ -59,6 +61,7 @@ const BASE_TITLES = [
     image:
       "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&w=900&q=80",
     likes: 20,
+    dislikes: 4,
     comments: []
   },
   {
@@ -72,6 +75,7 @@ const BASE_TITLES = [
     image:
       "https://images.unsplash.com/photo-1513106580091-1d82408b8cd6?auto=format&fit=crop&w=900&q=80",
     likes: 9,
+    dislikes: 1,
     comments: []
   },
   {
@@ -85,6 +89,7 @@ const BASE_TITLES = [
     image:
       "https://images.unsplash.com/photo-1518131678677-a16a0df1f0cb?auto=format&fit=crop&w=900&q=80",
     likes: 14,
+    dislikes: 2,
     comments: []
   }
 ];
@@ -145,8 +150,69 @@ function normalizeTitle(docLike) {
     description: data.description || "",
     image: data.image || "",
     likes: Number(data.likes || 0),
+    dislikes: Number(data.dislikes || 0),
     comments: Array.isArray(data.comments) ? data.comments : []
   };
+}
+
+function getStoredReactions() {
+  try {
+    return JSON.parse(localStorage.getItem(REACTIONS_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function getReaction(titleId) {
+  const reactions = getStoredReactions();
+  return reactions[titleId] || "";
+}
+
+function setReaction(titleId, reaction) {
+  const reactions = getStoredReactions();
+
+  if (reaction) {
+    reactions[titleId] = reaction;
+  } else {
+    delete reactions[titleId];
+  }
+
+  localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(reactions));
+}
+
+function getReactionStats(title) {
+  const likes = Number(title.likes || 0);
+  const dislikes = Number(title.dislikes || 0);
+  const total = likes + dislikes;
+  const likePercent = total ? Math.round((likes / total) * 100) : 0;
+  const dislikePercent = total ? Math.round((dislikes / total) * 100) : 0;
+
+  return {
+    likes,
+    dislikes,
+    total,
+    likePercent,
+    dislikePercent
+  };
+}
+
+function reactionButtonsTemplate(title) {
+  const currentReaction = getReaction(title.id);
+  const stats = getReactionStats(title);
+
+  return `
+    <div class="reaction-panel">
+      <div class="reaction-buttons">
+        <button class="reaction-btn ${currentReaction === "like" ? "active like" : ""}" data-id="${title.id}" data-reaction="like" type="button">
+          Like ${stats.likePercent}%
+        </button>
+        <button class="reaction-btn ${currentReaction === "dislike" ? "active dislike" : ""}" data-id="${title.id}" data-reaction="dislike" type="button">
+          Dislike ${stats.dislikePercent}%
+        </button>
+      </div>
+      <p class="reaction-summary">${stats.likes} likes • ${stats.dislikes} dislikes • ${stats.total} votes</p>
+    </div>
+  `;
 }
 
 async function seedTitlesIfNeeded() {
@@ -183,12 +249,12 @@ function movieCardTemplate(title) {
             <h3>${escapeHtml(title.title)}</h3>
             <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)} • ${escapeHtml(title.language.join(", "))}</p>
           </div>
-          <span class="rating-pill"><strong>${title.likes}</strong> likes</span>
+          <span class="rating-pill"><strong>${getReactionStats(title).likePercent}%</strong> liked</span>
         </div>
         <p class="movie-description">${escapeHtml(title.description)}</p>
+        ${reactionButtonsTemplate(title)}
         <div class="movie-actions">
           <a class="details-link" href="details.html?id=${title.id}">View Details →</a>
-          <button class="secondary-btn like-btn" data-id="${title.id}" type="button">Like</button>
         </div>
       </div>
     </article>
@@ -203,7 +269,7 @@ function featuredCardTemplate(title) {
         <h3>${escapeHtml(title.title)}</h3>
         <div class="movie-actions">
           <span class="genre-pill">${escapeHtml(title.type)}</span>
-          <span class="rating-pill"><strong>${title.likes}</strong> likes</span>
+          <span class="rating-pill"><strong>${getReactionStats(title).likePercent}%</strong> liked</span>
         </div>
       </div>
     </a>
@@ -319,6 +385,7 @@ async function addTitle(form) {
     description,
     image,
     likes: 0,
+    dislikes: 0,
     comments: [],
     createdAt: serverTimestamp()
   };
@@ -326,10 +393,45 @@ async function addTitle(form) {
   await setDoc(doc(db, TITLES_COLLECTION, newTitle.id), newTitle);
 }
 
-async function likeTitle(titleId) {
-  await updateDoc(doc(db, TITLES_COLLECTION, titleId), {
-    likes: increment(1)
+async function reactToTitle(titleId, nextReaction) {
+  const currentReaction = getReaction(titleId);
+
+  if (!["like", "dislike"].includes(nextReaction) || currentReaction === nextReaction) {
+    return false;
+  }
+
+  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(titleRef);
+
+    if (!snapshot.exists()) {
+      throw new Error("Title not found.");
+    }
+
+    const updates = {};
+
+    if (currentReaction === "like") {
+      updates.likes = increment(-1);
+    }
+
+    if (currentReaction === "dislike") {
+      updates.dislikes = increment(-1);
+    }
+
+    if (nextReaction === "like") {
+      updates.likes = increment(1);
+    }
+
+    if (nextReaction === "dislike") {
+      updates.dislikes = increment(1);
+    }
+
+    transaction.update(titleRef, updates);
   });
+
+  setReaction(titleId, nextReaction);
+  return true;
 }
 
 async function addComment(titleId, form) {
@@ -390,6 +492,7 @@ async function renderDetailsPage() {
   }
 
   const title = normalizeTitle(snapshot);
+  const stats = getReactionStats(title);
 
   target.innerHTML = `
     <section class="detail-card">
@@ -411,13 +514,13 @@ async function renderDetailsPage() {
             <strong>${escapeHtml(title.language.join(", "))}</strong>
           </div>
           <div class="detail-stat-card">
-            <p class="movie-meta">Likes</p>
-            <strong>${title.likes}</strong>
+            <p class="movie-meta">Community score</p>
+            <strong>${stats.likePercent}% liked</strong>
           </div>
         </div>
         <p class="detail-overview">${escapeHtml(title.description)}</p>
         <div class="detail-actions">
-          <button class="primary-btn like-btn" data-id="${title.id}" type="button">Like This Title</button>
+          ${reactionButtonsTemplate(title)}
         </div>
       </div>
     </section>
@@ -459,13 +562,17 @@ async function renderDetailsPage() {
 
 function setupLikeButtons() {
   document.addEventListener("click", async (event) => {
-    const button = event.target.closest(".like-btn");
+    const button = event.target.closest(".reaction-btn");
 
     if (!button) {
       return;
     }
 
-    await likeTitle(button.dataset.id);
+    const changed = await reactToTitle(button.dataset.id, button.dataset.reaction);
+
+    if (!changed) {
+      return;
+    }
 
     if (document.body.dataset.page === "home") {
       await renderHomePage();

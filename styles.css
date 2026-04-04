@@ -465,6 +465,50 @@ select {
   justify-content: space-between;
 }
 
+.reaction-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.reaction-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.reaction-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.reaction-btn:hover {
+  transform: translateY(-2px);
+}
+
+.reaction-btn.active.like {
+  background: rgba(36, 201, 111, 0.18);
+  border-color: rgba(36, 201, 111, 0.5);
+}
+
+.reaction-btn.active.dislike {
+  background: rgba(255, 99, 99, 0.18);
+  border-color: rgba(255, 99, 99, 0.5);
+}
+
+.reaction-summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .details-link {
   color: #fff;
   font-weight: 700;
