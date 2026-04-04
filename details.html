@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MovieMate | Movie Details</title>
+    <title>MovieMate | Title Details</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,12 +16,55 @@
     <div class="page-shell detail-shell">
       <nav class="topbar compact">
         <a class="brand" href="index.html">MovieMate</a>
-        <a class="ghost-link" href="index.html">Back to Browse</a>
+        <div class="topbar-actions">
+          <a class="ghost-link" href="index.html">Back to Browse</a>
+          <button class="ghost-link auth-trigger" id="authTrigger" type="button">
+            Login / Signup
+          </button>
+        </div>
       </nav>
 
       <main class="detail-page" id="movieDetails"></main>
     </div>
 
-    <script src="app.js"></script>
+    <div class="auth-modal hidden" id="authModal" aria-hidden="true">
+      <div class="auth-backdrop" id="authBackdrop"></div>
+      <div class="auth-card">
+        <button class="auth-close" id="authClose" type="button" aria-label="Close login form">
+          ×
+        </button>
+        <p class="eyebrow">Members only</p>
+        <h2 class="auth-heading">Sign in to rate and comment</h2>
+        <p class="auth-copy">
+          Create a MovieMate account with your email to unlock reviews and comments.
+        </p>
+
+        <div class="auth-tabs" role="tablist" aria-label="Authentication mode">
+          <button class="auth-tab active" id="loginTab" type="button" data-auth-mode="login">
+            Login
+          </button>
+          <button class="auth-tab" id="signupTab" type="button" data-auth-mode="signup">
+            Sign Up
+          </button>
+        </div>
+
+        <form class="auth-form" id="authForm">
+          <label class="input-group">
+            <span>Email</span>
+            <input id="authEmail" name="email" type="email" required />
+          </label>
+
+          <label class="input-group">
+            <span>Password</span>
+            <input id="authPassword" name="password" type="password" minlength="6" required />
+          </label>
+
+          <button class="primary-btn" id="authSubmit" type="submit">Login</button>
+          <p class="form-message" id="authMessage" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
   </body>
 </html>

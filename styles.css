@@ -282,7 +282,7 @@ select {
 
 .controls-card {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   border-radius: var(--radius-lg);
   padding: 18px;
@@ -377,7 +377,9 @@ select {
 .rating-row,
 .detail-stats,
 .detail-actions,
-.form-actions {
+.form-actions,
+.auth-tabs,
+.comment-meta {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -419,6 +421,16 @@ select {
 
 .star-btn.active {
   color: var(--gold);
+}
+
+.star-btn.locked {
+  opacity: 0.7;
+}
+
+.auth-note {
+  margin: 0;
+  color: #ffb0b4;
+  font-size: 0.9rem;
 }
 
 .empty-state {
@@ -504,6 +516,109 @@ select {
   margin-top: 18px;
 }
 
+.comment-section {
+  padding-top: 28px;
+}
+
+.comment-form {
+  margin-bottom: 20px;
+}
+
+.comment-list {
+  display: grid;
+  gap: 14px;
+}
+
+.comment-card {
+  padding: 18px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.comment-meta {
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.comment-card p {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+}
+
+.auth-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.auth-card {
+  position: relative;
+  width: min(480px, calc(100% - 24px));
+  padding: 28px;
+  border-radius: 28px;
+  background: rgba(15, 15, 15, 0.96);
+  border: 1px solid var(--line);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.5);
+}
+
+.auth-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+
+.auth-heading {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 2.6rem);
+}
+
+.auth-copy {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.auth-tabs {
+  margin: 20px 0 18px;
+}
+
+.auth-tab {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.auth-tab.active {
+  background: linear-gradient(135deg, #ff2430 0%, #b9050f 100%);
+  border-color: transparent;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
 .not-found {
   text-align: center;
   padding: 80px 20px;
@@ -562,5 +677,10 @@ select {
 
   .detail-poster {
     max-height: 480px;
+  }
+
+  .comment-meta {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

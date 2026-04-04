@@ -19,14 +19,17 @@
           <a class="brand" href="index.html">MovieMate</a>
           <div class="topbar-actions">
             <a class="ghost-link" href="#browse">Browse</a>
-            <a class="cta-link" href="#suggest">Suggest a Movie</a>
+            <a class="cta-link" href="#suggest">Suggest a Title</a>
+            <button class="ghost-link auth-trigger" id="authTrigger" type="button">
+              Login / Signup
+            </button>
           </div>
         </nav>
 
         <div class="hero-content">
           <div class="hero-copy">
             <p class="eyebrow">Curated picks for every mood</p>
-            <h1>Find, rate, and share movies worth recommending.</h1>
+            <h1>Find, rate, and share movies and series worth recommending.</h1>
             <p class="hero-text">
               Explore a Netflix-inspired collection, surface fan favorites, and
               help friends discover something unforgettable.
@@ -66,8 +69,17 @@
               <input
                 id="searchInput"
                 type="search"
-                placeholder="Search movies, moods, or keywords"
+                placeholder="Search titles, moods, or keywords"
               />
+            </label>
+
+            <label class="input-group">
+              <span>Type</span>
+              <select id="typeFilter">
+                <option value="all">Movies + Series</option>
+                <option value="Movie">Movies only</option>
+                <option value="Series">Series only</option>
+              </select>
             </label>
 
             <label class="input-group">
@@ -100,10 +112,10 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">Suggest a movie</p>
-              <h2>Share a film others should not miss</h2>
+              <h2>Share a movie or series others should not miss</h2>
             </div>
             <p class="section-copy">
-              Add a title, short overview, genre, and poster image to expand the
+              Add a movie or series, short overview, genre, and poster image to expand the
               collection.
             </p>
           </div>
@@ -111,8 +123,16 @@
           <form class="suggest-form" id="suggestForm">
             <div class="form-grid">
               <label class="input-group">
-                <span>Movie title</span>
+                <span>Title</span>
                 <input id="titleInput" name="title" type="text" required />
+              </label>
+
+              <label class="input-group">
+                <span>Type</span>
+                <select id="typeInput" name="type" required>
+                  <option value="Movie">Movie</option>
+                  <option value="Series">Series</option>
+                </select>
               </label>
 
               <label class="input-group">
@@ -158,6 +178,44 @@
       </main>
     </div>
 
-    <script src="app.js"></script>
+    <div class="auth-modal hidden" id="authModal" aria-hidden="true">
+      <div class="auth-backdrop" id="authBackdrop"></div>
+      <div class="auth-card">
+        <button class="auth-close" id="authClose" type="button" aria-label="Close login form">
+          ×
+        </button>
+        <p class="eyebrow">Members only</p>
+        <h2 class="auth-heading">Sign in to rate and comment</h2>
+        <p class="auth-copy">
+          Create a MovieMate account with your email to unlock reviews and comments.
+        </p>
+
+        <div class="auth-tabs" role="tablist" aria-label="Authentication mode">
+          <button class="auth-tab active" id="loginTab" type="button" data-auth-mode="login">
+            Login
+          </button>
+          <button class="auth-tab" id="signupTab" type="button" data-auth-mode="signup">
+            Sign Up
+          </button>
+        </div>
+
+        <form class="auth-form" id="authForm">
+          <label class="input-group">
+            <span>Email</span>
+            <input id="authEmail" name="email" type="email" required />
+          </label>
+
+          <label class="input-group">
+            <span>Password</span>
+            <input id="authPassword" name="password" type="password" minlength="6" required />
+          </label>
+
+          <button class="primary-btn" id="authSubmit" type="submit">Login</button>
+          <p class="form-message" id="authMessage" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
   </body>
 </html>
