@@ -198,7 +198,8 @@ function normalizeTitle(docLike) {
           id: comment.id || `${data.id || docLike.id}-comment-${index}`,
           name: comment.name || "Anonymous",
           text: comment.text || "",
-          createdAt: comment.createdAt || null
+          createdAt: comment.createdAt || null,
+          reports: Array.isArray(comment.reports) ? comment.reports : []
         }))
       : []
   };
@@ -296,6 +297,14 @@ function reactionButtonsTemplate(title) {
 
 function ownerActionButton(label, action, titleId, active = false) {
   return `<button class="owner-action-btn ${active ? "active" : ""}" data-action="${action}" data-id="${titleId}" type="button">${label}</button>`;
+}
+
+function reportActionButton(commentId, reportCount) {
+  return `
+    <button class="ghost-link comment-report-btn" data-comment-id="${commentId}" type="button">
+      Report${reportCount ? ` (${reportCount})` : ""}
+    </button>
+  `;
 }
 
 async function seedTitlesIfNeeded() {
@@ -438,8 +447,14 @@ function pendingCardTemplate(title) {
 
 function commentTemplate(comment) {
   const commentId = escapeHtml(comment.id || "");
+  const reportButton = reportActionButton(commentId, comment.reports?.length || 0);
   const ownerControls = isOwnerMode()
-    ? `<button class="danger-btn comment-delete-btn" data-comment-id="${commentId}" type="button">Delete Comment</button>`
+    ? `
+        <div class="comment-actions">
+          ${reportButton}
+          <button class="danger-btn comment-delete-btn" data-comment-id="${commentId}" type="button">Delete Comment</button>
+        </div>
+      `
     : "";
 
   return `
@@ -449,7 +464,7 @@ function commentTemplate(comment) {
         <span>${escapeHtml(formatDate(comment.createdAt))}</span>
       </div>
       <p>${escapeHtml(comment.text)}</p>
-      ${ownerControls}
+      ${isOwnerMode() ? ownerControls : `<div class="comment-actions">${reportButton}</div>`}
     </article>
   `;
 }
@@ -487,6 +502,29 @@ function renderFeaturedTitles(titles) {
     })
     .slice(0, 4);
   container.innerHTML = featured.map(featuredCardTemplate).join("");
+}
+
+function renderTrendingTitles(titles) {
+  const grid = document.querySelector("#trendingGrid");
+  const emptyState = document.querySelector("#trendingEmptyState");
+
+  if (!grid || !emptyState) {
+    return;
+  }
+
+  const trendingTitles = [...titles]
+    .filter((title) => title.trending || title.pinned)
+    .sort((a, b) => {
+      if (Number(b.trending) !== Number(a.trending)) {
+        return Number(b.trending) - Number(a.trending);
+      }
+
+      return getReactionStats(b).likePercent - getReactionStats(a).likePercent;
+    })
+    .slice(0, 4);
+
+  grid.innerHTML = trendingTitles.map(featuredCardTemplate).join("");
+  emptyState.classList.toggle("hidden", trendingTitles.length > 0);
 }
 
 function renderOwnerPanel(titles) {
@@ -578,9 +616,11 @@ async function renderHomePage() {
     "languages"
   );
   renderFeaturedTitles(visibleTitles);
+  renderTrendingTitles(visibleTitles);
   renderTitleGrid(filterTitles(visibleTitles));
   renderUpcomingGrid(visibleTitles);
   renderOwnerPanel(titles);
+  renderHeroStats(visibleTitles);
 }
 
 async function addTitle(form) {
@@ -622,68 +662,134 @@ async function updateTitleStatus(titleId, updates) {
   await updateDoc(doc(db, TITLES_COLLECTION, titleId), updates);
 }
 
-async function editTitle(titleId) {
+function openOwnerEditModal(titleId) {
   const title = titlesCache.find((item) => item.id === titleId);
+  const modal = document.querySelector("#ownerEditModal");
+  const form = document.querySelector("#ownerEditForm");
 
-  if (!title) {
+  if (!title || !modal || !form) {
     return;
   }
 
-  const titleValue = window.prompt("Edit title", title.title);
-  if (!titleValue) {
+  form.elements.id.value = title.id;
+  form.elements.title.value = title.title;
+  form.elements.type.value = title.type;
+  form.elements.status.value = title.status;
+  form.elements.genre.value = title.genre;
+  form.elements.language.value = title.language.join(", ");
+  form.elements.releaseDate.value = title.releaseDate || "";
+  form.elements.image.value = title.image;
+  form.elements.description.value = title.description;
+  showMessage("#ownerEditMessage", "");
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeOwnerEditModal() {
+  const modal = document.querySelector("#ownerEditModal");
+
+  if (!modal) {
     return;
   }
 
-  const typeValue = window.prompt("Edit type: Movie or Series", title.type);
-  if (!typeValue) {
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+function openReportModal(commentId) {
+  const modal = document.querySelector("#reportModal");
+  const form = document.querySelector("#reportForm");
+
+  if (!modal || !form) {
     return;
   }
 
-  const statusValue = window.prompt("Edit status: Released or Upcoming", title.status);
-  if (!statusValue) {
+  form.reset();
+  form.elements.commentId.value = commentId;
+  showMessage("#reportMessage", "");
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeReportModal() {
+  const modal = document.querySelector("#reportModal");
+
+  if (!modal) {
     return;
   }
 
-  const genreValue = window.prompt("Edit genre", title.genre);
-  if (!genreValue) {
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+function renderHeroStats(titles) {
+  const titlesStat = document.querySelector("#titlesStat");
+  const upcomingStat = document.querySelector("#upcomingStat");
+  const reviewsStat = document.querySelector("#reviewsStat");
+
+  if (!titlesStat || !upcomingStat || !reviewsStat) {
     return;
   }
 
-  const languageValue = window.prompt(
-    "Edit languages with commas, for example English, Hindi",
-    title.language.join(", ")
-  );
-  if (!languageValue) {
-    return;
-  }
+  const totalReviews = titles.reduce((sum, title) => sum + title.comments.length, 0);
+  const totalUpcoming = titles.filter((title) => title.status === "Upcoming").length;
 
-  const descriptionValue = window.prompt("Edit description", title.description);
-  if (!descriptionValue) {
-    return;
-  }
+  titlesStat.textContent = String(titles.length);
+  upcomingStat.textContent = String(totalUpcoming);
+  reviewsStat.textContent = String(totalReviews);
+}
 
-  const releaseDateValue = window.prompt("Edit release date in YYYY-MM-DD format", title.releaseDate);
-  if (!releaseDateValue) {
-    return;
-  }
+async function submitOwnerEdit(form) {
+  const formData = new FormData(form);
+  const titleId = formData.get("id")?.toString().trim() || "";
 
-  const imageValue = window.prompt("Edit poster image URL", title.image);
-  if (!imageValue) {
+  if (!titleId) {
     return;
   }
 
   await updateTitleStatus(titleId, {
-    title: titleValue.trim(),
-    type: typeValue.trim(),
-    status: statusValue.trim(),
-    releaseDate: releaseDateValue.trim(),
-    genre: genreValue.trim(),
-    language: languageValue
+    title: formData.get("title")?.toString().trim() || "",
+    type: formData.get("type")?.toString().trim() || "Movie",
+    status: formData.get("status")?.toString().trim() || "Released",
+    genre: formData.get("genre")?.toString().trim() || "",
+    language: (formData.get("language")?.toString().trim() || "")
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean),
-    description: descriptionValue.trim(),
-    image: imageValue.trim()
+    releaseDate: formData.get("releaseDate")?.toString().trim() || "",
+    image: formData.get("image")?.toString().trim() || "",
+    description: formData.get("description")?.toString().trim() || ""
+  });
+}
+
+async function reportComment(titleId, commentId, reason, note) {
+  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(titleRef);
+
+    if (!snapshot.exists()) {
+      throw new Error("Title not found.");
+    }
+
+    const data = normalizeTitle(snapshot);
+    transaction.update(titleRef, {
+      comments: data.comments.map((comment) =>
+        comment.id === commentId
+          ? {
+              ...comment,
+              reports: [
+                ...(Array.isArray(comment.reports) ? comment.reports : []),
+                {
+                  reason,
+                  note,
+                  createdAt: new Date().toISOString()
+                }
+              ]
+            }
+          : comment
+      )
+    });
   });
 }
 
@@ -983,7 +1089,8 @@ function setupOwnerActionButtons() {
     }
 
     if (action === "edit") {
-      await editTitle(id);
+      openOwnerEditModal(id);
+      return;
     }
 
     if (document.body.dataset.page === "home") {
@@ -991,6 +1098,87 @@ function setupOwnerActionButtons() {
     } else {
       await renderDetailsPage();
     }
+  });
+}
+
+function setupOwnerEditForm() {
+  const form = document.querySelector("#ownerEditForm");
+  const closeButton = document.querySelector("#ownerEditClose");
+
+  if (!form) {
+    return;
+  }
+
+  closeButton?.addEventListener("click", closeOwnerEditModal);
+
+  document.addEventListener("click", (event) => {
+    if (event.target instanceof HTMLElement && event.target.dataset.closeOwnerEdit === "true") {
+      closeOwnerEditModal();
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await submitOwnerEdit(form);
+    showMessage("#ownerEditMessage", "Title updated successfully.");
+
+    if (document.body.dataset.page === "home") {
+      await renderHomePage();
+    } else {
+      await renderDetailsPage();
+    }
+
+    closeOwnerEditModal();
+  });
+}
+
+function setupReportButtons() {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest(".comment-report-btn");
+
+    if (!button || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    openReportModal(button.dataset.commentId);
+  });
+}
+
+function setupReportForm() {
+  const form = document.querySelector("#reportForm");
+  const closeButton = document.querySelector("#reportClose");
+
+  if (!form) {
+    return;
+  }
+
+  closeButton?.addEventListener("click", closeReportModal);
+
+  document.addEventListener("click", (event) => {
+    if (event.target instanceof HTMLElement && event.target.dataset.closeReport === "true") {
+      closeReportModal();
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const params = new URLSearchParams(window.location.search);
+    const titleId = params.get("id");
+
+    if (!titleId) {
+      return;
+    }
+
+    const formData = new FormData(form);
+    await reportComment(
+      titleId,
+      formData.get("commentId")?.toString().trim() || "",
+      formData.get("reason")?.toString().trim() || "Other",
+      formData.get("note")?.toString().trim() || ""
+    );
+    showMessage("#reportMessage", "Thanks. This comment has been reported for review.");
+    await renderDetailsPage();
+    closeReportModal();
   });
 }
 
@@ -1102,7 +1290,7 @@ function setupFilters() {
     }
 
     const handler = () => {
-      renderTitleGrid(filterTitles(titlesCache));
+      renderTitleGrid(filterTitles(getVisibleTitles(titlesCache)));
     };
 
     element.addEventListener("input", handler);
@@ -1132,6 +1320,9 @@ async function init() {
   setupCommentDeleteButtons();
   setupOwnerActionButtons();
   setupOwnerMode();
+  setupOwnerEditForm();
+  setupReportButtons();
+  setupReportForm();
 
   if (document.body.dataset.page === "home") {
     setupFilters();

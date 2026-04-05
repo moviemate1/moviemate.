@@ -4,13 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MovieMate | Discover Movies and Series</title>
+    <meta
+      name="description"
+      content="MovieMate helps you discover movies and series through public reviews, reactions, upcoming releases, and community suggestions."
+    />
+    <meta
+      name="keywords"
+      content="MovieMate, movie reviews, series reviews, upcoming movies, upcoming series, movie suggestions, show recommendations"
+    />
+    <meta name="theme-color" content="#0a0a0f" />
+    <meta property="og:title" content="MovieMate | Discover Movies and Series" />
+    <meta
+      property="og:description"
+      content="Browse community picks, upcoming releases, reactions, and suggestions for movies and series."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="favicon.svg" />
+    <meta property="og:url" content="https://moviematehub.indevs.in/" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2" />
+    <link rel="stylesheet" href="styles.css?v=4" />
   </head>
   <body data-page="home">
     <div class="page-shell">
@@ -22,6 +40,7 @@
           </a>
           <div class="topbar-actions">
             <a class="ghost-link" href="#browse">Browse</a>
+            <a class="ghost-link" href="#upcoming">Upcoming</a>
             <a class="cta-link" href="#suggest">Suggest a Title</a>
             <button class="ghost-link owner-toggle" id="ownerToggle" type="button">Owner Mode</button>
           </div>
@@ -35,6 +54,20 @@
               Browse public suggestions, explore by language and genre, and
               discover what other viewers are loving right now.
             </p>
+            <div class="hero-stats" id="heroStats">
+              <article class="stat-card">
+                <span class="stat-label">Community titles</span>
+                <strong id="titlesStat">0</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">Upcoming releases</span>
+                <strong id="upcomingStat">0</strong>
+              </article>
+              <article class="stat-card">
+                <span class="stat-label">Public reviews</span>
+                <strong id="reviewsStat">0</strong>
+              </article>
+            </div>
             <div class="hero-highlights">
               <div class="hero-chip">Movies + Series</div>
               <div class="hero-chip">Multi-language discovery</div>
@@ -73,6 +106,20 @@
             <h3>Review and like</h3>
             <p class="section-copy">Read public reviews, post your own thoughts, and boost titles you enjoyed.</p>
           </article>
+        </section>
+
+        <section class="section trend-section" id="trending">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Right now</p>
+              <h2>Trending with the community</h2>
+            </div>
+            <p class="section-copy">
+              A fast shortlist of the movies and series getting the strongest reactions and owner picks.
+            </p>
+          </div>
+          <div class="featured-grid trend-grid" id="trendingGrid"></div>
+          <p class="empty-state hidden" id="trendingEmptyState">No trending titles yet.</p>
         </section>
 
         <section class="section" id="browse">
@@ -257,12 +304,97 @@
         </div>
         <div class="footer-links">
           <a href="about.html">About</a>
+          <a href="contact.html">Contact</a>
           <a href="privacy.html">Privacy</a>
           <a href="#suggest">Suggest a Title</a>
         </div>
       </footer>
     </div>
 
-    <script type="module" src="app.js?v=2"></script>
+    <div class="overlay-modal hidden" id="ownerEditModal" aria-hidden="true">
+      <div class="overlay-backdrop" data-close-owner-edit="true"></div>
+      <div class="overlay-card">
+        <button class="overlay-close" id="ownerEditClose" type="button" aria-label="Close edit form">&times;</button>
+        <p class="eyebrow">Owner edit</p>
+        <h2 class="overlay-title">Edit title details</h2>
+        <form class="overlay-form" id="ownerEditForm">
+          <input type="hidden" name="id" />
+          <label class="input-group">
+            <span>Title</span>
+            <input name="title" type="text" required />
+          </label>
+          <label class="input-group">
+            <span>Type</span>
+            <select name="type" required>
+              <option value="Movie">Movie</option>
+              <option value="Series">Series</option>
+            </select>
+          </label>
+          <label class="input-group">
+            <span>Status</span>
+            <select name="status" required>
+              <option value="Released">Released</option>
+              <option value="Upcoming">Upcoming</option>
+            </select>
+          </label>
+          <label class="input-group">
+            <span>Genre</span>
+            <input name="genre" type="text" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Languages, separated by commas</span>
+            <input name="language" type="text" required />
+          </label>
+          <label class="input-group">
+            <span>Release date</span>
+            <input name="releaseDate" type="date" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Poster image URL</span>
+            <input name="image" type="url" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Description</span>
+            <textarea name="description" rows="5" required></textarea>
+          </label>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Save Changes</button>
+            <p class="form-message" id="ownerEditMessage" aria-live="polite"></p>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="overlay-modal hidden" id="reportModal" aria-hidden="true">
+      <div class="overlay-backdrop" data-close-report="true"></div>
+      <div class="overlay-card">
+        <button class="overlay-close" id="reportClose" type="button" aria-label="Close report form">&times;</button>
+        <p class="eyebrow">Report comment</p>
+        <h2 class="overlay-title">Tell us what feels wrong</h2>
+        <form class="overlay-form" id="reportForm">
+          <input type="hidden" name="commentId" />
+          <label class="input-group">
+            <span>Reason</span>
+            <select name="reason" required>
+              <option value="Spam">Spam</option>
+              <option value="Abusive">Abusive</option>
+              <option value="Harassment">Harassment</option>
+              <option value="False information">False information</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label class="input-group form-span">
+            <span>Short note</span>
+            <textarea name="note" rows="4" placeholder="Why are you reporting this comment?" required></textarea>
+          </label>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Submit Report</button>
+            <p class="form-message" id="reportMessage" aria-live="polite"></p>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="app.js?v=4"></script>
   </body>
 </html>
