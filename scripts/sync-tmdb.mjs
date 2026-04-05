@@ -233,39 +233,11 @@ async function upsertTitles(items) {
   }
 }
 
-async function cleanupImportedTitles(activeIds) {
-  const snapshot = await db
-    .collection(TITLES_COLLECTION)
-    .where("source", "==", "tmdb")
-    .get();
-
-  if (snapshot.empty) {
-    return;
-  }
-
-  let batch = db.batch();
-  let operationCount = 0;
-
-  for (const docSnapshot of snapshot.docs) {
-    const shouldDelete = !activeIds.has(docSnapshot.id);
-
-    if (!shouldDelete) {
-      continue;
-    }
-
-    batch.delete(docSnapshot.ref);
-    operationCount += 1;
-
-    if (operationCount === 450) {
-      await batch.commit();
-      batch = db.batch();
-      operationCount = 0;
-    }
-  }
-
-  if (operationCount > 0) {
-    await batch.commit();
-  }
+async function cleanupImportedTitles() {
+  // Keep imported TMDb titles stored on the website even after release
+  // or after they fall out of the current TMDb lists. This lets the site
+  // grow into a longer-term library instead of replacing older imports.
+  return Promise.resolve();
 }
 
 async function run() {
@@ -341,7 +313,7 @@ async function run() {
   const merged = [...grouped.values()];
 
   await upsertTitles(merged);
-  await cleanupImportedTitles(new Set(merged.map((item) => item.id)));
+  await cleanupImportedTitles();
 
   console.log(`Sync complete. Updated ${merged.length} titles.`);
 }
