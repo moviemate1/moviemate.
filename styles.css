@@ -67,7 +67,9 @@ select {
   position: absolute;
   inset: 72px 0 0;
   background:
-    linear-gradient(120deg, rgba(229, 9, 20, 0.18), transparent 35%),
+    radial-gradient(circle at 18% 16%, rgba(255, 120, 120, 0.22), transparent 22%),
+    radial-gradient(circle at 78% 22%, rgba(88, 126, 255, 0.14), transparent 24%),
+    linear-gradient(120deg, rgba(229, 9, 20, 0.16), transparent 35%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 60%);
   border: 1px solid var(--line);
   border-radius: 36px;
@@ -182,9 +184,15 @@ button.ghost-link {
 .hero-content {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
-  gap: 30px;
-  align-items: center;
-  padding: 0 26px 24px;
+  gap: 34px;
+  align-items: stretch;
+  padding: 8px 26px 28px;
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .eyebrow,
@@ -204,8 +212,9 @@ button.ghost-link {
 }
 
 .hero-copy h1 {
-  font-size: clamp(3.5rem, 8vw, 6.2rem);
-  max-width: 11ch;
+  font-size: clamp(3.4rem, 7vw, 5.8rem);
+  max-width: 8.5ch;
+  letter-spacing: -0.04em;
 }
 
 .hero-text,
@@ -220,8 +229,9 @@ button.ghost-link {
 }
 
 .hero-text {
-  max-width: 52ch;
-  margin: 20px 0 0;
+  max-width: 42ch;
+  margin: 18px 0 0;
+  font-size: 1.02rem;
 }
 
 .hero-highlights {
@@ -235,13 +245,13 @@ button.ghost-link {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 26px;
+  margin-top: 24px;
 }
 
 .stat-card {
-  padding: 16px 18px;
+  padding: 18px 18px;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.05);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -259,9 +269,9 @@ button.ghost-link {
 .hero-chip {
   padding: 10px 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #f3d7d9;
+  color: #f0dde0;
   font-size: 0.88rem;
 }
 
@@ -301,6 +311,10 @@ button.ghost-link {
 .featured-panel {
   border-radius: var(--radius-lg);
   padding: 24px;
+  align-self: center;
+  background:
+    linear-gradient(180deg, rgba(17, 17, 17, 0.95), rgba(17, 17, 17, 0.82)),
+    radial-gradient(circle at top right, rgba(229, 9, 20, 0.16), transparent 30%);
 }
 
 .featured-grid,
