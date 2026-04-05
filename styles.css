@@ -370,14 +370,14 @@ button.ghost-link {
 }
 
 .section {
-  padding-top: 28px;
+  padding-top: 40px;
 }
 
 .community-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-  margin-top: 12px;
+  margin-top: 18px;
 }
 
 .community-card,
@@ -392,6 +392,10 @@ button.ghost-link {
 .community-card h3 {
   margin: 0 0 10px;
   font-size: 1.35rem;
+}
+
+.community-card .section-copy {
+  margin-bottom: 0;
 }
 
 .member-banner {
@@ -409,7 +413,7 @@ button.ghost-link {
   justify-content: space-between;
   gap: 24px;
   align-items: end;
-  margin-bottom: 22px;
+  margin-bottom: 26px;
 }
 
 .section-heading h2 {
@@ -628,6 +632,14 @@ button.ghost-link {
   gap: 18px;
 }
 
+.owner-panel {
+  padding: 28px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(19, 19, 22, 0.92), rgba(13, 13, 15, 0.82));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow);
+}
+
 .owner-panel-actions {
   display: flex;
   justify-content: flex-end;
@@ -774,8 +786,11 @@ button.ghost-link {
 
 .empty-state {
   margin: 28px 0 0;
-  padding: 18px;
+  padding: 18px 20px;
   text-align: center;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .hidden {
@@ -901,8 +916,8 @@ button.ghost-link {
   justify-content: space-between;
   gap: 24px;
   align-items: flex-start;
-  margin-top: 44px;
-  padding-top: 28px;
+  margin-top: 56px;
+  padding: 30px 0 10px;
   border-top: 1px solid var(--line);
 }
 
@@ -928,6 +943,12 @@ button.ghost-link {
 
 .footer-links a {
   color: #f0d7d9;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.footer-links a:hover {
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 .info-shell {
@@ -1135,6 +1156,10 @@ button.ghost-link {
     align-items: start;
   }
 
+  .section {
+    padding-top: 34px;
+  }
+
   .owner-panel-actions {
     justify-content: stretch;
   }
@@ -1182,6 +1207,7 @@ button.ghost-link {
 
   .site-footer {
     flex-direction: column;
+    gap: 18px;
   }
 
   .hero-copy h1 {
