@@ -259,6 +259,7 @@ function normalizeTitle(docLike) {
     trending: Boolean(data.trending),
     source: data.source || "",
     tmdbId: data.tmdbId || "",
+    tmdbPopularity: Number(data.tmdbPopularity || 0),
     importBuckets: Array.isArray(data.importBuckets) ? data.importBuckets : [],
     comments: Array.isArray(data.comments)
       ? data.comments.map((comment, index) => ({
@@ -683,6 +684,7 @@ function renderPopularMoviesGrid(titles) {
 
   const items = titles
     .filter((title) => title.type === "Movie" && title.importBuckets.includes("popular"))
+    .sort((a, b) => b.tmdbPopularity - a.tmdbPopularity)
     .slice(0, 12);
 
   grid.innerHTML = items.map(movieCardTemplate).join("");
@@ -699,6 +701,7 @@ function renderPopularSeriesGrid(titles) {
 
   const items = titles
     .filter((title) => title.type === "Series" && title.importBuckets.includes("popular"))
+    .sort((a, b) => b.tmdbPopularity - a.tmdbPopularity)
     .slice(0, 12);
 
   grid.innerHTML = items.map(movieCardTemplate).join("");
@@ -715,6 +718,7 @@ function renderTmdbTrendingGrid(titles) {
 
   const items = titles
     .filter((title) => title.importBuckets.includes("trending"))
+    .sort((a, b) => b.tmdbPopularity - a.tmdbPopularity)
     .slice(0, 12);
 
   grid.innerHTML = items.map(movieCardTemplate).join("");
