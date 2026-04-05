@@ -28,7 +28,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=6" />
+    <link rel="stylesheet" href="styles.css?v=7" />
   </head>
   <body data-page="home">
     <div class="page-shell">
@@ -48,9 +48,9 @@
 
         <div class="hero-content">
           <div class="hero-copy">
-            <p class="eyebrow">MoviemateHub picks for every mood</p>
-            <h1>Discover movies and series worth your time.</h1>
-            <p class="hero-text">
+            <p class="eyebrow" id="heroEyebrowText">MoviemateHub picks for every mood</p>
+            <h1 id="heroHeadlineText">Discover movies and series worth your time.</h1>
+            <p class="hero-text" id="heroSupportText">
               Explore community picks, upcoming releases, and honest reactions across languages and genres in one clean place.
             </p>
             <div class="hero-stats" id="heroStats">
@@ -81,7 +81,9 @@
           <section class="featured-panel" aria-labelledby="featured-heading">
             <div class="panel-header">
               <p class="panel-label">Featured Tonight</p>
-              <h2 id="featured-heading">Top liked picks from the community</h2>
+              <h2 id="featured-heading">
+                <span id="featuredHeadingText">Top liked picks from the community</span>
+              </h2>
             </div>
             <div class="featured-grid" id="featuredMovies"></div>
           </section>
@@ -92,18 +94,18 @@
         <section class="community-strip">
           <article class="community-card">
             <p class="eyebrow">What you can do</p>
-            <h3>Browse freely</h3>
-            <p class="section-copy">Anyone can explore movies and series without creating an account.</p>
+            <h3 id="communityBrowseHeading">Browse freely</h3>
+            <p class="section-copy" id="communityBrowseCopy">Anyone can explore movies and series without creating an account.</p>
           </article>
           <article class="community-card">
             <p class="eyebrow">Community powered</p>
-            <h3>Suggest new titles</h3>
-            <p class="section-copy">Help others discover hidden gems across platforms, genres, and languages.</p>
+            <h3 id="communitySuggestHeading">Suggest new titles</h3>
+            <p class="section-copy" id="communitySuggestCopy">Help others discover hidden gems across platforms, genres, and languages.</p>
           </article>
           <article class="community-card">
             <p class="eyebrow">Quick discovery</p>
-            <h3>Review and like</h3>
-            <p class="section-copy">Read public reviews, post your own thoughts, and boost titles you enjoyed.</p>
+            <h3 id="communityReviewHeading">Review and like</h3>
+            <p class="section-copy" id="communityReviewCopy">Read public reviews, post your own thoughts, and boost titles you enjoyed.</p>
           </article>
         </section>
 
@@ -111,9 +113,9 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">Right now</p>
-              <h2>Trending with the community</h2>
+              <h2 id="trendingHeadingText">Trending with the community</h2>
             </div>
-            <p class="section-copy">
+            <p class="section-copy" id="trendingCopyText">
               A fast shortlist of the movies and series getting the strongest reactions and owner picks.
             </p>
           </div>
@@ -125,9 +127,9 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">Browse collection</p>
-              <h2>Search by title, genre, language, or format</h2>
+              <h2 id="browseHeadingText">Search by title, genre, language, or format</h2>
             </div>
-            <p class="section-copy">
+            <p class="section-copy" id="browseCopyText">
               Explore community suggestions for movies and series across genres,
               languages, and platforms with easy filters and quick actions.
             </p>
@@ -173,9 +175,9 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">Coming soon</p>
-              <h2>Upcoming Movies & Series</h2>
+              <h2 id="upcomingHeadingText">Upcoming Movies & Series</h2>
             </div>
-            <p class="section-copy">
+            <p class="section-copy" id="upcomingCopyText">
               Watch what is releasing next with quick details on title, type, genre, language, release date, and story.
             </p>
           </div>
@@ -190,9 +192,9 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">Suggest a title</p>
-              <h2>Share a movie or series with the community</h2>
+              <h2 id="suggestHeadingText">Share a movie or series with the community</h2>
             </div>
-            <p class="section-copy">
+            <p class="section-copy" id="suggestCopyText">
               Add the title, type, genre, language, description, and poster to help others find something great to watch.
             </p>
           </div>
@@ -280,11 +282,16 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">Owner controls</p>
-              <h2>Pending suggestions and homepage control</h2>
+              <h2 id="ownerHeadingText">Pending suggestions and homepage control</h2>
             </div>
-            <p class="section-copy">
+            <p class="section-copy" id="ownerCopyText">
               Review public suggestions, approve what should go live, and mark standout titles as featured or trending.
             </p>
+          </div>
+          <div class="owner-panel-actions">
+            <button class="secondary-btn owner-panel-btn" id="editHomepageCopyBtn" type="button">
+              Edit Homepage Copy
+            </button>
           </div>
           <div class="owner-grid" id="pendingGrid"></div>
           <p class="empty-state hidden" id="pendingEmptyState">No pending suggestions right now.</p>
@@ -297,7 +304,7 @@
             <span class="brand-mark" aria-hidden="true"></span>
             <span class="brand-text">MovieMate</span>
           </a>
-          <p class="section-copy footer-copy">
+          <p class="section-copy footer-copy" id="footerCopyText">
             A simple public space to explore, review, like, and suggest movies and series.
           </p>
         </div>
@@ -364,6 +371,110 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=7"></script>
+    <div class="overlay-modal hidden" id="homepageEditModal" aria-hidden="true">
+      <button
+        class="overlay-backdrop"
+        data-close-homepage-edit="true"
+        type="button"
+        aria-label="Close homepage editor"
+      ></button>
+      <div class="overlay-card overlay-card-wide">
+        <button class="overlay-close" id="homepageEditClose" type="button" aria-label="Close homepage editor">&times;</button>
+        <p class="eyebrow">Owner edit</p>
+        <h2 class="overlay-title">Edit homepage text</h2>
+        <form class="overlay-form overlay-form-wide" id="homepageEditForm">
+          <label class="input-group form-span">
+            <span>Hero eyebrow</span>
+            <input name="heroEyebrow" type="text" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Hero headline</span>
+            <textarea name="heroTitle" rows="2" required></textarea>
+          </label>
+          <label class="input-group form-span">
+            <span>Hero support text</span>
+            <textarea name="heroText" rows="3" required></textarea>
+          </label>
+          <label class="input-group">
+            <span>Featured panel title</span>
+            <input name="featuredTitle" type="text" required />
+          </label>
+          <label class="input-group">
+            <span>Trending title</span>
+            <input name="trendingTitle" type="text" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Trending support text</span>
+            <textarea name="trendingText" rows="3" required></textarea>
+          </label>
+          <label class="input-group">
+            <span>Browse title</span>
+            <input name="browseTitle" type="text" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Browse support text</span>
+            <textarea name="browseText" rows="3" required></textarea>
+          </label>
+          <label class="input-group">
+            <span>Upcoming title</span>
+            <input name="upcomingTitle" type="text" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Upcoming support text</span>
+            <textarea name="upcomingText" rows="3" required></textarea>
+          </label>
+          <label class="input-group">
+            <span>Suggest title</span>
+            <input name="suggestTitle" type="text" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Suggest support text</span>
+            <textarea name="suggestText" rows="3" required></textarea>
+          </label>
+          <label class="input-group">
+            <span>Owner panel title</span>
+            <input name="ownerTitle" type="text" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Owner panel support text</span>
+            <textarea name="ownerText" rows="3" required></textarea>
+          </label>
+          <label class="input-group">
+            <span>Community card 1 title</span>
+            <input name="communityBrowseTitle" type="text" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Community card 1 text</span>
+            <textarea name="communityBrowseText" rows="2" required></textarea>
+          </label>
+          <label class="input-group">
+            <span>Community card 2 title</span>
+            <input name="communitySuggestTitle" type="text" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Community card 2 text</span>
+            <textarea name="communitySuggestText" rows="2" required></textarea>
+          </label>
+          <label class="input-group">
+            <span>Community card 3 title</span>
+            <input name="communityReviewTitle" type="text" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Community card 3 text</span>
+            <textarea name="communityReviewText" rows="2" required></textarea>
+          </label>
+          <label class="input-group form-span">
+            <span>Footer text</span>
+            <textarea name="footerText" rows="2" required></textarea>
+          </label>
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Save Homepage Copy</button>
+            <p class="form-message" id="homepageEditMessage" aria-live="polite"></p>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="app.js?v=8"></script>
   </body>
 </html>

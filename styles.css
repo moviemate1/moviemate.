@@ -622,6 +622,16 @@ button.ghost-link {
   gap: 18px;
 }
 
+.owner-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 18px;
+}
+
+.owner-panel-btn {
+  min-width: 220px;
+}
+
 .owner-actions {
   display: flex;
   gap: 10px;
@@ -1064,6 +1074,10 @@ button.ghost-link {
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
 }
 
+.overlay-card-wide {
+  width: min(980px, 100%);
+}
+
 .overlay-close {
   position: absolute;
   top: 16px;
@@ -1089,6 +1103,10 @@ button.ghost-link {
   gap: 16px;
 }
 
+.overlay-form-wide textarea {
+  min-height: 96px;
+}
+
 @media (max-width: 980px) {
   .hero-content,
   .detail-card,
@@ -1109,6 +1127,14 @@ button.ghost-link {
 
   .section-heading {
     align-items: start;
+  }
+
+  .owner-panel-actions {
+    justify-content: stretch;
+  }
+
+  .owner-panel-btn {
+    width: 100%;
   }
 }
 

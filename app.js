@@ -15,9 +15,40 @@ import {
 import { firebaseConfig } from "./firebase-config.js";
 
 const TITLES_COLLECTION = "moviemate_titles";
+const SETTINGS_COLLECTION = "moviemate_settings";
+const HOMEPAGE_DOC_ID = "homepage";
 const REACTIONS_STORAGE_KEY = "moviemate_reactions";
 const OWNER_MODE_KEY = "moviemate_owner_mode";
 const OWNER_PASSCODE = "1A2b3456@";
+const DEFAULT_HOMEPAGE_CONTENT = {
+  heroEyebrow: "MoviemateHub picks for every mood",
+  heroTitle: "Discover movies and series worth your time.",
+  heroText:
+    "Explore community picks, upcoming releases, and honest reactions across languages and genres in one clean place.",
+  featuredTitle: "Top liked picks from the community",
+  trendingTitle: "Trending with the community",
+  trendingText:
+    "A fast shortlist of the movies and series getting the strongest reactions and owner picks.",
+  browseTitle: "Search by title, genre, language, or format",
+  browseText:
+    "Explore community suggestions for movies and series across genres, languages, and platforms with easy filters and quick actions.",
+  upcomingTitle: "Upcoming Movies & Series",
+  upcomingText:
+    "Watch what is releasing next with quick details on title, type, genre, language, release date, and story.",
+  suggestTitle: "Share a movie or series with the community",
+  suggestText:
+    "Add the title, type, genre, language, description, and poster to help others find something great to watch.",
+  ownerTitle: "Pending suggestions and homepage control",
+  ownerText:
+    "Review public suggestions, approve what should go live, and mark standout titles as featured or trending.",
+  communityBrowseTitle: "Browse freely",
+  communityBrowseText: "Anyone can explore movies and series without creating an account.",
+  communitySuggestTitle: "Suggest new titles",
+  communitySuggestText: "Help others discover hidden gems across platforms, genres, and languages.",
+  communityReviewTitle: "Review and like",
+  communityReviewText: "Read public reviews, post your own thoughts, and boost titles you enjoyed.",
+  footerText: "A simple public space to explore, review, like, and suggest movies and series."
+};
 
 const BASE_TITLES = [
   {
@@ -127,6 +158,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let titlesCache = [];
+let homepageContentCache = { ...DEFAULT_HOMEPAGE_CONTENT };
 
 function isOwnerMode() {
   return localStorage.getItem(OWNER_MODE_KEY) === "true";
@@ -168,6 +200,38 @@ function formatDate(timestamp) {
     month: "short",
     year: "numeric"
   });
+}
+
+function normalizeHomepageContent(data = {}) {
+  return {
+    heroEyebrow: data.heroEyebrow || DEFAULT_HOMEPAGE_CONTENT.heroEyebrow,
+    heroTitle: data.heroTitle || DEFAULT_HOMEPAGE_CONTENT.heroTitle,
+    heroText: data.heroText || DEFAULT_HOMEPAGE_CONTENT.heroText,
+    featuredTitle: data.featuredTitle || DEFAULT_HOMEPAGE_CONTENT.featuredTitle,
+    trendingTitle: data.trendingTitle || DEFAULT_HOMEPAGE_CONTENT.trendingTitle,
+    trendingText: data.trendingText || DEFAULT_HOMEPAGE_CONTENT.trendingText,
+    browseTitle: data.browseTitle || DEFAULT_HOMEPAGE_CONTENT.browseTitle,
+    browseText: data.browseText || DEFAULT_HOMEPAGE_CONTENT.browseText,
+    upcomingTitle: data.upcomingTitle || DEFAULT_HOMEPAGE_CONTENT.upcomingTitle,
+    upcomingText: data.upcomingText || DEFAULT_HOMEPAGE_CONTENT.upcomingText,
+    suggestTitle: data.suggestTitle || DEFAULT_HOMEPAGE_CONTENT.suggestTitle,
+    suggestText: data.suggestText || DEFAULT_HOMEPAGE_CONTENT.suggestText,
+    ownerTitle: data.ownerTitle || DEFAULT_HOMEPAGE_CONTENT.ownerTitle,
+    ownerText: data.ownerText || DEFAULT_HOMEPAGE_CONTENT.ownerText,
+    communityBrowseTitle:
+      data.communityBrowseTitle || DEFAULT_HOMEPAGE_CONTENT.communityBrowseTitle,
+    communityBrowseText:
+      data.communityBrowseText || DEFAULT_HOMEPAGE_CONTENT.communityBrowseText,
+    communitySuggestTitle:
+      data.communitySuggestTitle || DEFAULT_HOMEPAGE_CONTENT.communitySuggestTitle,
+    communitySuggestText:
+      data.communitySuggestText || DEFAULT_HOMEPAGE_CONTENT.communitySuggestText,
+    communityReviewTitle:
+      data.communityReviewTitle || DEFAULT_HOMEPAGE_CONTENT.communityReviewTitle,
+    communityReviewText:
+      data.communityReviewText || DEFAULT_HOMEPAGE_CONTENT.communityReviewText,
+    footerText: data.footerText || DEFAULT_HOMEPAGE_CONTENT.footerText
+  };
 }
 
 function normalizeTitle(docLike) {
@@ -321,6 +385,20 @@ async function fetchTitles() {
   const snapshot = await getDocs(collection(db, TITLES_COLLECTION));
   titlesCache = snapshot.docs.map(normalizeTitle);
   return titlesCache;
+}
+
+async function fetchHomepageContent() {
+  const homepageRef = doc(db, SETTINGS_COLLECTION, HOMEPAGE_DOC_ID);
+  const snapshot = await getDoc(homepageRef);
+
+  if (!snapshot.exists()) {
+    homepageContentCache = { ...DEFAULT_HOMEPAGE_CONTENT };
+    await setDoc(homepageRef, homepageContentCache);
+    return homepageContentCache;
+  }
+
+  homepageContentCache = normalizeHomepageContent(snapshot.data());
+  return homepageContentCache;
 }
 
 function movieCardTemplate(title) {
@@ -591,9 +669,45 @@ function showMessage(selector, text) {
   }
 }
 
+function setTextContent(selector, text) {
+  const element = document.querySelector(selector);
+
+  if (element) {
+    element.textContent = text;
+  }
+}
+
+function renderHomepageContent(content) {
+  setTextContent("#heroEyebrowText", content.heroEyebrow);
+  setTextContent("#heroHeadlineText", content.heroTitle);
+  setTextContent("#heroSupportText", content.heroText);
+  setTextContent("#featuredHeadingText", content.featuredTitle);
+  setTextContent("#trendingHeadingText", content.trendingTitle);
+  setTextContent("#trendingCopyText", content.trendingText);
+  setTextContent("#browseHeadingText", content.browseTitle);
+  setTextContent("#browseCopyText", content.browseText);
+  setTextContent("#upcomingHeadingText", content.upcomingTitle);
+  setTextContent("#upcomingCopyText", content.upcomingText);
+  setTextContent("#suggestHeadingText", content.suggestTitle);
+  setTextContent("#suggestCopyText", content.suggestText);
+  setTextContent("#ownerHeadingText", content.ownerTitle);
+  setTextContent("#ownerCopyText", content.ownerText);
+  setTextContent("#communityBrowseHeading", content.communityBrowseTitle);
+  setTextContent("#communityBrowseCopy", content.communityBrowseText);
+  setTextContent("#communitySuggestHeading", content.communitySuggestTitle);
+  setTextContent("#communitySuggestCopy", content.communitySuggestText);
+  setTextContent("#communityReviewHeading", content.communityReviewTitle);
+  setTextContent("#communityReviewCopy", content.communityReviewText);
+  setTextContent("#footerCopyText", content.footerText);
+}
+
 async function renderHomePage() {
-  const titles = await fetchTitles();
+  const [titles, homepageContent] = await Promise.all([
+    fetchTitles(),
+    fetchHomepageContent()
+  ]);
   const visibleTitles = getVisibleTitles(titles);
+  renderHomepageContent(homepageContent);
   populateSelect(
     "#genreFilter",
     [...new Set(visibleTitles.map((title) => title.genre))].sort(),
@@ -692,6 +806,36 @@ function closeOwnerEditModal() {
   syncModalVisibility();
 }
 
+function openHomepageEditModal() {
+  const modal = document.querySelector("#homepageEditModal");
+  const form = document.querySelector("#homepageEditForm");
+
+  if (!modal || !form) {
+    return;
+  }
+
+  Object.entries(homepageContentCache).forEach(([key, value]) => {
+    if (form.elements[key]) {
+      form.elements[key].value = value;
+    }
+  });
+
+  showMessage("#homepageEditMessage", "");
+  modal.classList.remove("hidden");
+  syncModalVisibility();
+}
+
+function closeHomepageEditModal() {
+  const modal = document.querySelector("#homepageEditModal");
+
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.add("hidden");
+  syncModalVisibility();
+}
+
 function renderHeroStats(titles) {
   const titlesStat = document.querySelector("#titlesStat");
   const upcomingStat = document.querySelector("#upcomingStat");
@@ -730,6 +874,37 @@ async function submitOwnerEdit(form) {
     image: formData.get("image")?.toString().trim() || "",
     description: formData.get("description")?.toString().trim() || ""
   });
+}
+
+async function submitHomepageEdit(form) {
+  const formData = new FormData(form);
+  const content = normalizeHomepageContent({
+    heroEyebrow: formData.get("heroEyebrow")?.toString().trim(),
+    heroTitle: formData.get("heroTitle")?.toString().trim(),
+    heroText: formData.get("heroText")?.toString().trim(),
+    featuredTitle: formData.get("featuredTitle")?.toString().trim(),
+    trendingTitle: formData.get("trendingTitle")?.toString().trim(),
+    trendingText: formData.get("trendingText")?.toString().trim(),
+    browseTitle: formData.get("browseTitle")?.toString().trim(),
+    browseText: formData.get("browseText")?.toString().trim(),
+    upcomingTitle: formData.get("upcomingTitle")?.toString().trim(),
+    upcomingText: formData.get("upcomingText")?.toString().trim(),
+    suggestTitle: formData.get("suggestTitle")?.toString().trim(),
+    suggestText: formData.get("suggestText")?.toString().trim(),
+    ownerTitle: formData.get("ownerTitle")?.toString().trim(),
+    ownerText: formData.get("ownerText")?.toString().trim(),
+    communityBrowseTitle: formData.get("communityBrowseTitle")?.toString().trim(),
+    communityBrowseText: formData.get("communityBrowseText")?.toString().trim(),
+    communitySuggestTitle: formData.get("communitySuggestTitle")?.toString().trim(),
+    communitySuggestText: formData.get("communitySuggestText")?.toString().trim(),
+    communityReviewTitle: formData.get("communityReviewTitle")?.toString().trim(),
+    communityReviewText: formData.get("communityReviewText")?.toString().trim(),
+    footerText: formData.get("footerText")?.toString().trim()
+  });
+
+  await setDoc(doc(db, SETTINGS_COLLECTION, HOMEPAGE_DOC_ID), content, { merge: true });
+  homepageContentCache = content;
+  renderHomepageContent(homepageContentCache);
 }
 
 async function reactToTitle(titleId, nextReaction) {
@@ -1071,6 +1246,39 @@ function setupOwnerEditForm() {
   });
 }
 
+function setupHomepageEditor() {
+  const openButton = document.querySelector("#editHomepageCopyBtn");
+  const form = document.querySelector("#homepageEditForm");
+  const closeButton = document.querySelector("#homepageEditClose");
+
+  if (!openButton || !form) {
+    return;
+  }
+
+  openButton.addEventListener("click", () => {
+    if (!isOwnerMode()) {
+      return;
+    }
+
+    openHomepageEditModal();
+  });
+
+  closeButton?.addEventListener("click", closeHomepageEditModal);
+
+  document.addEventListener("click", (event) => {
+    if (event.target instanceof HTMLElement && event.target.dataset.closeHomepageEdit === "true") {
+      closeHomepageEditModal();
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await submitHomepageEdit(form);
+    showMessage("#homepageEditMessage", "Homepage updated successfully.");
+    closeHomepageEditModal();
+  });
+}
+
 function setupCommentDeleteButtons() {
   document.addEventListener("click", async (event) => {
     const button = event.target.closest(".comment-delete-btn");
@@ -1122,6 +1330,7 @@ function setupOwnerMode() {
     if (isOwnerMode()) {
       setOwnerMode(false);
       updateOwnerToggle();
+      closeHomepageEditModal();
 
       if (document.body.dataset.page === "home") {
         await renderHomePage();
@@ -1210,6 +1419,7 @@ async function init() {
   setupOwnerActionButtons();
   setupOwnerMode();
   setupOwnerEditForm();
+  setupHomepageEditor();
 
   if (document.body.dataset.page === "home") {
     setupFilters();
