@@ -24,6 +24,8 @@ const BASE_TITLES = [
     id: "moonlight-echo",
     title: "Moonlight Echo",
     type: "Movie",
+    status: "Released",
+    releaseDate: "2025-11-14",
     genre: "Drama",
     language: ["English"],
     description:
@@ -47,6 +49,8 @@ const BASE_TITLES = [
     id: "neon-run",
     title: "Neon Run",
     type: "Movie",
+    status: "Released",
+    releaseDate: "2025-08-22",
     genre: "Action",
     language: ["English"],
     description:
@@ -64,6 +68,8 @@ const BASE_TITLES = [
     id: "orbit-of-us",
     title: "Orbit of Us",
     type: "Movie",
+    status: "Released",
+    releaseDate: "2026-01-09",
     genre: "Sci-Fi",
     language: ["English", "Japanese"],
     description:
@@ -81,6 +87,8 @@ const BASE_TITLES = [
     id: "winter-house",
     title: "Winter House",
     type: "Series",
+    status: "Released",
+    releaseDate: "2025-12-02",
     genre: "Thriller",
     language: ["Hindi"],
     description:
@@ -98,6 +106,8 @@ const BASE_TITLES = [
     id: "wildflower-summer",
     title: "Wildflower Summer",
     type: "Series",
+    status: "Upcoming",
+    releaseDate: "2026-06-18",
     genre: "Romance",
     language: ["Korean"],
     description:
@@ -172,6 +182,8 @@ function normalizeTitle(docLike) {
     id: data.id || docLike.id,
     title: data.title || "",
     type: data.type || "Movie",
+    status: data.status || "Released",
+    releaseDate: data.releaseDate || "",
     genre: data.genre || "",
     language: languages,
     description: data.description || "",
@@ -245,6 +257,24 @@ function getReactionStats(title) {
   };
 }
 
+function formatReleaseDate(value) {
+  if (!value) {
+    return "Release date not added";
+  }
+
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
 function reactionButtonsTemplate(title) {
   const currentReaction = getReaction(title.id);
   const stats = getReactionStats(title);
@@ -305,6 +335,7 @@ function movieCardTemplate(title) {
     : "";
 
   const badges = `
+    ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
     ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
     ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
   `;
@@ -317,6 +348,7 @@ function movieCardTemplate(title) {
           <div>
             <h3>${escapeHtml(title.title)}</h3>
             <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)} • ${escapeHtml(title.language.join(", "))}</p>
+            <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
             <div class="status-row">${badges}</div>
           </div>
           <span class="rating-pill"><strong>${getReactionStats(title).likePercent}%</strong> liked</span>
@@ -334,6 +366,7 @@ function movieCardTemplate(title) {
 
 function featuredCardTemplate(title) {
   const badges = `
+    ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
     ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
     ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
   `;
@@ -343,6 +376,7 @@ function featuredCardTemplate(title) {
       <img class="featured-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
       <div class="featured-copy">
         <h3>${escapeHtml(title.title)}</h3>
+        <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
         <div class="status-row">${badges}</div>
         <div class="movie-actions">
           <span class="genre-pill">${escapeHtml(title.type)}</span>
@@ -359,6 +393,7 @@ function pendingCardTemplate(title) {
       <p class="eyebrow">Awaiting approval</p>
       <h3>${escapeHtml(title.title)}</h3>
       <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)} • ${escapeHtml(title.language.join(", "))}</p>
+      <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
       <p class="section-copy">${escapeHtml(title.description)}</p>
       <div class="owner-actions">
         ${ownerActionButton("Approve", "approve", title.id)}
@@ -501,10 +536,12 @@ async function addTitle(form) {
   const formData = new FormData(form);
   const title = formData.get("title")?.toString().trim() || "";
   const type = formData.get("type")?.toString().trim() || "Movie";
+  const status = formData.get("status")?.toString().trim() || "Released";
   const genre = formData.get("genre")?.toString().trim() || "";
   const language = Array.from(form.querySelectorAll('input[name="language"]:checked'))
     .map((input) => input.value)
     .filter(Boolean);
+  const releaseDate = formData.get("releaseDate")?.toString().trim() || "";
   const description = formData.get("description")?.toString().trim() || "";
   const image = formData.get("image")?.toString().trim() || "";
 
@@ -512,6 +549,8 @@ async function addTitle(form) {
     id: slugify(`${title}-${Date.now()}`),
     title,
     type,
+    status,
+    releaseDate,
     genre,
     language: language.length ? language : ["English"],
     description,
@@ -549,6 +588,11 @@ async function editTitle(titleId) {
     return;
   }
 
+  const statusValue = window.prompt("Edit status: Released or Upcoming", title.status);
+  if (!statusValue) {
+    return;
+  }
+
   const genreValue = window.prompt("Edit genre", title.genre);
   if (!genreValue) {
     return;
@@ -567,6 +611,11 @@ async function editTitle(titleId) {
     return;
   }
 
+  const releaseDateValue = window.prompt("Edit release date in YYYY-MM-DD format", title.releaseDate);
+  if (!releaseDateValue) {
+    return;
+  }
+
   const imageValue = window.prompt("Edit poster image URL", title.image);
   if (!imageValue) {
     return;
@@ -575,6 +624,8 @@ async function editTitle(titleId) {
   await updateTitleStatus(titleId, {
     title: titleValue.trim(),
     type: typeValue.trim(),
+    status: statusValue.trim(),
+    releaseDate: releaseDateValue.trim(),
     genre: genreValue.trim(),
     language: languageValue
       .split(",")
@@ -727,6 +778,7 @@ async function renderDetailsPage() {
       `
     : "";
   const badges = `
+    ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
     ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
     ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
     ${!title.approved ? '<span class="status-pill status-pending">Pending</span>' : ""}
@@ -749,8 +801,16 @@ async function renderDetailsPage() {
             <strong>${escapeHtml(title.genre)}</strong>
           </div>
           <div class="detail-stat-card">
+            <p class="movie-meta">Status</p>
+            <strong>${escapeHtml(title.status)}</strong>
+          </div>
+          <div class="detail-stat-card">
             <p class="movie-meta">Language</p>
             <strong>${escapeHtml(title.language.join(", "))}</strong>
+          </div>
+          <div class="detail-stat-card">
+            <p class="movie-meta">Release date</p>
+            <strong>${escapeHtml(formatReleaseDate(title.releaseDate))}</strong>
           </div>
           <div class="detail-stat-card">
             <p class="movie-meta">Community score</p>

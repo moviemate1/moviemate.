@@ -147,6 +147,14 @@
               </label>
 
               <label class="input-group">
+                <span>Status</span>
+                <select name="status" required>
+                  <option value="Released">Released</option>
+                  <option value="Upcoming">Upcoming</option>
+                </select>
+              </label>
+
+              <label class="input-group">
                 <span>Genre</span>
                 <input name="genre" type="text" placeholder="Drama, Thriller, Romance" required />
               </label>
@@ -165,6 +173,11 @@
                   <label class="check-option"><input type="checkbox" name="language" value="Other" /> Other</label>
                 </div>
               </fieldset>
+
+              <label class="input-group form-span">
+                <span>Release date</span>
+                <input name="releaseDate" type="date" required />
+              </label>
 
               <label class="input-group form-span">
                 <span>Description</span>

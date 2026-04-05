@@ -506,6 +506,18 @@ button.ghost-link {
   color: #cbdfff;
 }
 
+.status-upcoming {
+  background: rgba(168, 120, 255, 0.14);
+  border-color: rgba(168, 120, 255, 0.35);
+  color: #dec9ff;
+}
+
+.status-released {
+  background: rgba(74, 214, 144, 0.14);
+  border-color: rgba(74, 214, 144, 0.35);
+  color: #c7ffe0;
+}
+
 .owner-toggle.active {
   border-color: rgba(36, 201, 111, 0.55);
   background: rgba(36, 201, 111, 0.14);
