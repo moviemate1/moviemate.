@@ -259,6 +259,7 @@ function normalizeTitle(docLike) {
     trending: Boolean(data.trending),
     source: data.source || "",
     tmdbId: data.tmdbId || "",
+    importBuckets: Array.isArray(data.importBuckets) ? data.importBuckets : [],
     comments: Array.isArray(data.comments)
       ? data.comments.map((comment, index) => ({
           id: comment.id || `${data.id || docLike.id}-comment-${index}`,
@@ -672,6 +673,54 @@ function renderAutoUpdatedGrid(titles) {
   emptyState.classList.toggle("hidden", importedTitles.length > 0);
 }
 
+function renderPopularMoviesGrid(titles) {
+  const grid = document.querySelector("#popularMoviesGrid");
+  const emptyState = document.querySelector("#popularMoviesEmptyState");
+
+  if (!grid || !emptyState) {
+    return;
+  }
+
+  const items = titles
+    .filter((title) => title.type === "Movie" && title.importBuckets.includes("popular"))
+    .slice(0, 12);
+
+  grid.innerHTML = items.map(movieCardTemplate).join("");
+  emptyState.classList.toggle("hidden", items.length > 0);
+}
+
+function renderPopularSeriesGrid(titles) {
+  const grid = document.querySelector("#popularSeriesGrid");
+  const emptyState = document.querySelector("#popularSeriesEmptyState");
+
+  if (!grid || !emptyState) {
+    return;
+  }
+
+  const items = titles
+    .filter((title) => title.type === "Series" && title.importBuckets.includes("popular"))
+    .slice(0, 12);
+
+  grid.innerHTML = items.map(movieCardTemplate).join("");
+  emptyState.classList.toggle("hidden", items.length > 0);
+}
+
+function renderTmdbTrendingGrid(titles) {
+  const grid = document.querySelector("#tmdbTrendingGrid");
+  const emptyState = document.querySelector("#tmdbTrendingEmptyState");
+
+  if (!grid || !emptyState) {
+    return;
+  }
+
+  const items = titles
+    .filter((title) => title.importBuckets.includes("trending"))
+    .slice(0, 12);
+
+  grid.innerHTML = items.map(movieCardTemplate).join("");
+  emptyState.classList.toggle("hidden", items.length > 0);
+}
+
 function filterTitles(titles) {
   const searchValue = document.querySelector("#searchInput")?.value.trim().toLowerCase() || "";
   const typeValue = document.querySelector("#typeFilter")?.value || "all";
@@ -752,6 +801,9 @@ async function renderHomePage() {
   renderTitleGrid(filterTitles(visibleTitles));
   renderUpcomingGrid(visibleTitles);
   renderAutoUpdatedGrid(visibleTitles);
+  renderPopularMoviesGrid(visibleTitles);
+  renderPopularSeriesGrid(visibleTitles);
+  renderTmdbTrendingGrid(visibleTitles);
   renderOwnerPanel(titles);
   renderHeroStats(visibleTitles);
 }
