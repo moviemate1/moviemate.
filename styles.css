@@ -1027,6 +1027,10 @@ button.ghost-link {
   padding: 18px;
 }
 
+.overlay-modal.hidden {
+  display: none;
+}
+
 .overlay-backdrop {
   position: absolute;
   inset: 0;
