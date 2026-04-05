@@ -387,6 +387,36 @@ function featuredCardTemplate(title) {
   `;
 }
 
+function upcomingCardTemplate(title) {
+  const badges = `
+    <span class="status-pill status-upcoming">Upcoming</span>
+    ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
+    ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
+  `;
+
+  return `
+    <article class="movie-card upcoming-card">
+      <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <div class="movie-content">
+        <div class="movie-header">
+          <div>
+            <h3>${escapeHtml(title.title)}</h3>
+            <p class="movie-meta">Type: ${escapeHtml(title.type)}</p>
+            <p class="movie-meta">Genre: ${escapeHtml(title.genre)}</p>
+            <p class="movie-meta">Language: ${escapeHtml(title.language.join(", "))}</p>
+            <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+            <div class="status-row">${badges}</div>
+          </div>
+        </div>
+        <p class="movie-description">${escapeHtml(title.description)}</p>
+        <div class="movie-actions">
+          <a class="details-link" href="details.html?id=${title.id}">View Details →</a>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
 function pendingCardTemplate(title) {
   return `
     <article class="community-card pending-card">
@@ -488,6 +518,26 @@ function renderTitleGrid(titles) {
   emptyState.classList.toggle("hidden", titles.length > 0);
 }
 
+function renderUpcomingGrid(titles) {
+  const grid = document.querySelector("#upcomingGrid");
+  const emptyState = document.querySelector("#upcomingEmptyState");
+
+  if (!grid || !emptyState) {
+    return;
+  }
+
+  const upcomingTitles = [...titles]
+    .filter((title) => title.status === "Upcoming")
+    .sort((a, b) => {
+      const left = a.releaseDate || "9999-12-31";
+      const right = b.releaseDate || "9999-12-31";
+      return left.localeCompare(right);
+    });
+
+  grid.innerHTML = upcomingTitles.map(upcomingCardTemplate).join("");
+  emptyState.classList.toggle("hidden", upcomingTitles.length > 0);
+}
+
 function filterTitles(titles) {
   const searchValue = document.querySelector("#searchInput")?.value.trim().toLowerCase() || "";
   const typeValue = document.querySelector("#typeFilter")?.value || "all";
@@ -529,6 +579,7 @@ async function renderHomePage() {
   );
   renderFeaturedTitles(visibleTitles);
   renderTitleGrid(filterTitles(visibleTitles));
+  renderUpcomingGrid(visibleTitles);
   renderOwnerPanel(titles);
 }
 
