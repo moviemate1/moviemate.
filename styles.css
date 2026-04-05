@@ -88,10 +88,54 @@ select {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   font-family: "Bebas Neue", sans-serif;
   font-size: clamp(2rem, 3vw, 2.8rem);
   letter-spacing: 0.06em;
   color: var(--accent);
+}
+
+.brand-mark {
+  position: relative;
+  width: 52px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 40% 40% 42% 42%;
+  background:
+    radial-gradient(circle at 28% 30%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.18) 22%, transparent 36%),
+    radial-gradient(circle at 68% 34%, rgba(255, 170, 255, 0.92), rgba(255, 170, 255, 0.16) 26%, transparent 48%),
+    linear-gradient(135deg, #57a4ff 0%, #8b5bff 40%, #e967ff 72%, #ff90c1 100%);
+  box-shadow:
+    0 10px 22px rgba(152, 98, 255, 0.28),
+    inset 0 -8px 16px rgba(255, 255, 255, 0.2);
+  filter: saturate(1.08);
+}
+
+.brand-mark::before,
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  width: 16px;
+  height: 14px;
+  background: rgba(7, 7, 7, 0.5);
+  border-radius: 50%;
+  backdrop-filter: blur(2px);
+}
+
+.brand-mark::before {
+  left: 8px;
+}
+
+.brand-mark::after {
+  right: 8px;
+}
+
+.brand-text {
+  display: inline-block;
+  transform: translateY(1px);
 }
 
 .topbar-actions {
@@ -792,6 +836,11 @@ button.ghost-link {
 .footer-brand {
   display: inline-block;
   margin-bottom: 8px;
+}
+
+.footer-brand .brand-mark {
+  width: 44px;
+  height: 32px;
 }
 
 .footer-copy {
