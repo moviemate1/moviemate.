@@ -662,6 +662,13 @@ async function updateTitleStatus(titleId, updates) {
   await updateDoc(doc(db, TITLES_COLLECTION, titleId), updates);
 }
 
+function syncModalVisibility() {
+  document.querySelectorAll(".overlay-modal").forEach((modal) => {
+    const hidden = modal.classList.contains("hidden");
+    modal.setAttribute("aria-hidden", hidden ? "true" : "false");
+  });
+}
+
 function openOwnerEditModal(titleId) {
   const title = titlesCache.find((item) => item.id === titleId);
   const modal = document.querySelector("#ownerEditModal");
@@ -682,7 +689,7 @@ function openOwnerEditModal(titleId) {
   form.elements.description.value = title.description;
   showMessage("#ownerEditMessage", "");
   modal.classList.remove("hidden");
-  modal.setAttribute("aria-hidden", "false");
+  syncModalVisibility();
 }
 
 function closeOwnerEditModal() {
@@ -693,7 +700,7 @@ function closeOwnerEditModal() {
   }
 
   modal.classList.add("hidden");
-  modal.setAttribute("aria-hidden", "true");
+  syncModalVisibility();
 }
 
 function openReportModal(commentId) {
@@ -708,7 +715,7 @@ function openReportModal(commentId) {
   form.elements.commentId.value = commentId;
   showMessage("#reportMessage", "");
   modal.classList.remove("hidden");
-  modal.setAttribute("aria-hidden", "false");
+  syncModalVisibility();
 }
 
 function closeReportModal() {
@@ -719,7 +726,7 @@ function closeReportModal() {
   }
 
   modal.classList.add("hidden");
-  modal.setAttribute("aria-hidden", "true");
+  syncModalVisibility();
 }
 
 function renderHeroStats(titles) {
@@ -1155,7 +1162,10 @@ function setupReportForm() {
   closeButton?.addEventListener("click", closeReportModal);
 
   document.addEventListener("click", (event) => {
-    if (event.target instanceof HTMLElement && event.target.dataset.closeReport === "true") {
+    if (
+      event.target instanceof HTMLElement &&
+      (event.target.dataset.closeReport === "true" || event.target.id === "reportModal")
+    ) {
       closeReportModal();
     }
   });
@@ -1176,9 +1186,9 @@ function setupReportForm() {
       formData.get("reason")?.toString().trim() || "Other",
       formData.get("note")?.toString().trim() || ""
     );
-    showMessage("#reportMessage", "Thanks. This comment has been reported for review.");
-    await renderDetailsPage();
     closeReportModal();
+    await renderDetailsPage();
+    showMessage("#commentMessage", "Thanks. This comment has been reported for review.");
   });
 }
 
