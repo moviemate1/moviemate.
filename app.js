@@ -299,14 +299,6 @@ function ownerActionButton(label, action, titleId, active = false) {
   return `<button class="owner-action-btn ${active ? "active" : ""}" data-action="${action}" data-id="${titleId}" type="button">${label}</button>`;
 }
 
-function reportActionButton(commentId, reportCount) {
-  return `
-    <button class="ghost-link comment-report-btn" data-comment-id="${commentId}" type="button">
-      Report${reportCount ? ` (${reportCount})` : ""}
-    </button>
-  `;
-}
-
 async function seedTitlesIfNeeded() {
   const snapshot = await getDocs(collection(db, TITLES_COLLECTION));
 
@@ -446,13 +438,10 @@ function pendingCardTemplate(title) {
 }
 
 function commentTemplate(comment) {
-  const commentId = escapeHtml(comment.id || "");
-  const reportButton = reportActionButton(commentId, comment.reports?.length || 0);
   const ownerControls = isOwnerMode()
     ? `
         <div class="comment-actions">
-          ${reportButton}
-          <button class="danger-btn comment-delete-btn" data-comment-id="${commentId}" type="button">Delete Comment</button>
+          <button class="danger-btn comment-delete-btn" data-comment-id="${escapeHtml(comment.id || "")}" type="button">Delete Comment</button>
         </div>
       `
     : "";
@@ -464,7 +453,7 @@ function commentTemplate(comment) {
         <span>${escapeHtml(formatDate(comment.createdAt))}</span>
       </div>
       <p>${escapeHtml(comment.text)}</p>
-      ${isOwnerMode() ? ownerControls : `<div class="comment-actions">${reportButton}</div>`}
+      ${ownerControls}
     </article>
   `;
 }
@@ -703,32 +692,6 @@ function closeOwnerEditModal() {
   syncModalVisibility();
 }
 
-function openReportModal(commentId) {
-  const modal = document.querySelector("#reportModal");
-  const form = document.querySelector("#reportForm");
-
-  if (!modal || !form) {
-    return;
-  }
-
-  form.reset();
-  form.elements.commentId.value = commentId;
-  showMessage("#reportMessage", "");
-  modal.classList.remove("hidden");
-  syncModalVisibility();
-}
-
-function closeReportModal() {
-  const modal = document.querySelector("#reportModal");
-
-  if (!modal) {
-    return;
-  }
-
-  modal.classList.add("hidden");
-  syncModalVisibility();
-}
-
 function renderHeroStats(titles) {
   const titlesStat = document.querySelector("#titlesStat");
   const upcomingStat = document.querySelector("#upcomingStat");
@@ -766,37 +729,6 @@ async function submitOwnerEdit(form) {
     releaseDate: formData.get("releaseDate")?.toString().trim() || "",
     image: formData.get("image")?.toString().trim() || "",
     description: formData.get("description")?.toString().trim() || ""
-  });
-}
-
-async function reportComment(titleId, commentId, reason, note) {
-  const titleRef = doc(db, TITLES_COLLECTION, titleId);
-
-  await runTransaction(db, async (transaction) => {
-    const snapshot = await transaction.get(titleRef);
-
-    if (!snapshot.exists()) {
-      throw new Error("Title not found.");
-    }
-
-    const data = normalizeTitle(snapshot);
-    transaction.update(titleRef, {
-      comments: data.comments.map((comment) =>
-        comment.id === commentId
-          ? {
-              ...comment,
-              reports: [
-                ...(Array.isArray(comment.reports) ? comment.reports : []),
-                {
-                  reason,
-                  note,
-                  createdAt: new Date().toISOString()
-                }
-              ]
-            }
-          : comment
-      )
-    });
   });
 }
 
@@ -1139,59 +1071,6 @@ function setupOwnerEditForm() {
   });
 }
 
-function setupReportButtons() {
-  document.addEventListener("click", (event) => {
-    const button = event.target.closest(".comment-report-btn");
-
-    if (!button || document.body.dataset.page !== "details") {
-      return;
-    }
-
-    openReportModal(button.dataset.commentId);
-  });
-}
-
-function setupReportForm() {
-  const form = document.querySelector("#reportForm");
-  const closeButton = document.querySelector("#reportClose");
-
-  if (!form) {
-    return;
-  }
-
-  closeButton?.addEventListener("click", closeReportModal);
-
-  document.addEventListener("click", (event) => {
-    if (
-      event.target instanceof HTMLElement &&
-      (event.target.dataset.closeReport === "true" || event.target.id === "reportModal")
-    ) {
-      closeReportModal();
-    }
-  });
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const params = new URLSearchParams(window.location.search);
-    const titleId = params.get("id");
-
-    if (!titleId) {
-      return;
-    }
-
-    const formData = new FormData(form);
-    await reportComment(
-      titleId,
-      formData.get("commentId")?.toString().trim() || "",
-      formData.get("reason")?.toString().trim() || "Other",
-      formData.get("note")?.toString().trim() || ""
-    );
-    closeReportModal();
-    await renderDetailsPage();
-    showMessage("#commentMessage", "Thanks. This comment has been reported for review.");
-  });
-}
-
 function setupCommentDeleteButtons() {
   document.addEventListener("click", async (event) => {
     const button = event.target.closest(".comment-delete-btn");
@@ -1331,8 +1210,6 @@ async function init() {
   setupOwnerActionButtons();
   setupOwnerMode();
   setupOwnerEditForm();
-  setupReportButtons();
-  setupReportForm();
 
   if (document.body.dataset.page === "home") {
     setupFilters();

@@ -89,36 +89,6 @@
       </div>
     </div>
 
-    <div class="overlay-modal hidden" id="reportModal" aria-hidden="true">
-      <button class="overlay-backdrop" data-close-report="true" type="button" aria-label="Close report form"></button>
-      <div class="overlay-card">
-        <button class="overlay-close" id="reportClose" type="button" aria-label="Close report form">&times;</button>
-        <p class="eyebrow">Report comment</p>
-        <h2 class="overlay-title">Tell us what feels wrong</h2>
-        <form class="overlay-form" id="reportForm">
-          <input type="hidden" name="commentId" />
-          <label class="input-group">
-            <span>Reason</span>
-            <select name="reason" required>
-              <option value="Spam">Spam</option>
-              <option value="Abusive">Abusive</option>
-              <option value="Harassment">Harassment</option>
-              <option value="False information">False information</option>
-              <option value="Other">Other</option>
-            </select>
-          </label>
-          <label class="input-group form-span">
-            <span>Short note</span>
-            <textarea name="note" rows="4" placeholder="Why are you reporting this comment?" required></textarea>
-          </label>
-          <div class="form-actions">
-            <button class="primary-btn" type="submit">Submit Report</button>
-            <p class="form-message" id="reportMessage" aria-live="polite"></p>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <script type="module" src="app.js?v=6"></script>
+    <script type="module" src="app.js?v=7"></script>
   </body>
 </html>
