@@ -257,6 +257,8 @@ function normalizeTitle(docLike) {
     approved: data.approved !== false,
     pinned: Boolean(data.pinned),
     trending: Boolean(data.trending),
+    source: data.source || "",
+    tmdbId: data.tmdbId || "",
     comments: Array.isArray(data.comments)
       ? data.comments.map((comment, index) => ({
           id: comment.id || `${data.id || docLike.id}-comment-${index}`,
@@ -417,6 +419,7 @@ function movieCardTemplate(title) {
     ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
     ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
     ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
+    ${title.source === "tmdb" ? '<span class="status-pill status-source">TMDb</span>' : ""}
   `;
 
   return `
@@ -448,6 +451,7 @@ function featuredCardTemplate(title) {
     ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
     ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
     ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
+    ${title.source === "tmdb" ? '<span class="status-pill status-source">TMDb</span>' : ""}
   `;
 
   return `
@@ -471,6 +475,7 @@ function upcomingCardTemplate(title) {
     <span class="status-pill status-upcoming">Upcoming</span>
     ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
     ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
+    ${title.source === "tmdb" ? '<span class="status-pill status-source">TMDb</span>' : ""}
   `;
 
   return `
@@ -503,6 +508,7 @@ function pendingCardTemplate(title) {
       <h3>${escapeHtml(title.title)}</h3>
       <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)} • ${escapeHtml(title.language.join(", "))}</p>
       <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+      ${title.source === "tmdb" ? '<div class="status-row"><span class="status-pill status-source">TMDb</span></div>' : ""}
       <p class="section-copy">${escapeHtml(title.description)}</p>
       <div class="owner-actions">
         ${ownerActionButton("Approve", "approve", title.id)}
@@ -643,6 +649,29 @@ function renderUpcomingGrid(titles) {
   emptyState.classList.toggle("hidden", upcomingTitles.length > 0);
 }
 
+function renderAutoUpdatedGrid(titles) {
+  const grid = document.querySelector("#autoUpdatedGrid");
+  const emptyState = document.querySelector("#autoUpdatedEmptyState");
+
+  if (!grid || !emptyState) {
+    return;
+  }
+
+  const importedTitles = [...titles]
+    .filter((title) => title.source === "tmdb")
+    .sort((a, b) => {
+      if (a.status !== b.status) {
+        return a.status === "Upcoming" ? -1 : 1;
+      }
+
+      return (a.releaseDate || "9999-12-31").localeCompare(b.releaseDate || "9999-12-31");
+    })
+    .slice(0, 12);
+
+  grid.innerHTML = importedTitles.map(movieCardTemplate).join("");
+  emptyState.classList.toggle("hidden", importedTitles.length > 0);
+}
+
 function filterTitles(titles) {
   const searchValue = document.querySelector("#searchInput")?.value.trim().toLowerCase() || "";
   const typeValue = document.querySelector("#typeFilter")?.value || "all";
@@ -722,6 +751,7 @@ async function renderHomePage() {
   renderTrendingTitles(visibleTitles);
   renderTitleGrid(filterTitles(visibleTitles));
   renderUpcomingGrid(visibleTitles);
+  renderAutoUpdatedGrid(visibleTitles);
   renderOwnerPanel(titles);
   renderHeroStats(visibleTitles);
 }
@@ -1052,6 +1082,7 @@ async function renderDetailsPage() {
     ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
     ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
     ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
+    ${title.source === "tmdb" ? '<span class="status-pill status-source">TMDb</span>' : ""}
     ${!title.approved ? '<span class="status-pill status-pending">Pending</span>' : ""}
   `;
 
