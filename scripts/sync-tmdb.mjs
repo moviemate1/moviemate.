@@ -4,6 +4,9 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w780";
 const TITLES_COLLECTION = "moviemate_titles";
 const ALLOWED_LANGUAGE_CODES = new Set(["en", "hi", "ja", "ko", "ne"]);
+const UPCOMING_PAGE_COUNT = 6;
+const POPULAR_PAGE_COUNT = 10;
+const TRENDING_PAGE_COUNT = 10;
 
 const requiredEnv = ["TMDB_TOKEN", "FIREBASE_SERVICE_ACCOUNT"];
 
@@ -89,61 +92,12 @@ async function fetchGenres(type) {
   return new Map((payload.genres || []).map((genre) => [genre.id, genre.name]));
 }
 
-async function fetchUpcomingMovies() {
-  const pages = [1, 2];
+async function fetchPagedResults(path, params, pages) {
+  const pageNumbers = Array.from({ length: pages }, (_, index) => index + 1);
   const results = await Promise.all(
-    pages.map((page) =>
-      fetchTmdb("/movie/upcoming", {
-        language: "en-US",
-        page,
-        region: "IN"
-      })
-    )
-  );
-
-  return results.flatMap((page) => page.results || []);
-}
-
-async function fetchUpcomingSeries() {
-  const today = new Date().toISOString().slice(0, 10);
-  const pages = [1, 2];
-  const results = await Promise.all(
-    pages.map((page) =>
-      fetchTmdb("/discover/tv", {
-        language: "en-US",
-        page,
-        sort_by: "first_air_date.asc",
-        first_air_date_gte: today,
-        include_null_first_air_dates: "false",
-        vote_count_gte: 20
-      })
-    )
-  );
-
-  return results.flatMap((page) => page.results || []);
-}
-
-async function fetchPopularMovies() {
-  const pages = [1, 2];
-  const results = await Promise.all(
-    pages.map((page) =>
-      fetchTmdb("/movie/popular", {
-        language: "en-US",
-        page,
-        region: "IN"
-      })
-    )
-  );
-
-  return results.flatMap((page) => page.results || []);
-}
-
-async function fetchPopularSeries() {
-  const pages = [1, 2];
-  const results = await Promise.all(
-    pages.map((page) =>
-      fetchTmdb("/tv/popular", {
-        language: "en-US",
+    pageNumbers.map((page) =>
+      fetchTmdb(path, {
+        ...params,
         page
       })
     )
@@ -152,14 +106,59 @@ async function fetchPopularSeries() {
   return results.flatMap((page) => page.results || []);
 }
 
+async function fetchUpcomingMovies() {
+  return fetchPagedResults(
+    "/movie/upcoming",
+    {
+      language: "en-US",
+      region: "IN"
+    },
+    UPCOMING_PAGE_COUNT
+  );
+}
+
+async function fetchUpcomingSeries() {
+  const today = new Date().toISOString().slice(0, 10);
+  return fetchPagedResults(
+    "/discover/tv",
+    {
+      language: "en-US",
+      sort_by: "first_air_date.asc",
+      first_air_date_gte: today,
+      include_null_first_air_dates: "false",
+      vote_count_gte: 20
+    },
+    UPCOMING_PAGE_COUNT
+  );
+}
+
+async function fetchPopularMovies() {
+  return fetchPagedResults(
+    "/movie/popular",
+    {
+      language: "en-US",
+      region: "IN"
+    },
+    POPULAR_PAGE_COUNT
+  );
+}
+
+async function fetchPopularSeries() {
+  return fetchPagedResults(
+    "/tv/popular",
+    {
+      language: "en-US"
+    },
+    POPULAR_PAGE_COUNT
+  );
+}
+
 async function fetchTrendingMovies() {
-  const payload = await fetchTmdb("/trending/movie/week");
-  return payload.results || [];
+  return fetchPagedResults("/trending/movie/week", {}, TRENDING_PAGE_COUNT);
 }
 
 async function fetchTrendingSeries() {
-  const payload = await fetchTmdb("/trending/tv/week");
-  return payload.results || [];
+  return fetchPagedResults("/trending/tv/week", {}, TRENDING_PAGE_COUNT);
 }
 
 function isAllowedLanguage(item) {
@@ -188,12 +187,14 @@ function normalizeTmdbItem(item, type, genreMap, bucket) {
     trending: false,
     source: "tmdb",
     tmdbId: item.id,
+    tmdbPopularity: Number(item.popularity || 0),
     importBuckets: [bucket]
   };
 }
 
 async function upsertTitles(items) {
-  const batch = db.batch();
+  let batch = db.batch();
+  let operationCount = 0;
 
   for (const item of items) {
     const ref = db.collection(TITLES_COLLECTION).doc(item.id);
@@ -211,14 +212,25 @@ async function upsertTitles(items) {
         trending: Boolean(existingData.trending ?? item.trending),
         approved: existingData.approved ?? item.approved,
         importBuckets: Array.isArray(item.importBuckets) ? item.importBuckets : [],
+        tmdbPopularity: Number(item.tmdbPopularity || 0),
         createdAt: existingData.createdAt || admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       },
       { merge: true }
     );
+
+    operationCount += 1;
+
+    if (operationCount === 450) {
+      await batch.commit();
+      batch = db.batch();
+      operationCount = 0;
+    }
   }
 
-  await batch.commit();
+  if (operationCount > 0) {
+    await batch.commit();
+  }
 }
 
 async function cleanupImportedTitles(activeIds) {
@@ -281,27 +293,21 @@ async function run() {
 
   const normalizedUpcomingMovies = upcomingMovies
     .filter(isAllowedLanguage)
-    .slice(0, 20)
     .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "upcoming"));
   const normalizedUpcomingSeries = upcomingSeries
     .filter(isAllowedLanguage)
-    .slice(0, 20)
     .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "upcoming"));
   const normalizedPopularMovies = popularMovies
     .filter(isAllowedLanguage)
-    .slice(0, 24)
     .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "popular"));
   const normalizedPopularSeries = popularSeries
     .filter(isAllowedLanguage)
-    .slice(0, 24)
     .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "popular"));
   const normalizedTrendingMovies = trendingMovies
     .filter(isAllowedLanguage)
-    .slice(0, 20)
     .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "trending"));
   const normalizedTrendingSeries = trendingSeries
     .filter(isAllowedLanguage)
-    .slice(0, 20)
     .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "trending"));
 
   const grouped = new Map();
