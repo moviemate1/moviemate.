@@ -612,6 +612,12 @@ button.ghost-link {
   color: #c7ffe0;
 }
 
+.status-source {
+  background: rgba(85, 164, 255, 0.14);
+  border-color: rgba(85, 164, 255, 0.35);
+  color: #9ed0ff;
+}
+
 .owner-toggle.active {
   border-color: rgba(36, 201, 111, 0.55);
   background: rgba(36, 201, 111, 0.14);
