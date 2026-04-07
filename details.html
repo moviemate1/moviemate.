@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=9" />
+    <link rel="stylesheet" href="styles.css?v=10" />
   </head>
   <body data-page="details">
     <div class="page-shell detail-shell">
@@ -78,6 +78,30 @@
             <input name="image" type="url" required />
           </label>
           <label class="input-group form-span">
+            <span>Trailer URL</span>
+            <input name="trailerUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+          </label>
+          <label class="input-group">
+            <span>Director</span>
+            <input name="director" type="text" />
+          </label>
+          <label class="input-group">
+            <span>Main lead</span>
+            <input name="mainLead" type="text" />
+          </label>
+          <label class="input-group">
+            <span>Heroine</span>
+            <input name="heroine" type="text" />
+          </label>
+          <label class="input-group form-span">
+            <span>Cast names, separated by commas</span>
+            <textarea name="castText" rows="3"></textarea>
+          </label>
+          <label class="input-group form-span">
+            <span>Crew names and roles</span>
+            <textarea name="crewText" rows="3" placeholder="Name - Role, Name - Role"></textarea>
+          </label>
+          <label class="input-group form-span">
             <span>Description</span>
             <textarea name="description" rows="5" required></textarea>
           </label>
@@ -89,6 +113,6 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=12"></script>
+    <script type="module" src="app.js?v=13"></script>
   </body>
 </html>

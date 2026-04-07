@@ -7,6 +7,7 @@ import {
   getDocs,
   getFirestore,
   increment,
+  onSnapshot,
   runTransaction,
   serverTimestamp,
   setDoc,
@@ -20,6 +21,7 @@ const HOMEPAGE_DOC_ID = "homepage";
 const REACTIONS_STORAGE_KEY = "moviemate_reactions";
 const OWNER_MODE_KEY = "moviemate_owner_mode";
 const OWNER_PASSCODE = "1A2b3456@";
+const OWNER_NOTIFICATION_TOAST_MS = 3200;
 const DEFAULT_HOMEPAGE_CONTENT = {
   heroEyebrow: "MoviemateHub picks for every mood",
   heroTitle: "Discover movies and series worth your time.",
@@ -159,6 +161,10 @@ const db = getFirestore(app);
 
 let titlesCache = [];
 let homepageContentCache = { ...DEFAULT_HOMEPAGE_CONTENT };
+let pendingNotificationState = {
+  count: null,
+  unsubscribe: null
+};
 
 function isOwnerMode() {
   return localStorage.getItem(OWNER_MODE_KEY) === "true";
@@ -174,6 +180,67 @@ function slugify(value) {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+function normalizePersonEntry(person, fallbackRole) {
+  if (!person) {
+    return null;
+  }
+
+  if (typeof person === "string") {
+    const trimmed = person.trim();
+    return trimmed ? { name: trimmed, role: fallbackRole, image: "" } : null;
+  }
+
+  const name = String(person.name || "").trim();
+
+  if (!name) {
+    return null;
+  }
+
+  return {
+    name,
+    role: String(person.role || fallbackRole || "").trim(),
+    image: String(person.image || "").trim()
+  };
+}
+
+function normalizePeopleList(list, fallbackRole) {
+  if (!Array.isArray(list)) {
+    return [];
+  }
+
+  return list
+    .map((person) => normalizePersonEntry(person, fallbackRole))
+    .filter(Boolean);
+}
+
+function parseNameList(value, fallbackRole) {
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, role: fallbackRole, image: "" }));
+}
+
+function parseCrewText(value) {
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const [name, role] = entry.split("-").map((item) => item?.trim());
+      if (!name) {
+        return null;
+      }
+
+      return {
+        name,
+        role: role || "Crew",
+        image: ""
+      };
+    })
+    .filter(Boolean);
 }
 
 function escapeHtml(value) {
@@ -252,6 +319,13 @@ function normalizeTitle(docLike) {
     language: languages,
     description: data.description || "",
     image: data.image || "",
+    trailerUrl: data.trailerUrl || "",
+    director: data.director || "",
+    mainLead: data.mainLead || "",
+    heroine: data.heroine || "",
+    cast: normalizePeopleList(data.cast, "Cast"),
+    crew: normalizePeopleList(data.crew, "Crew"),
+    createdAt: data.createdAt || null,
     likes: Number(data.likes || 0),
     dislikes: Number(data.dislikes || 0),
     approved: data.approved !== false,
@@ -363,6 +437,271 @@ function reactionButtonsTemplate(title) {
   `;
 }
 
+function toYouTubeSearchUrl(title) {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${title} official trailer`)}`;
+}
+
+function getTrailerLink(title) {
+  return title.trailerUrl || toYouTubeSearchUrl(title.title);
+}
+
+function getYouTubeEmbedUrl(url) {
+  if (!url) {
+    return "";
+  }
+
+  try {
+    const parsed = new URL(url);
+
+    if (parsed.hostname.includes("youtu.be")) {
+      const videoId = parsed.pathname.replace("/", "");
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
+    }
+
+    if (parsed.hostname.includes("youtube.com")) {
+      const videoId = parsed.searchParams.get("v");
+
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+function formatLargeNumber(value) {
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`;
+  }
+
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}k`;
+  }
+
+  return String(value);
+}
+
+function buildGenreSegments(title) {
+  const genres = title.genre
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (!genres.length) {
+    return [{ label: "Drama", percent: 100, color: "#d09a7b" }];
+  }
+
+  const colors = ["#d09a7b", "#7e46ff", "#1f5fff", "#18cf9b", "#ff8a38"];
+  const basePercent = Math.floor(100 / genres.length);
+
+  return genres.map((genre, index) => ({
+    label: genre,
+    percent: index === genres.length - 1 ? 100 - basePercent * (genres.length - 1) : basePercent,
+    color: colors[index % colors.length]
+  }));
+}
+
+function genreChartStyle(segments) {
+  let start = 0;
+  const parts = segments.map((segment) => {
+    const end = start + segment.percent;
+    const result = `${segment.color} ${start}% ${end}%`;
+    start = end;
+    return result;
+  });
+
+  return `background: conic-gradient(${parts.join(", ")});`;
+}
+
+function reactionMeterTemplate(title) {
+  const stats = getReactionStats(title);
+  const total = Math.max(stats.total, 1);
+  const lovedPercent = stats.likePercent;
+  const skipPercent = stats.dislikePercent;
+  const mixedPercent = Math.max(0, 100 - lovedPercent - skipPercent);
+
+  return `
+    <article class="insight-card">
+      <div class="insight-header">
+        <div>
+          <p class="eyebrow">MovieMate Meter</p>
+          <h3>${lovedPercent}% positive</h3>
+        </div>
+        <span class="insight-pill">${formatLargeNumber(total)} votes</span>
+      </div>
+      <div class="meter-visual" style="background: conic-gradient(#18cf9b 0 ${lovedPercent}%, #7e46ff ${lovedPercent}% ${lovedPercent + mixedPercent}%, #ff6b6b ${lovedPercent + mixedPercent}% 100%);">
+        <div class="meter-core">
+          <strong>${lovedPercent}%</strong>
+          <span>${stats.likes}/${total} likes</span>
+        </div>
+      </div>
+      <div class="meter-list">
+        <div class="meter-row"><span class="meter-dot dot-love"></span><span>Loved it</span><strong>${lovedPercent}%</strong></div>
+        <div class="meter-row"><span class="meter-dot dot-mixed"></span><span>Mixed</span><strong>${mixedPercent}%</strong></div>
+        <div class="meter-row"><span class="meter-dot dot-skip"></span><span>Skip</span><strong>${skipPercent}%</strong></div>
+      </div>
+    </article>
+  `;
+}
+
+function vibeChartTemplate(title) {
+  const segments = buildGenreSegments(title);
+
+  return `
+    <article class="insight-card">
+      <div class="insight-header">
+        <div>
+          <p class="eyebrow">Vibe Chart</p>
+          <h3>${escapeHtml(title.genre || "Story mix")}</h3>
+        </div>
+      </div>
+      <div class="genre-chart" style="${genreChartStyle(segments)}">
+        <div class="genre-chart-core">
+          <span>${segments.length} moods</span>
+        </div>
+      </div>
+      <div class="meter-list">
+        ${segments
+          .map(
+            (segment) =>
+              `<div class="meter-row"><span class="meter-dot" style="background:${segment.color}"></span><span>${escapeHtml(segment.label)}</span><strong>${segment.percent}%</strong></div>`
+          )
+          .join("")}
+      </div>
+    </article>
+  `;
+}
+
+function trailerPanelTemplate(title) {
+  const trailerLink = getTrailerLink(title);
+  const embedUrl = getYouTubeEmbedUrl(title.trailerUrl);
+
+  if (embedUrl) {
+    return `
+      <section class="trailer-stage">
+        <iframe
+          class="trailer-frame"
+          src="${embedUrl}"
+          title="${escapeHtml(title.title)} trailer"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="trailer-stage">
+      <img class="trailer-poster" src="${title.image}" alt="${escapeHtml(title.title)} trailer preview" />
+      <div class="trailer-overlay">
+        <p class="eyebrow">Trailer</p>
+        <h2>Preview the story before you watch</h2>
+        <a class="primary-btn trailer-btn" href="${trailerLink}" target="_blank" rel="noreferrer">Watch Trailer</a>
+      </div>
+    </section>
+  `;
+}
+
+function ownerNotificationTemplate(title) {
+  return `
+    <article class="notification-card">
+      <div>
+        <p class="notification-title">${escapeHtml(title.title)}</p>
+        <p class="notification-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)} • ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+      </div>
+      <span class="status-pill status-pending">Needs approval</span>
+    </article>
+  `;
+}
+
+function personCardTemplate(person) {
+  const avatar = person.image
+    ? `<img class="person-avatar" src="${person.image}" alt="${escapeHtml(person.name)}" />`
+    : `<div class="person-avatar person-avatar-fallback">${escapeHtml(person.name.charAt(0).toUpperCase())}</div>`;
+
+  return `
+    <article class="person-card">
+      ${avatar}
+      <h4>${escapeHtml(person.name)}</h4>
+      <p>${escapeHtml(person.role || "")}</p>
+    </article>
+  `;
+}
+
+function peopleSectionTemplate(title) {
+  const cast = title.cast || [];
+  const crew = title.crew || [];
+  const mainPeople = [
+    title.director ? { name: title.director, role: "Director", image: "" } : null,
+    title.mainLead ? { name: title.mainLead, role: "Main Lead", image: "" } : null,
+    title.heroine ? { name: title.heroine, role: "Heroine", image: "" } : null
+  ].filter(Boolean);
+
+  if (!cast.length && !crew.length && !mainPeople.length) {
+    return "";
+  }
+
+  return `
+    <section class="people-section">
+      ${
+        mainPeople.length
+          ? `
+            <div class="people-block">
+              <div class="section-heading compact-heading">
+                <div>
+                  <p class="eyebrow">Main team</p>
+                  <h2>Key credits</h2>
+                </div>
+              </div>
+              <div class="people-grid people-rail">
+                ${mainPeople.map(personCardTemplate).join("")}
+              </div>
+            </div>
+          `
+          : ""
+      }
+      ${
+        cast.length
+          ? `
+            <div class="people-block">
+              <div class="section-heading compact-heading">
+                <div>
+                  <p class="eyebrow">Cast</p>
+                  <h2>Actors and characters</h2>
+                </div>
+              </div>
+              <div class="people-grid people-rail">
+                ${cast.map(personCardTemplate).join("")}
+              </div>
+            </div>
+          `
+          : ""
+      }
+      ${
+        crew.length
+          ? `
+            <div class="people-block">
+              <div class="section-heading compact-heading">
+                <div>
+                  <p class="eyebrow">Crew</p>
+                  <h2>Behind the scenes</h2>
+                </div>
+              </div>
+              <div class="people-grid people-rail">
+                ${crew.map(personCardTemplate).join("")}
+              </div>
+            </div>
+          `
+          : ""
+      }
+    </section>
+  `;
+}
+
 function ownerActionButton(label, action, titleId, active = false) {
   return `<button class="owner-action-btn ${active ? "active" : ""}" data-action="${action}" data-id="${titleId}" type="button">${label}</button>`;
 }
@@ -457,16 +796,12 @@ function featuredCardTemplate(title) {
   `;
 
   return `
-    <a class="featured-card" href="details.html?id=${title.id}">
+    <a class="featured-card featured-feed-card" href="details.html?id=${title.id}">
       <img class="featured-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
       <div class="featured-copy">
         <h3>${escapeHtml(title.title)}</h3>
-        <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+        <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.status)}</p>
         <div class="status-row">${badges}</div>
-        <div class="movie-actions">
-          <span class="genre-pill">${escapeHtml(title.type)}</span>
-          <span class="rating-pill"><strong>${getReactionStats(title).likePercent}%</strong> liked</span>
-        </div>
       </div>
     </a>
   `;
@@ -809,7 +1144,9 @@ async function renderHomePage() {
   renderPopularSeriesGrid(visibleTitles);
   renderTmdbTrendingGrid(visibleTitles);
   renderOwnerPanel(titles);
+  renderOwnerNotifications(titles);
   renderHeroStats(visibleTitles);
+  updateOwnerToggle();
 }
 
 async function addTitle(form) {
@@ -824,6 +1161,12 @@ async function addTitle(form) {
   const releaseDate = formData.get("releaseDate")?.toString().trim() || "";
   const description = formData.get("description")?.toString().trim() || "";
   const image = formData.get("image")?.toString().trim() || "";
+  const trailerUrl = formData.get("trailerUrl")?.toString().trim() || "";
+  const director = formData.get("director")?.toString().trim() || "";
+  const mainLead = formData.get("mainLead")?.toString().trim() || "";
+  const heroine = formData.get("heroine")?.toString().trim() || "";
+  const cast = parseNameList(formData.get("castText"), "Cast");
+  const crew = parseCrewText(formData.get("crewText"));
 
   const newTitle = {
     id: slugify(`${title}-${Date.now()}`),
@@ -835,6 +1178,12 @@ async function addTitle(form) {
     language: language.length ? language : ["English"],
     description,
     image,
+    trailerUrl,
+    director,
+    mainLead,
+    heroine,
+    cast,
+    crew,
     likes: 0,
     dislikes: 0,
     approved: false,
@@ -875,6 +1224,14 @@ function openOwnerEditModal(titleId) {
   form.elements.language.value = title.language.join(", ");
   form.elements.releaseDate.value = title.releaseDate || "";
   form.elements.image.value = title.image;
+  form.elements.trailerUrl.value = title.trailerUrl || "";
+  form.elements.director.value = title.director || "";
+  form.elements.mainLead.value = title.mainLead || "";
+  form.elements.heroine.value = title.heroine || "";
+  form.elements.castText.value = (title.cast || []).map((person) => person.name).join(", ");
+  form.elements.crewText.value = (title.crew || [])
+    .map((person) => `${person.name}${person.role ? ` - ${person.role}` : ""}`)
+    .join(", ");
   form.elements.description.value = title.description;
   showMessage("#ownerEditMessage", "");
   modal.classList.remove("hidden");
@@ -958,8 +1315,36 @@ async function submitOwnerEdit(form) {
       .filter(Boolean),
     releaseDate: formData.get("releaseDate")?.toString().trim() || "",
     image: formData.get("image")?.toString().trim() || "",
+    trailerUrl: formData.get("trailerUrl")?.toString().trim() || "",
+    director: formData.get("director")?.toString().trim() || "",
+    mainLead: formData.get("mainLead")?.toString().trim() || "",
+    heroine: formData.get("heroine")?.toString().trim() || "",
+    cast: parseNameList(formData.get("castText"), "Cast"),
+    crew: parseCrewText(formData.get("crewText")),
     description: formData.get("description")?.toString().trim() || ""
   });
+}
+
+function renderOwnerNotifications(titles) {
+  const list = document.querySelector("#ownerNotificationsList");
+  const count = document.querySelector("#ownerNotificationCount");
+  const empty = document.querySelector("#ownerNotificationsEmpty");
+
+  if (!list || !count || !empty) {
+    return;
+  }
+
+  const pendingTitles = getPendingTitles(titles)
+    .sort((a, b) => {
+      const left = String(a.createdAt || "");
+      const right = String(b.createdAt || "");
+      return right.localeCompare(left);
+    })
+    .slice(0, 6);
+
+  count.textContent = String(getPendingTitles(titles).length);
+  list.innerHTML = pendingTitles.map(ownerNotificationTemplate).join("");
+  empty.classList.toggle("hidden", pendingTitles.length > 0);
 }
 
 async function submitHomepageEdit(form) {
@@ -1115,6 +1500,7 @@ async function renderDetailsPage() {
   }
 
   const title = normalizeTitle(snapshot);
+  titlesCache = [...titlesCache.filter((item) => item.id !== title.id), title];
 
   if (!title.approved && !isOwnerMode()) {
     target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
@@ -1143,45 +1529,50 @@ async function renderDetailsPage() {
   `;
 
   target.innerHTML = `
-    <section class="detail-card">
-      <img class="detail-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
-      <div class="detail-copy">
-        <p class="eyebrow">Title Details</p>
-        <h1>${escapeHtml(title.title)}</h1>
-        <div class="status-row">${badges}</div>
-        <div class="detail-stats">
-          <div class="detail-stat-card">
-            <p class="movie-meta">Type</p>
-            <strong>${escapeHtml(title.type)}</strong>
-          </div>
-          <div class="detail-stat-card">
-            <p class="movie-meta">Genre</p>
-            <strong>${escapeHtml(title.genre)}</strong>
-          </div>
-          <div class="detail-stat-card">
-            <p class="movie-meta">Status</p>
-            <strong>${escapeHtml(title.status)}</strong>
-          </div>
-          <div class="detail-stat-card">
-            <p class="movie-meta">Language</p>
-            <strong>${escapeHtml(title.language.join(", "))}</strong>
-          </div>
-          <div class="detail-stat-card">
-            <p class="movie-meta">Release date</p>
-            <strong>${escapeHtml(formatReleaseDate(title.releaseDate))}</strong>
-          </div>
-          <div class="detail-stat-card">
-            <p class="movie-meta">Community score</p>
-            <strong>${stats.likePercent}% liked</strong>
+    <section class="detail-hero-card">
+      ${trailerPanelTemplate(title)}
+      <div class="detail-summary">
+        <div class="detail-summary-header">
+          <img class="detail-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+          <div class="detail-copy">
+            <p class="eyebrow">${title.type} • ${new Date().getFullYear()}</p>
+            <h1>${escapeHtml(title.title)}</h1>
+            <div class="status-row">${badges}</div>
+            <div class="detail-meta-stack">
+              <p class="movie-meta"><strong>Type:</strong> ${escapeHtml(title.type)}</p>
+              <p class="movie-meta"><strong>Genre:</strong> ${escapeHtml(title.genre)}</p>
+              <p class="movie-meta"><strong>Language:</strong> ${escapeHtml(title.language.join(", "))}</p>
+              <p class="movie-meta"><strong>Release date:</strong> ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+              ${title.director ? `<p class="movie-meta"><strong>Director:</strong> ${escapeHtml(title.director)}</p>` : ""}
+              ${title.mainLead ? `<p class="movie-meta"><strong>Main lead:</strong> ${escapeHtml(title.mainLead)}</p>` : ""}
+              ${title.heroine ? `<p class="movie-meta"><strong>Heroine:</strong> ${escapeHtml(title.heroine)}</p>` : ""}
+            </div>
           </div>
         </div>
-        <p class="detail-overview">${escapeHtml(title.description)}</p>
         <div class="detail-actions">
           ${reactionButtonsTemplate(title)}
+          <a class="secondary-btn trailer-btn" href="${getTrailerLink(title)}" target="_blank" rel="noreferrer">Open Trailer</a>
           ${ownerControls}
         </div>
       </div>
     </section>
+
+    <section class="detail-insights-grid">
+      ${reactionMeterTemplate(title)}
+      ${vibeChartTemplate(title)}
+      <article class="insight-card insight-overview-card">
+        <div class="insight-header">
+          <div>
+            <p class="eyebrow">Overview</p>
+            <h3>${escapeHtml(title.title)}</h3>
+          </div>
+          <span class="insight-pill">${stats.likePercent}% liked</span>
+        </div>
+        <p class="detail-overview">${escapeHtml(title.description)}</p>
+      </article>
+    </section>
+
+    ${peopleSectionTemplate(title)}
 
     <section class="comment-section">
       <div class="section-heading">
@@ -1393,27 +1784,36 @@ function setupCommentDeleteButtons() {
 }
 
 function updateOwnerToggle() {
-  const button = document.querySelector("#ownerToggle");
-
-  if (!button) {
-    return;
-  }
-
   const active = isOwnerMode();
-  button.classList.toggle("active", active);
-  button.textContent = active ? "Owner Unlocked" : "Owner Mode";
+  const pendingCount =
+    pendingNotificationState.count ?? getPendingTitles(titlesCache).length;
+
+  document.querySelectorAll("#ownerToggle").forEach((button) => {
+    button.classList.toggle("active", active);
+    button.textContent = active
+      ? pendingCount
+        ? `Owner Unlocked • ${pendingCount}`
+        : "Owner Unlocked"
+      : pendingCount
+        ? `Owner Mode • ${pendingCount}`
+        : "Owner Mode";
+  });
+
+  document.querySelectorAll("#ownerDockToggle").forEach((button) => {
+    button.classList.toggle("active", active);
+  });
 }
 
 function setupOwnerMode() {
-  const button = document.querySelector("#ownerToggle");
+  const buttons = document.querySelectorAll("#ownerToggle, #ownerDockToggle");
 
-  if (!button) {
+  if (!buttons.length) {
     return;
   }
 
   updateOwnerToggle();
 
-  button.addEventListener("click", async () => {
+  const handler = async () => {
     if (isOwnerMode()) {
       setOwnerMode(false);
       updateOwnerToggle();
@@ -1442,6 +1842,10 @@ function setupOwnerMode() {
     } else {
       await renderDetailsPage();
     }
+  };
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", handler);
   });
 }
 
@@ -1499,6 +1903,49 @@ function setupSuggestForm() {
   });
 }
 
+function showOwnerToast(message) {
+  let toast = document.querySelector("#ownerToast");
+
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "ownerToast";
+    toast.className = "owner-toast";
+    document.body.appendChild(toast);
+  }
+
+  toast.textContent = message;
+  toast.classList.add("visible");
+
+  window.setTimeout(() => {
+    toast?.classList.remove("visible");
+  }, OWNER_NOTIFICATION_TOAST_MS);
+}
+
+function setupOwnerNotificationsRealtime() {
+  pendingNotificationState.unsubscribe?.();
+
+  pendingNotificationState.unsubscribe = onSnapshot(collection(db, TITLES_COLLECTION), (snapshot) => {
+    const liveTitles = snapshot.docs.map(normalizeTitle);
+    titlesCache = liveTitles;
+    const pendingTitles = getPendingTitles(liveTitles);
+    const pendingCount = pendingTitles.length;
+
+    if (document.body.dataset.page === "home") {
+      renderOwnerNotifications(liveTitles);
+      renderOwnerPanel(liveTitles);
+    }
+
+    const previousCount = pendingNotificationState.count;
+    pendingNotificationState.count = pendingCount;
+
+    if (previousCount !== null && pendingCount > previousCount && isOwnerMode()) {
+      showOwnerToast(`You have ${pendingCount} title${pendingCount === 1 ? "" : "s"} waiting for approval.`);
+    }
+
+    updateOwnerToggle();
+  });
+}
+
 async function init() {
   setupLikeButtons();
   setupDeleteButtons();
@@ -1515,8 +1962,12 @@ async function init() {
   }
 
   if (document.body.dataset.page === "details") {
+    await fetchTitles();
     await renderDetailsPage();
+    updateOwnerToggle();
   }
+
+  setupOwnerNotificationsRealtime();
 }
 
 init().catch((error) => {
