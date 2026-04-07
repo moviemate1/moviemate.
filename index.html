@@ -28,7 +28,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=22" />
+    <link rel="stylesheet" href="styles.css?v=23" />
   </head>
   <body data-page="home">
     <div class="page-shell">
@@ -55,7 +55,7 @@
               ◌
               <span class="notification-dot" id="topNotificationDot"></span>
             </button>
-            <button class="avatar-chip" type="button" aria-label="MovieMate profile">MM</button>
+            <button class="avatar-chip auth-chip" data-auth-toggle type="button" aria-label="MovieMate account">Sign In</button>
           </div>
         </nav>
       </header>
@@ -167,6 +167,7 @@
             <label class="input-group">
               <span>Search title</span>
               <input id="searchInput" type="search" placeholder="Search titles or keywords" />
+              <div class="search-suggestions hidden" id="searchSuggestions"></div>
             </label>
 
             <label class="input-group">
@@ -194,6 +195,9 @@
           </div>
 
           <div class="movie-grid" id="movieGrid"></div>
+          <div class="load-more-wrap hidden" id="loadMoreWrap">
+            <button class="secondary-btn" id="loadMoreBtn" type="button">Load More Titles</button>
+          </div>
           <p class="empty-state hidden" id="emptyState">
             No titles match these filters yet. Try another genre or suggest a new one.
           </p>
@@ -371,6 +375,11 @@
                 <input name="genre" type="text" placeholder="Drama, Thriller, Romance" required />
               </label>
 
+              <label class="input-group">
+                <span>Platforms</span>
+                <input name="platforms" type="text" placeholder="Netflix, Prime Video, Theatres" />
+              </label>
+
               <fieldset class="input-group language-group">
                 <span>Language or languages</span>
                 <div class="language-options" id="languageInput">
@@ -479,6 +488,7 @@
               Edit Homepage Copy
             </button>
           </div>
+          <div class="owner-analytics-grid" id="ownerAnalytics"></div>
           <div class="owner-notifications-panel" id="ownerNotificationsPanel">
             <div class="owner-notifications-header">
               <div>
@@ -552,6 +562,39 @@
       </div>
     </div>
 
+    <div class="overlay-modal hidden" id="authModal" aria-hidden="true">
+      <button class="overlay-backdrop" data-close-auth="true" type="button" aria-label="Close account modal"></button>
+      <div class="overlay-card auth-overlay">
+        <button class="overlay-close" id="authClose" type="button" aria-label="Close account modal">&times;</button>
+        <div class="auth-tab-row">
+          <button class="schedule-type-pill active" id="authLoginTab" type="button">Login</button>
+          <button class="schedule-type-pill" id="authSignupTab" type="button">Sign Up</button>
+        </div>
+        <p class="eyebrow">Your MovieMate account</p>
+        <h2 class="overlay-title" id="authTitle">Sign in to MovieMate</h2>
+        <p class="section-copy" id="authHint">Sign in to keep collections, schedule, and favorites across devices.</p>
+        <form class="overlay-form auth-form-single" id="authForm" data-mode="login">
+          <label class="input-group hidden" id="authNameField">
+            <span>Name</span>
+            <input name="displayName" type="text" placeholder="Your name" />
+          </label>
+          <label class="input-group form-span">
+            <span>Email</span>
+            <input name="email" type="email" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Password</span>
+            <input name="password" type="password" required />
+          </label>
+          <div class="form-actions auth-actions">
+            <button class="primary-btn" id="authSubmit" type="submit">Sign In</button>
+            <button class="ghost-link" id="forgotPasswordBtn" type="button">Forgot Password?</button>
+          </div>
+          <p class="form-message" id="authMessage" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+
     <div class="overlay-modal hidden" id="ownerEditModal" aria-hidden="true">
       <button class="overlay-backdrop" data-close-owner-edit="true" type="button" aria-label="Close edit form"></button>
       <div class="overlay-card">
@@ -585,6 +628,10 @@
           <label class="input-group form-span">
             <span>Languages, separated by commas</span>
             <input name="language" type="text" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Platforms, separated by commas</span>
+            <input name="platforms" type="text" placeholder="Netflix, Prime Video, Theatres" />
           </label>
           <label class="input-group">
             <span>Release date</span>
@@ -734,6 +781,6 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=27"></script>
+    <script type="module" src="app.js?v=28"></script>
   </body>
 </html>

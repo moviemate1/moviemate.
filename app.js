@@ -13,15 +13,25 @@ import {
   setDoc,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const TITLES_COLLECTION = "moviemate_titles";
 const SETTINGS_COLLECTION = "moviemate_settings";
+const USERS_COLLECTION = "moviemate_users";
 const HOMEPAGE_DOC_ID = "homepage";
 const REACTIONS_STORAGE_KEY = "moviemate_reactions";
 const SAVED_TITLES_STORAGE_KEY = "moviemate_saved_titles";
 const OWNER_MODE_KEY = "moviemate_owner_mode";
 const USER_NOTIFICATIONS_SEEN_KEY = "moviemate_notifications_seen_at";
+const SEARCH_PAGE_SIZE = 24;
 const OWNER_PASSCODE = "1A2b3456@";
 const OWNER_NOTIFICATION_TOAST_MS = 3200;
 const REACTION_OPTIONS = {
@@ -166,12 +176,26 @@ const BASE_TITLES = [
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 let titlesCache = [];
 let homepageContentCache = { ...DEFAULT_HOMEPAGE_CONTENT };
+let currentUser = null;
+let currentUserProfile = null;
+let browseVisibleCount = SEARCH_PAGE_SIZE;
 let pendingNotificationState = {
   count: null,
   unsubscribe: null
+};
+
+const DEFAULT_USER_PROFILE = {
+  displayName: "",
+  savedTitles: [],
+  reactions: {},
+  watchStatus: {},
+  collections: [],
+  createdAt: null,
+  updatedAt: null
 };
 
 function isOwnerMode() {
@@ -180,6 +204,69 @@ function isOwnerMode() {
 
 function setOwnerMode(enabled) {
   localStorage.setItem(OWNER_MODE_KEY, enabled ? "true" : "false");
+}
+
+function isSignedIn() {
+  return Boolean(currentUser?.uid);
+}
+
+function getUserDocRef(uid = currentUser?.uid) {
+  return uid ? doc(db, USERS_COLLECTION, uid) : null;
+}
+
+function normalizeUserProfile(data = {}) {
+  return {
+    ...DEFAULT_USER_PROFILE,
+    ...data,
+    savedTitles: Array.isArray(data.savedTitles) ? data.savedTitles : [],
+    reactions: data.reactions && typeof data.reactions === "object" ? data.reactions : {},
+    watchStatus: data.watchStatus && typeof data.watchStatus === "object" ? data.watchStatus : {},
+    collections: Array.isArray(data.collections) ? data.collections : []
+  };
+}
+
+async function ensureUserProfile(user) {
+  const ref = getUserDocRef(user?.uid);
+
+  if (!ref) {
+    currentUserProfile = null;
+    return null;
+  }
+
+  const snapshot = await getDoc(ref);
+
+  if (!snapshot.exists()) {
+    const profile = {
+      ...DEFAULT_USER_PROFILE,
+      displayName: user.email || user.displayName || "MovieMate member",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    await setDoc(ref, profile, { merge: true });
+    currentUserProfile = normalizeUserProfile(profile);
+    return currentUserProfile;
+  }
+
+  currentUserProfile = normalizeUserProfile(snapshot.data());
+  return currentUserProfile;
+}
+
+async function persistUserProfile(partial) {
+  const ref = getUserDocRef();
+
+  if (!ref || !currentUserProfile) {
+    return;
+  }
+
+  const nextProfile = normalizeUserProfile({
+    ...currentUserProfile,
+    ...partial,
+    updatedAt: new Date().toISOString()
+  });
+
+  currentUserProfile = nextProfile;
+  await setDoc(ref, nextProfile, { merge: true });
 }
 
 function slugify(value) {
@@ -316,6 +403,11 @@ function normalizeTitle(docLike) {
     : data.language
       ? [data.language]
       : ["English"];
+  const platforms = Array.isArray(data.platforms)
+    ? data.platforms
+    : data.platforms
+      ? [data.platforms]
+      : [];
 
   return {
     id: data.id || docLike.id,
@@ -325,6 +417,7 @@ function normalizeTitle(docLike) {
     releaseDate: data.releaseDate || "",
     genre: data.genre || "",
     language: languages,
+    platforms,
     description: data.description || "",
     image: data.image || "",
     trailerUrl: data.trailerUrl || "",
@@ -348,12 +441,15 @@ function normalizeTitle(docLike) {
     source: data.source || "",
     tmdbId: data.tmdbId || "",
     tmdbPopularity: Number(data.tmdbPopularity || 0),
+    viewsCount: Number(data.viewsCount || 0),
+    savesCount: Number(data.savesCount || 0),
     importBuckets: Array.isArray(data.importBuckets) ? data.importBuckets : [],
     comments: Array.isArray(data.comments)
       ? data.comments.map((comment, index) => ({
           id: comment.id || `${data.id || docLike.id}-comment-${index}`,
           name: comment.name || "Anonymous",
           text: comment.text || "",
+          spoiler: Boolean(comment.spoiler),
           createdAt: comment.createdAt || null,
           reports: Array.isArray(comment.reports) ? comment.reports : []
         }))
@@ -370,6 +466,10 @@ function getPendingTitles(titles) {
 }
 
 function getStoredReactions() {
+  if (isSignedIn()) {
+    return currentUserProfile?.reactions || {};
+  }
+
   try {
     return JSON.parse(localStorage.getItem(REACTIONS_STORAGE_KEY) || "{}");
   } catch {
@@ -378,6 +478,10 @@ function getStoredReactions() {
 }
 
 function getSavedTitles() {
+  if (isSignedIn()) {
+    return currentUserProfile?.savedTitles || [];
+  }
+
   try {
     const parsed = JSON.parse(localStorage.getItem(SAVED_TITLES_STORAGE_KEY) || "[]");
     return Array.isArray(parsed) ? parsed : [];
@@ -402,6 +506,14 @@ function toggleSavedTitle(titleId) {
   localStorage.setItem(SAVED_TITLES_STORAGE_KEY, JSON.stringify([...saved]));
 }
 
+function getWatchStatusMap() {
+  return currentUserProfile?.watchStatus || {};
+}
+
+function getTitleWatchStatus(titleId) {
+  return getWatchStatusMap()[titleId] || "";
+}
+
 function getCreatedAtMs(value) {
   if (!value) {
     return 0;
@@ -421,6 +533,22 @@ function getReaction(titleId) {
 }
 
 function setReaction(titleId, reaction) {
+  if (isSignedIn()) {
+    const reactions = { ...(currentUserProfile?.reactions || {}) };
+
+    if (reaction) {
+      reactions[titleId] = reaction;
+    } else {
+      delete reactions[titleId];
+    }
+
+    currentUserProfile = normalizeUserProfile({
+      ...currentUserProfile,
+      reactions
+    });
+    return;
+  }
+
   const reactions = getStoredReactions();
 
   if (reaction) {
@@ -434,6 +562,45 @@ function setReaction(titleId, reaction) {
 
 function clearReaction(titleId) {
   setReaction(titleId, "");
+}
+
+async function syncSavedTitle(titleId) {
+  if (!isSignedIn()) {
+    toggleSavedTitle(titleId);
+    return;
+  }
+
+  const saved = new Set(getSavedTitles());
+  const wasSaved = saved.has(titleId);
+
+  if (wasSaved) {
+    saved.delete(titleId);
+  } else {
+    saved.add(titleId);
+  }
+
+  await persistUserProfile({ savedTitles: [...saved] });
+  await updateDoc(doc(db, TITLES_COLLECTION, titleId), {
+    savesCount: increment(wasSaved ? -1 : 1)
+  });
+}
+
+async function syncWatchStatus(titleId, nextStatus) {
+  if (!isSignedIn()) {
+    return false;
+  }
+
+  const watchStatus = { ...(currentUserProfile?.watchStatus || {}) };
+  const currentStatus = watchStatus[titleId] || "";
+
+  if (currentStatus === nextStatus) {
+    delete watchStatus[titleId];
+  } else {
+    watchStatus[titleId] = nextStatus;
+  }
+
+  await persistUserProfile({ watchStatus });
+  return true;
 }
 
 function getReactionStats(title) {
@@ -480,10 +647,29 @@ function formatReleaseDate(value) {
   });
 }
 
+function formatPlatforms(platforms = []) {
+  return platforms.length ? platforms.join(", ") : "Platform not added";
+}
+
+async function shareTitle(title) {
+  const shareData = {
+    title: title.title,
+    text: `${title.title} on MovieMate`,
+    url: `${window.location.origin}/details.html?id=${title.id}`
+  };
+
+  if (navigator.share) {
+    await navigator.share(shareData);
+    return true;
+  }
+
+  await navigator.clipboard.writeText(shareData.url);
+  return true;
+}
+
 function reactionButtonsTemplate(title) {
   const currentReaction = getReaction(title.id);
   const stats = getReactionStats(title);
-  const saved = isSavedTitle(title.id);
 
   return `
     <div class="reaction-panel">
@@ -499,6 +685,34 @@ function reactionButtonsTemplate(title) {
           .join("")}
       </div>
       <p class="reaction-summary">${stats.total} votes • ${stats.recommendedPercent}% recommend</p>
+    </div>
+  `;
+}
+
+function watchStatusActionsTemplate(title) {
+  const currentStatus = getTitleWatchStatus(title.id);
+  const actions = [
+    ["watched", "Watched"],
+    ["want", "Want to watch"],
+    ["favorite", "Favorite"]
+  ];
+
+  return `
+    <div class="watch-status-row">
+      ${actions
+        .map(
+          ([value, label]) => `
+            <button
+              class="watch-status-btn ${currentStatus === value ? "active" : ""}"
+              type="button"
+              data-watch-status="${value}"
+              data-id="${title.id}"
+            >
+              ${label}
+            </button>
+          `
+        )
+        .join("")}
     </div>
   `;
 }
@@ -886,6 +1100,7 @@ function movieCardTemplate(title) {
                 <h3>${escapeHtml(title.title)}</h3>
                 <p class="movie-meta">${escapeHtml(cardLabel)}</p>
                 <p class="movie-meta subtle-line">${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+                ${title.platforms?.length ? `<p class="movie-meta subtle-line">${escapeHtml(formatPlatforms(title.platforms))}</p>` : ""}
               </div>
               <span class="rating-pill"><strong>${stats.recommendedPercent}%</strong> recommend</span>
             </div>
@@ -924,6 +1139,7 @@ function featuredCardTemplate(title) {
         <h3>${escapeHtml(title.title)}</h3>
         <p class="movie-meta">${escapeHtml(cardLabel)}</p>
         <p class="movie-meta subtle-line">${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+        ${title.platforms?.length ? `<p class="movie-meta subtle-line">${escapeHtml(formatPlatforms(title.platforms))}</p>` : ""}
         <div class="status-row">${badges}</div>
       </div>
     </a>
@@ -973,14 +1189,22 @@ function getSimilarityScore(baseTitle, candidate) {
   return score;
 }
 
-function similarTitlesTemplate(baseTitle, titles) {
+function similarSectionTemplate(baseTitle, titles, mode) {
   const matches = titles
     .filter((candidate) => candidate.id !== baseTitle.id && candidate.approved)
-    .map((candidate) => ({
-      candidate,
-      score: getSimilarityScore(baseTitle, candidate)
-    }))
-    .filter((entry) => entry.score > 0)
+    .map((candidate) => {
+      const score = getSimilarityScore(baseTitle, candidate);
+      const sameGenre = [...getGenreSet(candidate)].some((genre) => getGenreSet(baseTitle).has(genre));
+      const sameLanguage = countSharedValues(baseTitle.language, candidate.language) > 0;
+
+      return {
+        candidate,
+        score,
+        sameGenre,
+        sameLanguage
+      };
+    })
+    .filter((entry) => (mode === "genre" ? entry.sameGenre : entry.sameLanguage))
     .sort((left, right) => right.score - left.score)
     .slice(0, 8)
     .map((entry) => entry.candidate);
@@ -993,10 +1217,16 @@ function similarTitlesTemplate(baseTitle, titles) {
     <section class="similar-section">
       <div class="section-heading compact-heading">
         <div>
-          <p class="eyebrow">Similar picks</p>
-          <h2>You may also like</h2>
+          <p class="eyebrow">${mode === "genre" ? "Same genre" : "Same language"}</p>
+          <h2>${mode === "genre" ? "More from this genre" : "More in this language"}</h2>
         </div>
-        <p class="section-copy">More ${escapeHtml(baseTitle.type.toLowerCase())} picks with a similar vibe, language, or genre mix.</p>
+        <p class="section-copy">
+          ${
+            mode === "genre"
+              ? `More ${escapeHtml(baseTitle.type.toLowerCase())} picks with a similar genre feeling.`
+              : `More ${escapeHtml(baseTitle.type.toLowerCase())} picks in ${escapeHtml(baseTitle.language.join(", "))}.`
+          }
+        </p>
       </div>
       <div class="featured-grid detail-similar-grid">
         ${matches.map(featuredCardTemplate).join("")}
@@ -1089,6 +1319,7 @@ function upcomingCardTemplate(title) {
             <p class="movie-meta">Type: ${escapeHtml(title.type)}</p>
             <p class="movie-meta">Genre: ${escapeHtml(title.genre)}</p>
             <p class="movie-meta">Language: ${escapeHtml(title.language.join(", "))}</p>
+            ${title.platforms?.length ? `<p class="movie-meta">Platform: ${escapeHtml(formatPlatforms(title.platforms))}</p>` : ""}
             <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
             <div class="status-row">${badges}</div>
           </div>
@@ -1130,6 +1361,16 @@ function commentTemplate(comment) {
         </div>
       `
     : "";
+  const spoilerBody = comment.spoiler
+    ? `
+        <div class="spoiler-box" data-spoiler-box="true">
+          <button class="secondary-btn spoiler-toggle-btn" type="button" data-toggle-spoiler="true">
+            Reveal spoiler
+          </button>
+          <p class="spoiler-text hidden">${escapeHtml(comment.text)}</p>
+        </div>
+      `
+    : `<p>${escapeHtml(comment.text)}</p>`;
 
   return `
     <article class="comment-card">
@@ -1137,7 +1378,8 @@ function commentTemplate(comment) {
         <strong>${escapeHtml(comment.name || "Anonymous")}</strong>
         <span>${escapeHtml(formatDate(comment.createdAt))}</span>
       </div>
-      <p>${escapeHtml(comment.text)}</p>
+      ${comment.spoiler ? '<span class="status-pill status-upcoming spoiler-pill">Spoiler</span>' : ""}
+      ${spoilerBody}
       ${ownerControls}
     </article>
   `;
@@ -1221,13 +1463,69 @@ function renderOwnerPanel(titles) {
 function renderTitleGrid(titles) {
   const grid = document.querySelector("#movieGrid");
   const emptyState = document.querySelector("#emptyState");
+  const loadMoreWrap = document.querySelector("#loadMoreWrap");
+  const visibleTitles = titles.slice(0, browseVisibleCount);
 
   if (!grid || !emptyState) {
     return;
   }
 
-  grid.innerHTML = titles.map(movieCardTemplate).join("");
+  grid.innerHTML = visibleTitles.map(movieCardTemplate).join("");
   emptyState.classList.toggle("hidden", titles.length > 0);
+  loadMoreWrap?.classList.toggle("hidden", titles.length <= visibleTitles.length);
+}
+
+function renderSearchSuggestions(titles) {
+  const list = document.querySelector("#searchSuggestions");
+  const query = document.querySelector("#searchInput")?.value.trim().toLowerCase() || "";
+
+  if (!list) {
+    return;
+  }
+
+  if (!query) {
+    list.innerHTML = "";
+    list.classList.add("hidden");
+    return;
+  }
+
+  const matches = titles
+    .filter((title) => {
+      const haystack = [
+        title.title,
+        title.description,
+        title.genre,
+        title.type,
+        title.language.join(" "),
+        formatPlatforms(title.platforms)
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(query);
+    })
+    .slice(0, 6);
+
+  if (!matches.length) {
+    list.innerHTML = "";
+    list.classList.add("hidden");
+    return;
+  }
+
+  list.innerHTML = matches
+    .map(
+      (title) => `
+        <a class="search-suggestion-item" href="details.html?id=${title.id}">
+          <img src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+          <span>
+            <strong>${escapeHtml(title.title)}</strong>
+            <small>${escapeHtml(title.type)} • ${escapeHtml(title.genre)}</small>
+          </span>
+        </a>
+      `
+    )
+    .join("");
+  list.classList.remove("hidden");
 }
 
 function renderUpcomingGrid(titles) {
@@ -1347,6 +1645,8 @@ function renderMostInterestedList(titles) {
 }
 
 function scheduleCardTemplate(title) {
+  const watchStatus = getTitleWatchStatus(title.id);
+
   return `
     <a class="schedule-card" href="details.html?id=${title.id}">
       <div class="schedule-date-badge">
@@ -1357,6 +1657,7 @@ function scheduleCardTemplate(title) {
       <div class="schedule-copy">
         <h3>${escapeHtml(title.title)}</h3>
         <p>${escapeHtml(title.type)} • ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+        ${watchStatus ? `<span class="schedule-status-tag">${escapeHtml(watchStatus)}</span>` : ""}
       </div>
     </a>
   `;
@@ -1491,8 +1792,12 @@ function buildPersonalCollections(titles) {
   const savedIds = new Set(getSavedTitles());
   const savedTitles = titles.filter((title) => savedIds.has(title.id));
   const reactionMap = getStoredReactions();
+  const watchStatus = getWatchStatusMap();
   const reactedTitles = titles.filter((title) => reactionMap[title.id]);
   const perfectTitles = titles.filter((title) => reactionMap[title.id] === "perfect");
+  const watchedTitles = titles.filter((title) => watchStatus[title.id] === "watched");
+  const wantTitles = titles.filter((title) => watchStatus[title.id] === "want");
+  const favoriteTitles = titles.filter((title) => watchStatus[title.id] === "favorite");
 
   return [
     {
@@ -1509,6 +1814,21 @@ function buildPersonalCollections(titles) {
       title: "Perfect Vote Picks",
       subtitle: "Titles you marked as perfect",
       items: perfectTitles
+    },
+    {
+      title: "Watched",
+      subtitle: "Titles you already finished",
+      items: watchedTitles
+    },
+    {
+      title: "Want to Watch",
+      subtitle: "Your cross-device schedule picks",
+      items: wantTitles
+    },
+    {
+      title: "Favorites",
+      subtitle: "Your most-loved titles",
+      items: favoriteTitles
     }
   ]
     .filter((group) => group.items.length)
@@ -1640,13 +1960,23 @@ function filterTitles(titles) {
   return titles.filter((title) => {
     const titleMatch =
       title.title.toLowerCase().includes(searchValue) ||
-      title.description.toLowerCase().includes(searchValue);
+      title.description.toLowerCase().includes(searchValue) ||
+      title.genre.toLowerCase().includes(searchValue) ||
+      title.language.join(" ").toLowerCase().includes(searchValue) ||
+      formatPlatforms(title.platforms).toLowerCase().includes(searchValue);
     const typeMatch = typeValue === "all" || title.type === typeValue;
     const genreMatch = genreValue === "all" || title.genre === genreValue;
     const languageMatch = languageValue === "all" || title.language.includes(languageValue);
 
     return titleMatch && typeMatch && genreMatch && languageMatch;
   });
+}
+
+function refreshBrowseResults() {
+  const visibleTitles = getVisibleTitles(titlesCache);
+  const filtered = filterTitles(visibleTitles);
+  renderTitleGrid(filtered);
+  renderSearchSuggestions(visibleTitles);
 }
 
 function showMessage(selector, text) {
@@ -1695,6 +2025,7 @@ async function renderHomePage() {
     fetchHomepageContent()
   ]);
   const visibleTitles = getVisibleTitles(titles);
+  browseVisibleCount = Math.max(browseVisibleCount, SEARCH_PAGE_SIZE);
   renderHomepageContent(homepageContent);
   populateSelect(
     "#genreFilter",
@@ -1708,7 +2039,7 @@ async function renderHomePage() {
   );
   renderFeaturedTitles(visibleTitles);
   renderTrendingTitles(visibleTitles);
-  renderTitleGrid(filterTitles(visibleTitles));
+  refreshBrowseResults();
   renderScheduleGrid(visibleTitles);
   renderAutoUpdatedGrid(visibleTitles);
   renderPopularMoviesGrid(visibleTitles);
@@ -1719,6 +2050,7 @@ async function renderHomePage() {
   renderUserNotifications(visibleTitles);
   renderOwnerPanel(titles);
   renderOwnerNotifications(titles);
+  renderOwnerAnalytics(visibleTitles);
   renderHeroStats(visibleTitles);
   updateOwnerToggle();
 }
@@ -1729,6 +2061,10 @@ async function addTitle(form) {
   const type = formData.get("type")?.toString().trim() || "Movie";
   const status = formData.get("status")?.toString().trim() || "Released";
   const genre = formData.get("genre")?.toString().trim() || "";
+  const platforms = (formData.get("platforms")?.toString().trim() || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
   const language = Array.from(form.querySelectorAll('input[name="language"]:checked'))
     .map((input) => input.value)
     .filter(Boolean);
@@ -1749,6 +2085,7 @@ async function addTitle(form) {
     status,
     releaseDate,
     genre,
+    platforms,
     language: language.length ? language : ["English"],
     description,
     image,
@@ -1800,6 +2137,9 @@ function openOwnerEditModal(titleId) {
   form.elements.status.value = title.status;
   form.elements.genre.value = title.genre;
   form.elements.language.value = title.language.join(", ");
+  if (form.elements.platforms) {
+    form.elements.platforms.value = (title.platforms || []).join(", ");
+  }
   form.elements.releaseDate.value = title.releaseDate || "";
   form.elements.image.value = title.image;
   form.elements.trailerUrl.value = title.trailerUrl || "";
@@ -1852,6 +2192,184 @@ function closeTrailerModal() {
   frame.src = "";
   modal.classList.add("hidden");
   syncModalVisibility();
+}
+
+function openAuthModal(mode = "login") {
+  const modal = document.querySelector("#authModal");
+
+  if (!modal) {
+    return;
+  }
+
+  setAuthMode(mode);
+  showMessage("#authMessage", "");
+  modal.classList.remove("hidden");
+  syncModalVisibility();
+}
+
+function closeAuthModal() {
+  const modal = document.querySelector("#authModal");
+
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.add("hidden");
+  syncModalVisibility();
+}
+
+function setAuthMode(mode) {
+  const form = document.querySelector("#authForm");
+  const title = document.querySelector("#authTitle");
+  const submit = document.querySelector("#authSubmit");
+  const nameField = document.querySelector("#authNameField");
+  const loginTab = document.querySelector("#authLoginTab");
+  const signupTab = document.querySelector("#authSignupTab");
+
+  if (!form) {
+    return;
+  }
+
+  form.dataset.mode = mode;
+
+  if (title) {
+    title.textContent = mode === "signup" ? "Create your MovieMate account" : "Sign in to MovieMate";
+  }
+
+  if (submit) {
+    submit.textContent = mode === "signup" ? "Create Account" : "Sign In";
+  }
+
+  if (nameField) {
+    nameField.classList.toggle("hidden", mode !== "signup");
+  }
+
+  loginTab?.classList.toggle("active", mode === "login");
+  signupTab?.classList.toggle("active", mode === "signup");
+}
+
+function updateAuthUI() {
+  document.querySelectorAll("[data-auth-toggle]").forEach((button) => {
+    if (!(button instanceof HTMLElement)) {
+      return;
+    }
+
+    if (isSignedIn()) {
+      button.textContent = "Sign Out";
+      button.classList.add("signed-in");
+    } else {
+      button.textContent = "Sign In";
+      button.classList.remove("signed-in");
+    }
+  });
+
+  document.querySelectorAll("[data-account-only]").forEach((element) => {
+    element.classList.toggle("hidden", !isSignedIn());
+  });
+
+  const authHint = document.querySelector("#authHint");
+
+  if (authHint) {
+    authHint.textContent = isSignedIn()
+      ? `Signed in as ${currentUser?.email || "MovieMate member"}`
+      : "Sign in to keep collections, schedule, and favorites across devices.";
+  }
+}
+
+async function handleAuthSubmit(form) {
+  const formData = new FormData(form);
+  const mode = form.dataset.mode || "login";
+  const name = formData.get("displayName")?.toString().trim() || "";
+  const email = formData.get("email")?.toString().trim() || "";
+  const password = formData.get("password")?.toString().trim() || "";
+
+  if (!email || !password) {
+    showMessage("#authMessage", "Enter email and password first.");
+    return;
+  }
+
+  if (mode === "signup") {
+    const credentials = await createUserWithEmailAndPassword(auth, email, password);
+    currentUser = credentials.user;
+    await ensureUserProfile(credentials.user);
+    await persistUserProfile({
+      displayName: name || email
+    });
+    closeAuthModal();
+    return;
+  }
+
+  await signInWithEmailAndPassword(auth, email, password);
+  closeAuthModal();
+}
+
+function setupAuthModal() {
+  const form = document.querySelector("#authForm");
+  const closeButton = document.querySelector("#authClose");
+  const loginTab = document.querySelector("#authLoginTab");
+  const signupTab = document.querySelector("#authSignupTab");
+  const forgotButton = document.querySelector("#forgotPasswordBtn");
+
+  document.querySelectorAll("[data-auth-toggle]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (isSignedIn()) {
+        await signOut(auth);
+        return;
+      }
+
+      openAuthModal("login");
+    });
+  });
+
+  loginTab?.addEventListener("click", () => setAuthMode("login"));
+  signupTab?.addEventListener("click", () => setAuthMode("signup"));
+  closeButton?.addEventListener("click", closeAuthModal);
+
+  document.addEventListener("click", (event) => {
+    if (event.target instanceof HTMLElement && event.target.dataset.closeAuth === "true") {
+      closeAuthModal();
+    }
+  });
+
+  forgotButton?.addEventListener("click", async () => {
+    const email = form?.elements.email?.value?.trim();
+
+    if (!email) {
+      showMessage("#authMessage", "Enter your email first.");
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showMessage("#authMessage", "Password reset email sent.");
+    } catch (error) {
+      console.error(error);
+      showMessage("#authMessage", "Could not send reset email right now.");
+    }
+  });
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    showMessage("#authMessage", "Working...");
+
+    try {
+      await handleAuthSubmit(form);
+      updateAuthUI();
+    } catch (error) {
+      console.error(error);
+      showMessage("#authMessage", "Sign in failed. Check your email/password or Firebase Auth settings.");
+    }
+  });
+}
+
+function requireAccount(actionText = "use this feature") {
+  if (isSignedIn()) {
+    return true;
+  }
+
+  openAuthModal("login");
+  showMessage("#authMessage", `Sign in to ${actionText}.`);
+  return false;
 }
 
 function openHomepageEditModal() {
@@ -1914,6 +2432,10 @@ async function submitOwnerEdit(form) {
     type: formData.get("type")?.toString().trim() || "Movie",
     status: formData.get("status")?.toString().trim() || "Released",
     genre: formData.get("genre")?.toString().trim() || "",
+    platforms: (formData.get("platforms")?.toString().trim() || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
     language: (formData.get("language")?.toString().trim() || "")
       .split(",")
       .map((value) => value.trim())
@@ -1950,6 +2472,45 @@ function renderOwnerNotifications(titles) {
   count.textContent = String(getPendingTitles(titles).length);
   list.innerHTML = pendingTitles.map(ownerNotificationTemplate).join("");
   empty.classList.toggle("hidden", pendingTitles.length > 0);
+}
+
+function analyticsRowTemplate(title, metric, value) {
+  return `
+    <a class="analytics-row" href="details.html?id=${title.id}">
+      <img src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <span>
+        <strong>${escapeHtml(title.title)}</strong>
+        <small>${escapeHtml(metric)} • ${escapeHtml(String(value))}</small>
+      </span>
+    </a>
+  `;
+}
+
+function renderOwnerAnalytics(titles) {
+  const panel = document.querySelector("#ownerAnalytics");
+
+  if (!panel) {
+    return;
+  }
+
+  const mostViewed = [...titles].sort((a, b) => b.viewsCount - a.viewsCount)[0];
+  const mostSaved = [...titles].sort((a, b) => b.savesCount - a.savesCount)[0];
+  const mostVoted = [...titles].sort((a, b) => getReactionStats(b).total - getReactionStats(a).total)[0];
+
+  panel.innerHTML = `
+    <article class="analytics-card">
+      <p class="eyebrow">Most viewed</p>
+      ${mostViewed ? analyticsRowTemplate(mostViewed, "Views", mostViewed.viewsCount) : '<p class="section-copy">No view data yet.</p>'}
+    </article>
+    <article class="analytics-card">
+      <p class="eyebrow">Most voted</p>
+      ${mostVoted ? analyticsRowTemplate(mostVoted, "Votes", getReactionStats(mostVoted).total) : '<p class="section-copy">No voting data yet.</p>'}
+    </article>
+    <article class="analytics-card">
+      <p class="eyebrow">Most saved</p>
+      ${mostSaved ? analyticsRowTemplate(mostSaved, "Saves", mostSaved.savesCount) : '<p class="section-copy">No saved data yet.</p>'}
+    </article>
+  `;
 }
 
 async function submitHomepageEdit(form) {
@@ -2037,6 +2598,13 @@ async function reactToTitle(titleId, nextReaction) {
   await updateDoc(doc(db, TITLES_COLLECTION, titleId), updates);
 
   setReaction(titleId, nextReaction);
+
+  if (isSignedIn()) {
+    await persistUserProfile({
+      reactions: { ...(currentUserProfile?.reactions || {}) }
+    });
+  }
+
   return true;
 }
 
@@ -2049,6 +2617,7 @@ async function addComment(titleId, form) {
   const formData = new FormData(form);
   const name = formData.get("name")?.toString().trim() || "Anonymous";
   const text = formData.get("comment")?.toString().trim() || "";
+  const spoiler = formData.get("spoiler") === "on";
 
   if (!text) {
     showMessage("#commentMessage", "Please write a review or comment first.");
@@ -2071,6 +2640,7 @@ async function addComment(titleId, form) {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           name,
           text,
+          spoiler,
           createdAt: new Date().toISOString()
         },
         ...data.comments
@@ -2128,12 +2698,15 @@ async function renderDetailsPage() {
     return;
   }
 
+  trackTitleView(title.id);
+
   const stats = getReactionStats(title);
   const saved = isSavedTitle(title.id);
   const embeddedTrailerUrl = getYouTubeEmbedUrl(title.trailerUrl);
   const releaseYear = title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now";
   const leadDirector = title.director || "MovieMate";
   const primaryLanguage = title.language?.[0] || "Not added";
+  const primaryPlatform = formatPlatforms(title.platforms);
   const ownerControls = isOwnerMode()
     ? `
         <div class="owner-actions">
@@ -2178,6 +2751,10 @@ async function renderDetailsPage() {
                 <strong>${escapeHtml(primaryLanguage)}</strong>
               </div>
               <div class="detail-fact">
+                <span>Platform</span>
+                <strong>${escapeHtml(primaryPlatform)}</strong>
+              </div>
+              <div class="detail-fact">
                 <span>Release</span>
                 <strong>${escapeHtml(formatReleaseDate(title.releaseDate))}</strong>
               </div>
@@ -2191,12 +2768,14 @@ async function renderDetailsPage() {
     <section class="detail-action-strip">
       <div class="detail-actions">
         ${reactionButtonsTemplate(title)}
+        ${watchStatusActionsTemplate(title)}
         ${
           embeddedTrailerUrl
             ? `<button class="secondary-btn trailer-btn" type="button" data-open-trailer="true" data-embed-url="${embeddedTrailerUrl}" data-trailer-title="${escapeHtml(title.title)} trailer">Watch Trailer</button>`
             : `<a class="secondary-btn trailer-btn" href="${getTrailerLink(title)}" target="_blank" rel="noreferrer">Open Trailer</a>`
         }
         <button class="secondary-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collections" : "Save to Collections"}</button>
+        <button class="secondary-btn share-title-btn" data-share-id="${title.id}" type="button">Share Title</button>
         ${ownerControls}
         <p class="form-message" id="detailVoteMessage" aria-live="polite"></p>
       </div>
@@ -2219,7 +2798,8 @@ async function renderDetailsPage() {
 
     ${peopleSectionTemplate(title)}
 
-    ${similarTitlesTemplate(title, getVisibleTitles(titlesCache))}
+    ${similarSectionTemplate(title, getVisibleTitles(titlesCache), "genre")}
+    ${similarSectionTemplate(title, getVisibleTitles(titlesCache), "language")}
 
     <section class="comment-section">
       <div class="section-heading">
@@ -2235,6 +2815,10 @@ async function renderDetailsPage() {
           <label class="input-group">
             <span>Your name</span>
             <input name="name" type="text" placeholder="Your name" />
+          </label>
+          <label class="check-option spoiler-check form-span">
+            <input name="spoiler" type="checkbox" />
+            <span>Mark this comment as spoiler</span>
           </label>
           <label class="input-group form-span">
             <span>Your review or comment</span>
@@ -2292,8 +2876,42 @@ async function renderDetailsPage() {
     if (saveButton) {
       event.preventDefault();
       event.stopPropagation();
-      toggleSavedTitle(saveButton.dataset.saveId);
+      if (!requireAccount("save titles to your collections")) {
+        return;
+      }
+      await syncSavedTitle(saveButton.dataset.saveId);
       await renderDetailsPage();
+      return;
+    }
+
+    const watchButton = actionTarget.closest(".watch-status-btn");
+
+    if (watchButton) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!requireAccount("save watched, want to watch, and favorite actions")) {
+        return;
+      }
+
+      await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
+      await renderDetailsPage();
+      return;
+    }
+
+    const shareButton = actionTarget.closest(".share-title-btn");
+
+    if (shareButton) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      try {
+        await shareTitle(title);
+        showMessage("#detailVoteMessage", "Share link ready.");
+      } catch (error) {
+        console.error(error);
+        showMessage("#detailVoteMessage", "Could not share right now.");
+      }
     }
   });
 
@@ -2601,6 +3219,26 @@ function setupCommentForm(titleId) {
   });
 }
 
+function setupSpoilerToggle() {
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-toggle-spoiler='true']");
+
+    if (!button) {
+      return;
+    }
+
+    const box = button.closest("[data-spoiler-box='true']");
+    const text = box?.querySelector(".spoiler-text");
+
+    if (!text) {
+      return;
+    }
+
+    text.classList.toggle("hidden");
+    button.textContent = text.classList.contains("hidden") ? "Reveal spoiler" : "Hide spoiler";
+  });
+}
+
 function setupFilters() {
   ["#searchInput", "#typeFilter", "#genreFilter", "#languageFilter"].forEach((selector) => {
     const element = document.querySelector(selector);
@@ -2610,11 +3248,21 @@ function setupFilters() {
     }
 
     const handler = () => {
-      renderTitleGrid(filterTitles(getVisibleTitles(titlesCache)));
+      browseVisibleCount = SEARCH_PAGE_SIZE;
+      refreshBrowseResults();
     };
 
     element.addEventListener("input", handler);
     element.addEventListener("change", handler);
+  });
+}
+
+function setupLoadMore() {
+  const button = document.querySelector("#loadMoreBtn");
+
+  button?.addEventListener("click", () => {
+    browseVisibleCount += SEARCH_PAGE_SIZE;
+    refreshBrowseResults();
   });
 }
 
@@ -2639,6 +3287,11 @@ function setupScheduleControls() {
 function setupCollectionTabs() {
   document.querySelectorAll(".collection-tab").forEach((button) => {
     button.addEventListener("click", () => {
+      if ((button.dataset.collectionTab === "mine" || button.dataset.collectionTab === "saved") && !isSignedIn()) {
+        requireAccount("open personal collections");
+        return;
+      }
+
       document.querySelectorAll(".collection-tab").forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
       renderCollectionsGrid(getVisibleTitles(titlesCache));
@@ -2699,6 +3352,51 @@ function setupTopSearch() {
       searchInput?.focus();
     }, 220);
   });
+
+  document.addEventListener("click", (event) => {
+    const suggestions = document.querySelector("#searchSuggestions");
+
+    if (!suggestions || !(event.target instanceof HTMLElement)) {
+      return;
+    }
+
+    if (event.target.closest("#searchInput") || event.target.closest("#searchSuggestions")) {
+      return;
+    }
+
+    suggestions.classList.add("hidden");
+  });
+}
+
+async function refreshCurrentPage() {
+  if (document.body.dataset.page === "home") {
+    await renderHomePage();
+    return;
+  }
+
+  if (document.body.dataset.page === "details") {
+    await fetchTitles();
+    await renderDetailsPage();
+    updateOwnerToggle();
+  }
+}
+
+async function trackTitleView(titleId) {
+  const viewKey = `moviemate_viewed_${titleId}`;
+
+  if (sessionStorage.getItem(viewKey)) {
+    return;
+  }
+
+  sessionStorage.setItem(viewKey, "true");
+
+  try {
+    await updateDoc(doc(db, TITLES_COLLECTION, titleId), {
+      viewsCount: increment(1)
+    });
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 function setupUserNotificationsModal() {
@@ -2762,7 +3460,11 @@ function setupSaveButtons() {
       return;
     }
 
-    toggleSavedTitle(button.dataset.saveId);
+    if (!requireAccount("save titles to your collections")) {
+      return;
+    }
+
+    await syncSavedTitle(button.dataset.saveId);
 
     if (document.body.dataset.page === "home") {
       await renderHomePage();
@@ -2822,6 +3524,7 @@ function setupOwnerNotificationsRealtime() {
       renderUserNotifications(visibleTitles);
       renderMostInterestedList(visibleTitles);
       renderOwnerNotifications(liveTitles);
+      renderOwnerAnalytics(visibleTitles);
       renderOwnerPanel(liveTitles);
     }
 
@@ -2846,9 +3549,12 @@ async function init() {
   setupOwnerEditForm();
   setupHomepageEditor();
   setupTrailerModal();
+  setupAuthModal();
+  setupSpoilerToggle();
 
   if (document.body.dataset.page === "home") {
     setupFilters();
+    setupLoadMore();
     setupScheduleControls();
     setupCollectionTabs();
     setupInterestWindow();
@@ -2865,6 +3571,19 @@ async function init() {
     updateOwnerToggle();
   }
 
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    if (user) {
+      await ensureUserProfile(user);
+    } else {
+      currentUserProfile = null;
+    }
+
+    updateAuthUI();
+    await refreshCurrentPage();
+  });
+
+  updateAuthUI();
   setupOwnerNotificationsRealtime();
 }
 
