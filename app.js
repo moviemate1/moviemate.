@@ -652,6 +652,16 @@ function trailerPanelTemplate(title) {
     return `
       <section class="trailer-stage" id="trailerSection">
         <img class="trailer-poster" src="${title.image}" alt="${escapeHtml(title.title)} trailer preview" />
+        <button
+          class="trailer-stage-button"
+          type="button"
+          data-open-trailer="true"
+          data-embed-url="${embedUrl}"
+          data-trailer-title="${escapeHtml(title.title)} trailer"
+          aria-label="Play ${escapeHtml(title.title)} trailer"
+        >
+          <span class="trailer-play-badge" aria-hidden="true">▶</span>
+        </button>
         <div class="trailer-overlay">
           <p class="eyebrow">Trailer</p>
           <h2>Preview the story before you watch</h2>
@@ -2092,6 +2102,7 @@ async function renderDetailsPage() {
           }
           <button class="secondary-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collections" : "Save to Collections"}</button>
           ${ownerControls}
+          <p class="form-message" id="detailVoteMessage" aria-live="polite"></p>
         </div>
       </div>
     </section>
@@ -2150,13 +2161,20 @@ async function renderDetailsPage() {
       event.preventDefault();
       event.stopPropagation();
 
-      const changed = await reactToTitle(button.dataset.id, button.dataset.reaction);
+      try {
+        const changed = await reactToTitle(button.dataset.id, button.dataset.reaction);
 
-      if (!changed) {
-        return;
+        if (!changed) {
+          showMessage("#detailVoteMessage", "You already picked that option.");
+          return;
+        }
+
+        await renderDetailsPage();
+        showMessage("#detailVoteMessage", "Your vote was saved.");
+      } catch (error) {
+        console.error(error);
+        showMessage("#detailVoteMessage", "Could not save your vote right now.");
       }
-
-      await renderDetailsPage();
     });
   });
 
@@ -2171,16 +2189,27 @@ function setupLikeButtons() {
       return;
     }
 
-    const changed = await reactToTitle(button.dataset.id, button.dataset.reaction);
+    try {
+      const changed = await reactToTitle(button.dataset.id, button.dataset.reaction);
 
-    if (!changed) {
-      return;
-    }
+      if (!changed) {
+        if (document.body.dataset.page === "details") {
+          showMessage("#detailVoteMessage", "You already picked that option.");
+        }
+        return;
+      }
 
-    if (document.body.dataset.page === "home") {
-      await renderHomePage();
-    } else {
-      await renderDetailsPage();
+      if (document.body.dataset.page === "home") {
+        await renderHomePage();
+      } else {
+        await renderDetailsPage();
+        showMessage("#detailVoteMessage", "Your vote was saved.");
+      }
+    } catch (error) {
+      console.error(error);
+      if (document.body.dataset.page === "details") {
+        showMessage("#detailVoteMessage", "Could not save your vote right now.");
+      }
     }
   });
 }
