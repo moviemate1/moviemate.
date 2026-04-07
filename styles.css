@@ -860,6 +860,30 @@ button.ghost-link {
   border-color: rgba(255, 99, 99, 0.5);
 }
 
+.reaction-btn.active.perfect,
+.reaction-btn-perfect.active {
+  background: rgba(154, 92, 255, 0.2);
+  border-color: rgba(154, 92, 255, 0.5);
+}
+
+.reaction-btn.active.goforit,
+.reaction-btn-goforit.active {
+  background: rgba(36, 201, 111, 0.18);
+  border-color: rgba(36, 201, 111, 0.5);
+}
+
+.reaction-btn.active.timepass,
+.reaction-btn-timepass.active {
+  background: rgba(255, 191, 71, 0.18);
+  border-color: rgba(255, 191, 71, 0.5);
+}
+
+.reaction-btn.active.skip,
+.reaction-btn-skip.active {
+  background: rgba(255, 99, 99, 0.18);
+  border-color: rgba(255, 99, 99, 0.5);
+}
+
 .reaction-summary {
   margin: 0;
   color: var(--muted);
@@ -1139,8 +1163,16 @@ button.ghost-link {
   background: #18cf9b;
 }
 
+.dot-perfect {
+  background: #9a5cff;
+}
+
 .dot-mixed {
   background: #7e46ff;
+}
+
+.dot-timepass {
+  background: #ffbf47;
 }
 
 .dot-skip {

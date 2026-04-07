@@ -22,6 +22,12 @@ const REACTIONS_STORAGE_KEY = "moviemate_reactions";
 const OWNER_MODE_KEY = "moviemate_owner_mode";
 const OWNER_PASSCODE = "1A2b3456@";
 const OWNER_NOTIFICATION_TOAST_MS = 3200;
+const REACTION_OPTIONS = {
+  perfect: { label: "Perfect", className: "perfect" },
+  goForIt: { label: "Go for it", className: "goforit" },
+  timepass: { label: "Timepass", className: "timepass" },
+  skip: { label: "Skip", className: "skip" }
+};
 const DEFAULT_HOMEPAGE_CONTENT = {
   heroEyebrow: "MoviemateHub picks for every mood",
   heroTitle: "Discover movies and series worth your time.",
@@ -326,6 +332,12 @@ function normalizeTitle(docLike) {
     cast: normalizePeopleList(data.cast, "Cast"),
     crew: normalizePeopleList(data.crew, "Crew"),
     createdAt: data.createdAt || null,
+    votePerfect: Number(data.votePerfect || 0),
+    voteGoForIt:
+      Number(data.voteGoForIt || 0) || (!("voteGoForIt" in data) ? Number(data.likes || 0) : 0),
+    voteTimepass: Number(data.voteTimepass || 0),
+    voteSkip:
+      Number(data.voteSkip || 0) || (!("voteSkip" in data) ? Number(data.dislikes || 0) : 0),
     likes: Number(data.likes || 0),
     dislikes: Number(data.dislikes || 0),
     approved: data.approved !== false,
@@ -385,18 +397,28 @@ function clearReaction(titleId) {
 }
 
 function getReactionStats(title) {
-  const likes = Number(title.likes || 0);
-  const dislikes = Number(title.dislikes || 0);
-  const total = likes + dislikes;
-  const likePercent = total ? Math.round((likes / total) * 100) : 0;
-  const dislikePercent = total ? Math.round((dislikes / total) * 100) : 0;
+  const perfect = Number(title.votePerfect || 0);
+  const goForIt = Number(title.voteGoForIt || 0);
+  const timepass = Number(title.voteTimepass || 0);
+  const skip = Number(title.voteSkip || 0);
+  const total = perfect + goForIt + timepass + skip;
+  const perfectPercent = total ? Math.round((perfect / total) * 100) : 0;
+  const goForItPercent = total ? Math.round((goForIt / total) * 100) : 0;
+  const timepassPercent = total ? Math.round((timepass / total) * 100) : 0;
+  const skipPercent = total ? Math.round((skip / total) * 100) : 0;
+  const recommendedPercent = perfectPercent + goForItPercent;
 
   return {
-    likes,
-    dislikes,
+    perfect,
+    goForIt,
+    timepass,
+    skip,
     total,
-    likePercent,
-    dislikePercent
+    perfectPercent,
+    goForItPercent,
+    timepassPercent,
+    skipPercent,
+    recommendedPercent
   };
 }
 
@@ -425,14 +447,17 @@ function reactionButtonsTemplate(title) {
   return `
     <div class="reaction-panel">
       <div class="reaction-buttons">
-        <button class="reaction-btn ${currentReaction === "like" ? "active like" : ""}" data-id="${title.id}" data-reaction="like" type="button">
-          Like ${stats.likePercent}%
-        </button>
-        <button class="reaction-btn ${currentReaction === "dislike" ? "active dislike" : ""}" data-id="${title.id}" data-reaction="dislike" type="button">
-          Dislike ${stats.dislikePercent}%
-        </button>
+        ${Object.entries(REACTION_OPTIONS)
+          .map(
+            ([value, option]) => `
+              <button class="reaction-btn reaction-btn-${option.className} ${currentReaction === value ? `active ${option.className}` : ""}" data-id="${title.id}" data-reaction="${value}" type="button">
+                ${option.label}
+              </button>
+            `
+          )
+          .join("")}
       </div>
-      <p class="reaction-summary">${stats.likes} likes • ${stats.dislikes} dislikes • ${stats.total} votes</p>
+      <p class="reaction-summary">${stats.total} votes • ${stats.recommendedPercent}% recommend</p>
     </div>
   `;
 }
@@ -519,28 +544,31 @@ function genreChartStyle(segments) {
 function reactionMeterTemplate(title) {
   const stats = getReactionStats(title);
   const total = Math.max(stats.total, 1);
-  const lovedPercent = stats.likePercent;
-  const skipPercent = stats.dislikePercent;
-  const mixedPercent = Math.max(0, 100 - lovedPercent - skipPercent);
+  const perfectPercent = stats.perfectPercent;
+  const goForItPercent = stats.goForItPercent;
+  const timepassPercent = stats.timepassPercent;
+  const skipPercent = stats.skipPercent;
+  const recommendedPercent = stats.recommendedPercent;
 
   return `
     <article class="insight-card">
       <div class="insight-header">
         <div>
           <p class="eyebrow">MovieMate Meter</p>
-          <h3>${lovedPercent}% positive</h3>
+          <h3>${recommendedPercent}% recommend</h3>
         </div>
         <span class="insight-pill">${formatLargeNumber(total)} votes</span>
       </div>
-      <div class="meter-visual" style="background: conic-gradient(#18cf9b 0 ${lovedPercent}%, #7e46ff ${lovedPercent}% ${lovedPercent + mixedPercent}%, #ff6b6b ${lovedPercent + mixedPercent}% 100%);">
+      <div class="meter-visual" style="background: conic-gradient(#9a5cff 0 ${perfectPercent}%, #18cf9b ${perfectPercent}% ${perfectPercent + goForItPercent}%, #ffbf47 ${perfectPercent + goForItPercent}% ${perfectPercent + goForItPercent + timepassPercent}%, #ff6b6b ${perfectPercent + goForItPercent + timepassPercent}% 100%);">
         <div class="meter-core">
-          <strong>${lovedPercent}%</strong>
-          <span>${stats.likes}/${total} likes</span>
+          <strong>${recommendedPercent}%</strong>
+          <span>${stats.goForIt + stats.perfect}/${total} recommend</span>
         </div>
       </div>
       <div class="meter-list">
-        <div class="meter-row"><span class="meter-dot dot-love"></span><span>Loved it</span><strong>${lovedPercent}%</strong></div>
-        <div class="meter-row"><span class="meter-dot dot-mixed"></span><span>Mixed</span><strong>${mixedPercent}%</strong></div>
+        <div class="meter-row"><span class="meter-dot dot-perfect"></span><span>Perfect</span><strong>${perfectPercent}%</strong></div>
+        <div class="meter-row"><span class="meter-dot dot-love"></span><span>Go for it</span><strong>${goForItPercent}%</strong></div>
+        <div class="meter-row"><span class="meter-dot dot-timepass"></span><span>Timepass</span><strong>${timepassPercent}%</strong></div>
         <div class="meter-row"><span class="meter-dot dot-skip"></span><span>Skip</span><strong>${skipPercent}%</strong></div>
       </div>
     </article>
@@ -774,7 +802,7 @@ function movieCardTemplate(title) {
             <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
             <div class="status-row">${badges}</div>
           </div>
-          <span class="rating-pill"><strong>${getReactionStats(title).likePercent}%</strong> liked</span>
+          <span class="rating-pill"><strong>${getReactionStats(title).recommendedPercent}%</strong> recommend</span>
         </div>
         <p class="movie-description">${escapeHtml(title.description)}</p>
         ${reactionButtonsTemplate(title)}
@@ -929,7 +957,7 @@ function renderTrendingTitles(titles) {
         return Number(b.trending) - Number(a.trending);
       }
 
-      return getReactionStats(b).likePercent - getReactionStats(a).likePercent;
+      return getReactionStats(b).recommendedPercent - getReactionStats(a).recommendedPercent;
     })
     .slice(0, 4);
 
@@ -1186,6 +1214,10 @@ async function addTitle(form) {
     crew,
     likes: 0,
     dislikes: 0,
+    votePerfect: 0,
+    voteGoForIt: 0,
+    voteTimepass: 0,
+    voteSkip: 0,
     approved: false,
     pinned: false,
     trending: false,
@@ -1381,7 +1413,7 @@ async function submitHomepageEdit(form) {
 async function reactToTitle(titleId, nextReaction) {
   const currentReaction = getReaction(titleId);
 
-  if (!["like", "dislike"].includes(nextReaction) || currentReaction === nextReaction) {
+  if (!(nextReaction in REACTION_OPTIONS) || currentReaction === nextReaction) {
     return false;
   }
 
@@ -1394,25 +1426,32 @@ async function reactToTitle(titleId, nextReaction) {
       throw new Error("Title not found.");
     }
 
-    const updates = {};
+    const data = normalizeTitle(snapshot);
+    const votes = {
+      votePerfect: Number(data.votePerfect || 0),
+      voteGoForIt: Number(data.voteGoForIt || 0),
+      voteTimepass: Number(data.voteTimepass || 0),
+      voteSkip: Number(data.voteSkip || 0)
+    };
 
-    if (currentReaction === "like") {
-      updates.likes = increment(-1);
+    const fieldMap = {
+      perfect: "votePerfect",
+      goForIt: "voteGoForIt",
+      timepass: "voteTimepass",
+      skip: "voteSkip"
+    };
+
+    if (currentReaction && fieldMap[currentReaction]) {
+      votes[fieldMap[currentReaction]] = Math.max(0, votes[fieldMap[currentReaction]] - 1);
     }
 
-    if (currentReaction === "dislike") {
-      updates.dislikes = increment(-1);
-    }
+    votes[fieldMap[nextReaction]] += 1;
 
-    if (nextReaction === "like") {
-      updates.likes = increment(1);
-    }
-
-    if (nextReaction === "dislike") {
-      updates.dislikes = increment(1);
-    }
-
-    transaction.update(titleRef, updates);
+    transaction.update(titleRef, {
+      ...votes,
+      likes: votes.votePerfect + votes.voteGoForIt,
+      dislikes: votes.voteSkip
+    });
   });
 
   setReaction(titleId, nextReaction);
@@ -1566,7 +1605,7 @@ async function renderDetailsPage() {
             <p class="eyebrow">Overview</p>
             <h3>${escapeHtml(title.title)}</h3>
           </div>
-          <span class="insight-pill">${stats.likePercent}% liked</span>
+          <span class="insight-pill">${stats.recommendedPercent}% recommend</span>
         </div>
         <p class="detail-overview">${escapeHtml(title.description)}</p>
       </article>
