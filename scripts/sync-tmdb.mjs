@@ -4,10 +4,11 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w780";
 const TMDB_PROFILE_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
 const TITLES_COLLECTION = "moviemate_titles";
-const ALLOWED_LANGUAGE_CODES = new Set(["en", "hi", "ja", "ko", "ne"]);
+const ALLOWED_LANGUAGE_CODES = new Set(["en", "hi", "ja", "ko", "ne", "ta", "te", "ml", "kn"]);
 const WATCH_PROVIDER_REGIONS = ["IN", "US", "GB"];
 const UPCOMING_PAGE_COUNT = 6;
 const BOLLYWOOD_PAGE_COUNT = 8;
+const SOUTH_PAGE_COUNT = 8;
 const POPULAR_PAGE_COUNT = 10;
 const TRENDING_PAGE_COUNT = 10;
 
@@ -37,6 +38,8 @@ const LANGUAGE_MAP = {
   ko: "Korean",
   ta: "Tamil",
   te: "Telugu",
+  ml: "Malayalam",
+  kn: "Kannada",
   es: "Spanish",
   fr: "French",
   de: "German",
@@ -259,6 +262,28 @@ async function fetchBollywoodMovies() {
     },
     BOLLYWOOD_PAGE_COUNT
   );
+}
+
+async function fetchSouthMovies() {
+  const southLanguages = ["ta", "te", "ml", "kn"];
+  const results = await Promise.all(
+    southLanguages.map((languageCode) =>
+      fetchPagedResults(
+        "/discover/movie",
+        {
+          language: "en-US",
+          region: "IN",
+          with_original_language: languageCode,
+          sort_by: "popularity.desc",
+          vote_count_gte: 20,
+          include_adult: "false"
+        },
+        SOUTH_PAGE_COUNT
+      )
+    )
+  );
+
+  return results.flat();
 }
 
 async function fetchPopularSeries() {
@@ -506,6 +531,7 @@ async function run() {
     upcomingMovies,
     upcomingSeries,
     bollywoodMovies,
+    southMovies,
     popularMovies,
     popularSeries,
     trendingMovies,
@@ -516,6 +542,7 @@ async function run() {
     fetchUpcomingMovies(),
     fetchUpcomingSeries(),
     fetchBollywoodMovies(),
+    fetchSouthMovies(),
     fetchPopularMovies(),
     fetchPopularSeries(),
     fetchTrendingMovies(),
@@ -534,6 +561,9 @@ async function run() {
   const normalizedBollywoodMovies = bollywoodMovies
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "bollywood"));
+  const normalizedSouthMovies = southMovies
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "south"));
   const normalizedPopularSeries = popularSeries
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "popular"));
@@ -550,6 +580,7 @@ async function run() {
     ...normalizedUpcomingMovies,
     ...normalizedUpcomingSeries,
     ...normalizedBollywoodMovies,
+    ...normalizedSouthMovies,
     ...normalizedPopularMovies,
     ...normalizedPopularSeries,
     ...normalizedTrendingMovies,
