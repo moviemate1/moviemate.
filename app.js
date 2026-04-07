@@ -1644,6 +1644,22 @@ function renderCuratedExploreRows(titles) {
     (a, b) => getInterestScore(b) - getInterestScore(a)
   );
 
+  const southPicks = getCuratedTitles(
+    titles,
+    (title) =>
+      title.importBuckets.includes("south") ||
+      title.language.some((language) => {
+        const value = String(language).toLowerCase();
+        return (
+          value.includes("tamil") ||
+          value.includes("telugu") ||
+          value.includes("malayalam") ||
+          value.includes("kannada")
+        );
+      }),
+    (a, b) => getInterestScore(b) - getInterestScore(a)
+  );
+
   const netflixPicks = getCuratedTitles(
     titles,
     (title) => hasPlatformMatch(title, ["netflix"]),
@@ -1698,6 +1714,12 @@ function renderCuratedExploreRows(titles) {
     bollywoodPicks,
     "Bollywood Buzz",
     "Hindi movie picks with strong India buzz and Bollywood energy."
+  );
+  renderNamedExploreRow(
+    "southRow",
+    southPicks,
+    "South Cinema Spotlight",
+    "Tamil, Telugu, Malayalam, and Kannada picks with strong South cinema energy."
   );
   renderNamedExploreRow(
     "netflixRow",
