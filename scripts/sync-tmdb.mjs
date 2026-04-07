@@ -428,28 +428,13 @@ async function upsertTitles(items) {
 
   for (const item of items) {
     const ref = db.collection(TITLES_COLLECTION).doc(item.id);
-    const existing = await ref.get();
-    const existingData = existing.exists ? existing.data() : {};
 
     batch.set(
       ref,
       {
         ...item,
-        likes: Number(existingData.likes || 0),
-        dislikes: Number(existingData.dislikes || 0),
-        comments: Array.isArray(existingData.comments) ? existingData.comments : [],
-        platforms:
-          Array.isArray(item.platforms) && item.platforms.length
-            ? item.platforms
-            : Array.isArray(existingData.platforms)
-              ? existingData.platforms
-              : [],
-        pinned: Boolean(existingData.pinned ?? item.pinned),
-        trending: Boolean(existingData.trending ?? item.trending),
-        approved: existingData.approved ?? item.approved,
         importBuckets: Array.isArray(item.importBuckets) ? item.importBuckets : [],
         tmdbPopularity: Number(item.tmdbPopularity || 0),
-        createdAt: existingData.createdAt || admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       },
       { merge: true }
