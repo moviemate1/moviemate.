@@ -190,6 +190,14 @@ let pendingNotificationState = {
 
 const DEFAULT_USER_PROFILE = {
   displayName: "",
+  username: "",
+  firstName: "",
+  lastName: "",
+  birthDate: "",
+  bio: "",
+  avatarUrl: "",
+  instagram: "",
+  whatsapp: "",
   savedTitles: [],
   reactions: {},
   watchStatus: {},
@@ -210,6 +218,56 @@ function isSignedIn() {
   return Boolean(currentUser?.uid);
 }
 
+function buildDefaultUsername(user = currentUser) {
+  const source = user?.displayName || user?.email || "moviemateuser";
+  return slugify(String(source).split("@")[0] || "moviemateuser");
+}
+
+function getProfileDisplayName(profile = currentUserProfile, user = currentUser) {
+  if (profile?.displayName?.trim()) {
+    return profile.displayName.trim();
+  }
+
+  const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(" ").trim();
+
+  if (fullName) {
+    return fullName;
+  }
+
+  return user?.displayName || user?.email?.split("@")[0] || "MovieMate Member";
+}
+
+function getProfileUsername(profile = currentUserProfile, user = currentUser) {
+  return profile?.username?.trim() || buildDefaultUsername(user);
+}
+
+function getProfileInitials(profile = currentUserProfile, user = currentUser) {
+  const displayName = getProfileDisplayName(profile, user);
+  return displayName
+    .split(" ")
+    .map((part) => part.trim().charAt(0))
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+function getProfileAvatar(profile = currentUserProfile, user = currentUser) {
+  const avatarUrl = String(profile?.avatarUrl || "").trim();
+
+  if (avatarUrl) {
+    return {
+      image: avatarUrl,
+      initials: ""
+    };
+  }
+
+  return {
+    image: "",
+    initials: getProfileInitials(profile, user)
+  };
+}
+
 function getUserDocRef(uid = currentUser?.uid) {
   return uid ? doc(db, USERS_COLLECTION, uid) : null;
 }
@@ -218,6 +276,14 @@ function normalizeUserProfile(data = {}) {
   return {
     ...DEFAULT_USER_PROFILE,
     ...data,
+    username: String(data.username || "").trim(),
+    firstName: String(data.firstName || "").trim(),
+    lastName: String(data.lastName || "").trim(),
+    birthDate: String(data.birthDate || "").trim(),
+    bio: String(data.bio || "").trim(),
+    avatarUrl: String(data.avatarUrl || "").trim(),
+    instagram: String(data.instagram || "").trim(),
+    whatsapp: String(data.whatsapp || "").trim(),
     savedTitles: Array.isArray(data.savedTitles) ? data.savedTitles : [],
     reactions: data.reactions && typeof data.reactions === "object" ? data.reactions : {},
     watchStatus: data.watchStatus && typeof data.watchStatus === "object" ? data.watchStatus : {},
@@ -236,9 +302,12 @@ async function ensureUserProfile(user) {
   const snapshot = await getDoc(ref);
 
   if (!snapshot.exists()) {
+    const username = buildDefaultUsername(user);
+    const emailName = user.email?.split("@")[0] || "";
     const profile = {
       ...DEFAULT_USER_PROFILE,
-      displayName: user.email || user.displayName || "MovieMate member",
+      displayName: user.displayName || emailName || "MovieMate member",
+      username,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
@@ -426,6 +495,8 @@ function normalizeTitle(docLike) {
     heroine: data.heroine || "",
     cast: normalizePeopleList(data.cast, "Cast"),
     crew: normalizePeopleList(data.crew, "Crew"),
+    submittedBy: data.submittedBy || "",
+    submittedByName: data.submittedByName || "",
     createdAt: data.createdAt || null,
     votePerfect: Number(data.votePerfect || 0),
     voteGoForIt:
@@ -447,6 +518,7 @@ function normalizeTitle(docLike) {
     comments: Array.isArray(data.comments)
       ? data.comments.map((comment, index) => ({
           id: comment.id || `${data.id || docLike.id}-comment-${index}`,
+          userId: comment.userId || "",
           name: comment.name || "Anonymous",
           text: comment.text || "",
           spoiler: Boolean(comment.spoiler),
@@ -2095,6 +2167,8 @@ async function addTitle(form) {
     heroine,
     cast,
     crew,
+    submittedBy: currentUser?.uid || "",
+    submittedByName: isSignedIn() ? getProfileDisplayName() : "",
     likes: 0,
     dislikes: 0,
     votePerfect: 0,
@@ -2254,17 +2328,52 @@ function updateAuthUI() {
       return;
     }
 
+    const avatar = button.querySelector("[data-account-avatar]");
+    const label = button.querySelector("[data-account-label]");
+
     if (isSignedIn()) {
-      button.textContent = "Sign Out";
       button.classList.add("signed-in");
+      if (avatar) {
+        avatar.textContent = getProfileInitials();
+        avatar.classList.remove("hidden");
+      }
+      if (label) {
+        label.textContent = getProfileDisplayName();
+      } else {
+        button.textContent = getProfileDisplayName();
+      }
     } else {
-      button.textContent = "Sign In";
       button.classList.remove("signed-in");
+      if (avatar) {
+        avatar.textContent = "MM";
+        avatar.classList.add("hidden");
+      }
+      if (label) {
+        label.textContent = "Sign In";
+      } else {
+        button.textContent = "Sign In";
+      }
     }
   });
 
   document.querySelectorAll("[data-account-only]").forEach((element) => {
     element.classList.toggle("hidden", !isSignedIn());
+  });
+
+  document.querySelectorAll("[data-signed-out-only]").forEach((element) => {
+    element.classList.toggle("hidden", isSignedIn());
+  });
+
+  document.querySelectorAll("[data-profile-link]").forEach((link) => {
+    if (link instanceof HTMLAnchorElement) {
+      link.href = "profile.html";
+    }
+  });
+
+  document.querySelectorAll("[data-account-settings-link]").forEach((link) => {
+    if (link instanceof HTMLAnchorElement) {
+      link.href = "account.html";
+    }
   });
 
   const authHint = document.querySelector("#authHint");
@@ -2303,6 +2412,27 @@ async function handleAuthSubmit(form) {
   closeAuthModal();
 }
 
+function closeAccountMenus() {
+  document.querySelectorAll(".account-menu").forEach((menu) => {
+    menu.classList.add("hidden");
+    menu.setAttribute("aria-hidden", "true");
+  });
+}
+
+function toggleAccountMenu(button) {
+  const wrap = button.closest(".account-menu-wrap");
+  const menu = wrap?.querySelector(".account-menu");
+
+  if (!menu) {
+    return;
+  }
+
+  const willOpen = menu.classList.contains("hidden");
+  closeAccountMenus();
+  menu.classList.toggle("hidden", !willOpen);
+  menu.setAttribute("aria-hidden", willOpen ? "false" : "true");
+}
+
 function setupAuthModal() {
   const form = document.querySelector("#authForm");
   const closeButton = document.querySelector("#authClose");
@@ -2313,12 +2443,38 @@ function setupAuthModal() {
   document.querySelectorAll("[data-auth-toggle]").forEach((button) => {
     button.addEventListener("click", async () => {
       if (isSignedIn()) {
-        await signOut(auth);
+        toggleAccountMenu(button);
         return;
       }
 
       openAuthModal("login");
     });
+  });
+
+  document.querySelectorAll("[data-signin-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      closeAccountMenus();
+      openAuthModal("login");
+    });
+  });
+
+  document.querySelectorAll("[data-signout-action]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      closeAccountMenus();
+      await signOut(auth);
+    });
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!(event.target instanceof HTMLElement)) {
+      return;
+    }
+
+    if (event.target.closest(".account-menu-wrap")) {
+      return;
+    }
+
+    closeAccountMenus();
   });
 
   loginTab?.addEventListener("click", () => setAuthMode("login"));
@@ -2615,7 +2771,8 @@ async function deleteTitle(titleId) {
 
 async function addComment(titleId, form) {
   const formData = new FormData(form);
-  const name = formData.get("name")?.toString().trim() || "Anonymous";
+  const typedName = formData.get("name")?.toString().trim() || "";
+  const name = isSignedIn() ? getProfileDisplayName() : typedName || "Anonymous";
   const text = formData.get("comment")?.toString().trim() || "";
   const spoiler = formData.get("spoiler") === "on";
 
@@ -2638,6 +2795,7 @@ async function addComment(titleId, form) {
       comments: [
         {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          userId: currentUser?.uid || "",
           name,
           text,
           spoiler,
@@ -3368,6 +3526,423 @@ function setupTopSearch() {
   });
 }
 
+function profileAvatarTemplate(profile = currentUserProfile, user = currentUser, className = "profile-avatar") {
+  const avatar = getProfileAvatar(profile, user);
+
+  if (avatar.image) {
+    return `<img class="${className}" src="${escapeHtml(avatar.image)}" alt="${escapeHtml(getProfileDisplayName(profile, user))} avatar" />`;
+  }
+
+  return `<div class="${className} profile-avatar-fallback">${escapeHtml(avatar.initials || "MM")}</div>`;
+}
+
+function getProfileReviewEntries(titles) {
+  const reactionMap = getStoredReactions();
+  const uid = currentUser?.uid || "";
+  const entries = titles
+    .map((title) => {
+      const reaction = reactionMap[title.id] || "";
+      const comments = (title.comments || []).filter((comment) => comment.userId && comment.userId === uid);
+
+      if (!reaction && !comments.length) {
+        return null;
+      }
+
+      return {
+        title,
+        reaction,
+        comments
+      };
+    })
+    .filter(Boolean);
+
+  return entries.sort((left, right) => getInterestScore(right.title) - getInterestScore(left.title));
+}
+
+function getProfilePosts(titles) {
+  const uid = currentUser?.uid || "";
+  return titles
+    .filter((title) => title.submittedBy && title.submittedBy === uid)
+    .sort((left, right) => getCreatedAtMs(right.createdAt) - getCreatedAtMs(left.createdAt));
+}
+
+function profileReviewCardTemplate(entry) {
+  const stats = getReactionStats(entry.title);
+  const reactionLabel = entry.reaction ? REACTION_OPTIONS[entry.reaction]?.label || entry.reaction : "";
+  const firstComment = entry.comments[0]?.text || "";
+
+  return `
+    <article class="profile-review-card">
+      <a class="profile-review-poster-link" href="details.html?id=${entry.title.id}">
+        <img class="profile-review-poster" src="${entry.title.image}" alt="${escapeHtml(entry.title.title)} poster" />
+      </a>
+      <div class="profile-review-copy">
+        <div class="profile-review-head">
+          <div>
+            <h3>${escapeHtml(entry.title.title)}</h3>
+            <p>${escapeHtml(entry.title.type)} • ${escapeHtml(formatReleaseDate(entry.title.releaseDate))}</p>
+          </div>
+          ${reactionLabel ? `<span class="profile-reaction-badge">${escapeHtml(reactionLabel)}</span>` : ""}
+        </div>
+        <p class="profile-review-meta">${escapeHtml(entry.title.genre)} • ${escapeHtml(entry.title.language.join(", "))}</p>
+        ${firstComment ? `<p class="profile-review-text">${escapeHtml(firstComment)}</p>` : `<p class="profile-review-text">${stats.recommendedPercent}% recommend on MovieMate.</p>`}
+        <div class="profile-inline-actions">
+          <a class="ghost-link" href="details.html?id=${entry.title.id}">Open title</a>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function profilePostCardTemplate(title) {
+  return `
+    <article class="profile-post-card">
+      <img class="profile-post-cover" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <div class="profile-post-copy">
+        <h3>${escapeHtml(title.title)}</h3>
+        <p>${escapeHtml(title.type)} • ${escapeHtml(title.genre)}</p>
+        <p>${escapeHtml(title.approved ? "Live on MovieMate" : "Waiting for owner approval")}</p>
+      </div>
+      <a class="ghost-link" href="details.html?id=${title.id}">View</a>
+    </article>
+  `;
+}
+
+function buildInterestedTitles(titles) {
+  const watchStatus = getWatchStatusMap();
+  const savedIds = new Set(getSavedTitles());
+  return titles
+    .filter((title) => savedIds.has(title.id) || watchStatus[title.id] === "want" || watchStatus[title.id] === "favorite")
+    .sort((left, right) => getInterestScore(right) - getInterestScore(left))
+    .slice(0, 6);
+}
+
+function interestedTitleTemplate(title) {
+  return `
+    <a class="profile-interest-item" href="details.html?id=${title.id}">
+      <img src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <span>
+        <strong>${escapeHtml(title.title)}</strong>
+        <small>${escapeHtml(formatReleaseDate(title.releaseDate))} • ${escapeHtml(title.type)}</small>
+      </span>
+    </a>
+  `;
+}
+
+function renderProfilePage() {
+  const target = document.querySelector("#profilePage");
+
+  if (!target) {
+    return;
+  }
+
+  if (!isSignedIn() || !currentUserProfile) {
+    target.innerHTML = `
+      <section class="account-empty-state">
+        <p class="eyebrow">MovieMate account</p>
+        <h1>Sign in to see your profile.</h1>
+        <p class="section-copy">Your reviews, saved collections, watch states, and profile details will appear here after you sign in.</p>
+        <button class="primary-btn" type="button" id="profileSignInBtn">Sign In</button>
+      </section>
+    `;
+    document.querySelector("#profileSignInBtn")?.addEventListener("click", () => openAuthModal("login"));
+    return;
+  }
+
+  const visibleTitles = getVisibleTitles(titlesCache);
+  const reviewEntries = getProfileReviewEntries(visibleTitles);
+  const submittedTitles = getProfilePosts(titlesCache);
+  const personalCollections = buildPersonalCollections(visibleTitles);
+  const interestedTitles = buildInterestedTitles(visibleTitles);
+  const watchStatus = getWatchStatusMap();
+  const stats = {
+    reviews: reviewEntries.length,
+    posts: submittedTitles.length,
+    collections: personalCollections.length,
+    saved: getSavedTitles().length,
+    watched: Object.values(watchStatus).filter((value) => value === "watched").length,
+    favorites: Object.values(watchStatus).filter((value) => value === "favorite").length
+  };
+
+  target.innerHTML = `
+    <section class="profile-page-shell">
+      <aside class="profile-side-card">
+        <div class="profile-avatar-wrap">
+          ${profileAvatarTemplate(currentUserProfile, currentUser, "profile-avatar")}
+        </div>
+        <h1>${escapeHtml(getProfileDisplayName())}</h1>
+        <p class="profile-handle">@${escapeHtml(getProfileUsername())}</p>
+        <div class="profile-stat-row">
+          <article><strong>${stats.reviews}</strong><span>Reviews</span></article>
+          <article><strong>${stats.posts}</strong><span>Posts</span></article>
+          <article><strong>${stats.collections}</strong><span>Collections</span></article>
+        </div>
+        <p class="profile-bio">${escapeHtml(currentUserProfile.bio || "Add a short bio in settings to personalize your MovieMate profile.")}</p>
+        <div class="profile-mini-stats">
+          <span>${stats.saved} saved</span>
+          <span>${stats.watched} watched</span>
+          <span>${stats.favorites} favorites</span>
+        </div>
+        <div class="profile-card-actions">
+          <a class="secondary-btn" href="account.html">Edit Profile</a>
+        </div>
+      </aside>
+
+      <section class="profile-main-panel">
+        <div class="profile-tabs">
+          <button class="profile-tab active" data-profile-tab="reviews" type="button">Reviews</button>
+          <button class="profile-tab" data-profile-tab="posts" type="button">Posts</button>
+          <button class="profile-tab" data-profile-tab="collections" type="button">Collections</button>
+        </div>
+
+        <div class="profile-panel-body active" data-profile-panel="reviews">
+          <div class="profile-filter-row">
+            <button class="profile-filter-pill active" data-profile-filter="all" type="button">All</button>
+            <button class="profile-filter-pill" data-profile-filter="skip" type="button">Skip</button>
+            <button class="profile-filter-pill" data-profile-filter="timepass" type="button">Timepass</button>
+            <button class="profile-filter-pill" data-profile-filter="goForIt" type="button">Go For It</button>
+            <button class="profile-filter-pill" data-profile-filter="perfect" type="button">Perfect</button>
+          </div>
+          <div class="profile-review-list" id="profileReviewList">
+            ${
+              reviewEntries.length
+                ? reviewEntries.map(profileReviewCardTemplate).join("")
+                : '<p class="empty-state">Vote on titles or leave comments to build your review profile.</p>'
+            }
+          </div>
+        </div>
+
+        <div class="profile-panel-body hidden" data-profile-panel="posts">
+          <div class="profile-post-list">
+            ${
+              submittedTitles.length
+                ? submittedTitles.map(profilePostCardTemplate).join("")
+                : '<p class="empty-state">Titles you suggest will appear here after you post them.</p>'
+            }
+          </div>
+        </div>
+
+        <div class="profile-panel-body hidden" data-profile-panel="collections">
+          <div class="collection-grid profile-collection-grid">
+            ${
+              personalCollections.length
+                ? personalCollections.map(collectionCardTemplate).join("")
+                : '<p class="empty-state">Save titles, react, and use watch actions to generate your personal collections.</p>'
+            }
+          </div>
+        </div>
+      </section>
+
+      <aside class="profile-interest-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Interested In</p>
+            <h2>Saved by you</h2>
+          </div>
+        </div>
+        <div class="profile-interest-list">
+          ${
+            interestedTitles.length
+              ? interestedTitles.map(interestedTitleTemplate).join("")
+              : '<p class="empty-state">Use “Want to watch”, “Favorite”, or “Save to Collections” to build this list.</p>'
+          }
+        </div>
+      </aside>
+    </section>
+  `;
+
+  setupProfileTabs(reviewEntries);
+}
+
+function renderAccountPage() {
+  const target = document.querySelector("#accountPage");
+
+  if (!target) {
+    return;
+  }
+
+  if (!isSignedIn() || !currentUserProfile) {
+    target.innerHTML = `
+      <section class="account-empty-state">
+        <p class="eyebrow">Account settings</p>
+        <h1>Sign in to edit your profile.</h1>
+        <p class="section-copy">Your username, bio, socials, and personal MovieMate settings live here.</p>
+        <button class="primary-btn" type="button" id="accountSignInBtn">Sign In</button>
+      </section>
+    `;
+    document.querySelector("#accountSignInBtn")?.addEventListener("click", () => openAuthModal("login"));
+    return;
+  }
+
+  const reviewEntries = getProfileReviewEntries(getVisibleTitles(titlesCache));
+  const submittedTitles = getProfilePosts(titlesCache);
+  const personalCollections = buildPersonalCollections(getVisibleTitles(titlesCache));
+
+  target.innerHTML = `
+    <section class="account-page-shell">
+      <aside class="account-settings-nav">
+        <div class="account-settings-card">
+          <h2>Settings</h2>
+          <a href="#edit-profile" class="account-settings-link active">Edit profile</a>
+          <a href="#profile-health" class="account-settings-link">Profile Health</a>
+          <button class="account-settings-link account-settings-button" type="button" id="resetPasswordBtn">Change password</button>
+          <div class="account-settings-divider"></div>
+          <a href="contact.html" class="account-settings-link">Give Feedback</a>
+          <a href="privacy.html" class="account-settings-link">Privacy Policy</a>
+          <a href="about.html" class="account-settings-link">About MovieMate</a>
+        </div>
+      </aside>
+
+      <section class="account-settings-main">
+        <article class="account-settings-card" id="edit-profile">
+          <div class="account-form-head">
+            ${profileAvatarTemplate(currentUserProfile, currentUser, "account-avatar")}
+            <div>
+              <p class="eyebrow">Edit Profile</p>
+              <h1>Make your MovieMate profile yours</h1>
+              <p class="section-copy">Update the visible details users will see across your collections, reviews, and saved titles.</p>
+            </div>
+          </div>
+          <form class="account-form" id="profileSettingsForm">
+            <label class="input-group">
+              <span>Display name</span>
+              <input name="displayName" type="text" value="${escapeHtml(getProfileDisplayName())}" />
+            </label>
+            <label class="input-group">
+              <span>Username</span>
+              <input name="username" type="text" value="${escapeHtml(getProfileUsername())}" />
+            </label>
+            <label class="input-group">
+              <span>First name</span>
+              <input name="firstName" type="text" value="${escapeHtml(currentUserProfile.firstName || "")}" />
+            </label>
+            <label class="input-group">
+              <span>Last name</span>
+              <input name="lastName" type="text" value="${escapeHtml(currentUserProfile.lastName || "")}" />
+            </label>
+            <label class="input-group">
+              <span>Date of birth</span>
+              <input name="birthDate" type="date" value="${escapeHtml(currentUserProfile.birthDate || "")}" />
+            </label>
+            <label class="input-group form-span">
+              <span>Profile photo URL</span>
+              <input name="avatarUrl" type="url" placeholder="https://..." value="${escapeHtml(currentUserProfile.avatarUrl || "")}" />
+            </label>
+            <label class="input-group form-span">
+              <span>Bio</span>
+              <textarea name="bio" rows="4" placeholder="Tell MovieMate visitors about your taste">${escapeHtml(currentUserProfile.bio || "")}</textarea>
+            </label>
+            <label class="input-group">
+              <span>Instagram</span>
+              <input name="instagram" type="text" placeholder="@username or profile link" value="${escapeHtml(currentUserProfile.instagram || "")}" />
+            </label>
+            <label class="input-group">
+              <span>Whatsapp</span>
+              <input name="whatsapp" type="text" placeholder="+91..." value="${escapeHtml(currentUserProfile.whatsapp || "")}" />
+            </label>
+            <div class="form-actions form-span">
+              <button class="primary-btn" type="submit">Save Profile</button>
+              <p class="form-message" id="profileSettingsMessage" aria-live="polite"></p>
+            </div>
+          </form>
+        </article>
+
+        <article class="account-settings-card" id="profile-health">
+          <p class="eyebrow">Profile Health</p>
+          <h2>Your account at a glance</h2>
+          <div class="account-health-grid">
+            <div class="account-health-item"><strong>${reviewEntries.length}</strong><span>Reviews captured</span></div>
+            <div class="account-health-item"><strong>${submittedTitles.length}</strong><span>Posts suggested</span></div>
+            <div class="account-health-item"><strong>${personalCollections.length}</strong><span>Collections built</span></div>
+            <div class="account-health-item"><strong>${getSavedTitles().length}</strong><span>Titles saved</span></div>
+          </div>
+        </article>
+      </section>
+    </section>
+  `;
+
+  setupAccountSettingsForm();
+}
+
+function setupProfileTabs(reviewEntries) {
+  document.querySelectorAll(".profile-tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      const tab = button.dataset.profileTab;
+      document.querySelectorAll(".profile-tab").forEach((item) => item.classList.remove("active"));
+      document.querySelectorAll("[data-profile-panel]").forEach((panel) => panel.classList.add("hidden"));
+      button.classList.add("active");
+      document.querySelector(`[data-profile-panel='${tab}']`)?.classList.remove("hidden");
+    });
+  });
+
+  document.querySelectorAll(".profile-filter-pill").forEach((button) => {
+    button.addEventListener("click", () => {
+      const filter = button.dataset.profileFilter;
+      const list = document.querySelector("#profileReviewList");
+
+      if (!list) {
+        return;
+      }
+
+      document.querySelectorAll(".profile-filter-pill").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+
+      const filtered = filter === "all" ? reviewEntries : reviewEntries.filter((entry) => entry.reaction === filter);
+      list.innerHTML = filtered.length
+        ? filtered.map(profileReviewCardTemplate).join("")
+        : '<p class="empty-state">No reviews yet for this filter.</p>';
+    });
+  });
+}
+
+function setupAccountSettingsForm() {
+  const form = document.querySelector("#profileSettingsForm");
+  const resetPasswordButton = document.querySelector("#resetPasswordBtn");
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!currentUserProfile) {
+      return;
+    }
+
+    const formData = new FormData(form);
+    const displayName = formData.get("displayName")?.toString().trim() || "";
+    const firstName = formData.get("firstName")?.toString().trim() || "";
+    const lastName = formData.get("lastName")?.toString().trim() || "";
+    const fallbackDisplay = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+    await persistUserProfile({
+      displayName: displayName || fallbackDisplay || getProfileDisplayName(),
+      username: slugify(formData.get("username")?.toString().trim() || buildDefaultUsername()),
+      firstName,
+      lastName,
+      birthDate: formData.get("birthDate")?.toString().trim() || "",
+      avatarUrl: formData.get("avatarUrl")?.toString().trim() || "",
+      bio: formData.get("bio")?.toString().trim() || "",
+      instagram: formData.get("instagram")?.toString().trim() || "",
+      whatsapp: formData.get("whatsapp")?.toString().trim() || ""
+    });
+
+    showMessage("#profileSettingsMessage", "Profile updated successfully.");
+    updateAuthUI();
+  });
+
+  resetPasswordButton?.addEventListener("click", async () => {
+    if (!currentUser?.email) {
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, currentUser.email);
+      showMessage("#profileSettingsMessage", "Password reset email sent.");
+    } catch (error) {
+      console.error(error);
+      showMessage("#profileSettingsMessage", "Could not send password reset email right now.");
+    }
+  });
+}
+
 async function refreshCurrentPage() {
   if (document.body.dataset.page === "home") {
     await renderHomePage();
@@ -3378,6 +3953,18 @@ async function refreshCurrentPage() {
     await fetchTitles();
     await renderDetailsPage();
     updateOwnerToggle();
+    return;
+  }
+
+  if (document.body.dataset.page === "profile") {
+    await fetchTitles();
+    await renderProfilePage();
+    return;
+  }
+
+  if (document.body.dataset.page === "account") {
+    await fetchTitles();
+    await renderAccountPage();
   }
 }
 
@@ -3569,6 +4156,16 @@ async function init() {
     await fetchTitles();
     await renderDetailsPage();
     updateOwnerToggle();
+  }
+
+  if (document.body.dataset.page === "profile") {
+    await fetchTitles();
+    renderProfilePage();
+  }
+
+  if (document.body.dataset.page === "account") {
+    await fetchTitles();
+    renderAccountPage();
   }
 
   onAuthStateChanged(auth, async (user) => {

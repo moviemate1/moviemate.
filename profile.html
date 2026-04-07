@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MovieMate | My Profile</title>
+    <meta name="description" content="View your MovieMate profile, reviews, posts, collections, and saved interests." />
+    <meta name="theme-color" content="#0a0a0f" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=24" />
+  </head>
+  <body data-page="profile">
+    <div class="page-shell detail-shell">
+      <header class="explore-header">
+        <nav class="explore-topbar">
+          <div class="explore-topbar-left">
+            <a class="home-chip" href="index.html#trending" aria-label="Go to explore">⌂</a>
+            <a class="brand brand-compact" href="index.html">
+              <span class="brand-mark" aria-hidden="true"></span>
+              <span class="brand-text">MovieMate</span>
+            </a>
+            <span class="beta-chip">profile</span>
+          </div>
+          <div class="explore-nav-center">
+            <a class="explore-nav-link" href="index.html#trending"><span>◉</span> Explore</a>
+            <a class="explore-nav-link" href="index.html#schedule"><span>◌</span> Schedule</a>
+            <a class="explore-nav-link" href="index.html#collections"><span>▣</span> Collections</a>
+            <a class="explore-nav-link active" href="profile.html"><span>☺</span> My Profile</a>
+          </div>
+          <div class="explore-actions-right">
+            <a class="ghost-link" href="account.html">Settings</a>
+            <div class="account-menu-wrap">
+              <button class="avatar-chip auth-chip account-chip" data-auth-toggle type="button" aria-label="MovieMate account">
+                <span class="account-chip-avatar hidden" data-account-avatar>MM</span>
+                <span class="account-chip-label" data-account-label>Sign In</span>
+              </button>
+              <div class="account-menu hidden" aria-hidden="true">
+                <a class="account-menu-link hidden" data-account-only data-profile-link href="profile.html">My Profile</a>
+                <a class="account-menu-link hidden" data-account-only href="profile.html#reviews">My Reviews</a>
+                <a class="account-menu-link hidden" data-account-only data-account-settings-link href="account.html">Settings</a>
+                <button class="account-menu-link hidden danger" data-account-only data-signout-action type="button">Logout</button>
+                <button class="account-menu-link" data-signed-out-only data-signin-action type="button">Sign In</button>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </header>
+
+      <main class="profile-page" id="profilePage"></main>
+    </div>
+
+    <div class="overlay-modal hidden" id="authModal" aria-hidden="true">
+      <button class="overlay-backdrop" data-close-auth="true" type="button" aria-label="Close account modal"></button>
+      <div class="overlay-card auth-overlay">
+        <button class="overlay-close" id="authClose" type="button" aria-label="Close account modal">&times;</button>
+        <div class="auth-tab-row">
+          <button class="schedule-type-pill active" id="authLoginTab" type="button">Login</button>
+          <button class="schedule-type-pill" id="authSignupTab" type="button">Sign Up</button>
+        </div>
+        <p class="eyebrow">Your MovieMate account</p>
+        <h2 class="overlay-title" id="authTitle">Sign in to MovieMate</h2>
+        <p class="section-copy" id="authHint">Sign in to keep collections, schedule, and favorites across devices.</p>
+        <form class="overlay-form auth-form-single" id="authForm" data-mode="login">
+          <label class="input-group hidden" id="authNameField">
+            <span>Name</span>
+            <input name="displayName" type="text" placeholder="Your name" />
+          </label>
+          <label class="input-group form-span">
+            <span>Email</span>
+            <input name="email" type="email" required />
+          </label>
+          <label class="input-group form-span">
+            <span>Password</span>
+            <input name="password" type="password" required />
+          </label>
+          <div class="form-actions auth-actions">
+            <button class="primary-btn" id="authSubmit" type="submit">Sign In</button>
+            <button class="ghost-link" id="forgotPasswordBtn" type="button">Forgot Password?</button>
+          </div>
+          <p class="form-message" id="authMessage" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="app.js?v=29"></script>
+  </body>
+</html>

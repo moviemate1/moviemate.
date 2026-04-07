@@ -293,6 +293,83 @@ select {
   cursor: pointer;
 }
 
+.account-menu-wrap {
+  position: relative;
+}
+
+.account-chip {
+  width: auto;
+  min-width: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 12px;
+}
+
+.account-chip-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #7e46ff 0%, #e50914 100%);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.account-chip-label {
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.account-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 70;
+  min-width: 220px;
+  padding: 10px;
+  border-radius: 18px;
+  background: rgba(10, 10, 14, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+  display: grid;
+  gap: 6px;
+}
+
+.account-menu-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.account-menu-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.account-menu-link.danger {
+  color: #ffc6c9;
+  background: rgba(255, 99, 99, 0.12);
+}
+
+.account-top-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .ghost-link,
 .cta-link,
 .primary-btn,
@@ -684,6 +761,307 @@ button.ghost-link {
 
 .auth-chip.signed-in {
   background: rgba(126, 70, 255, 0.18);
+}
+
+.profile-page,
+.account-page {
+  padding: 28px 0 60px;
+}
+
+.profile-page-shell,
+.account-page-shell {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 260px;
+  gap: 22px;
+  align-items: start;
+}
+
+.account-page-shell {
+  grid-template-columns: 260px minmax(0, 1fr);
+}
+
+.profile-side-card,
+.profile-main-panel,
+.profile-interest-panel,
+.account-settings-card {
+  padding: 24px;
+  border-radius: 26px;
+  background: rgba(18, 18, 21, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow);
+}
+
+.profile-avatar-wrap {
+  margin-bottom: 18px;
+}
+
+.profile-avatar,
+.account-avatar {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+}
+
+.profile-avatar-fallback {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #7e46ff 0%, #e50914 100%);
+  color: #fff;
+  font-weight: 800;
+  font-size: 2rem;
+}
+
+.profile-side-card h1,
+.account-form-head h1 {
+  margin: 0 0 6px;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.profile-handle {
+  margin: 0 0 22px;
+  color: var(--muted);
+}
+
+.profile-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.profile-stat-row article,
+.account-health-item {
+  padding: 14px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.profile-stat-row strong,
+.account-health-item strong {
+  display: block;
+  font-size: 1.35rem;
+  color: #fff;
+}
+
+.profile-stat-row span,
+.account-health-item span {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.profile-bio {
+  margin: 0 0 18px;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.profile-mini-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #d9d9e2;
+  margin-bottom: 18px;
+}
+
+.profile-card-actions {
+  display: flex;
+}
+
+.profile-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.profile-tab,
+.profile-filter-pill,
+.account-settings-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.profile-tab.active,
+.profile-filter-pill.active {
+  background: linear-gradient(135deg, #7e46ff 0%, #b45dff 60%, #e50914 100%);
+  border-color: transparent;
+}
+
+.profile-filter-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.profile-review-list,
+.profile-post-list,
+.profile-interest-list {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-review-card,
+.profile-post-card,
+.profile-interest-item {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-post-card {
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.profile-interest-item {
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+}
+
+.profile-review-poster,
+.profile-post-cover,
+.profile-interest-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.profile-review-head {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: start;
+}
+
+.profile-review-head h3,
+.profile-post-copy h3 {
+  margin: 0 0 6px;
+}
+
+.profile-review-meta,
+.profile-post-copy p,
+.profile-interest-item small {
+  margin: 0;
+  color: var(--muted);
+}
+
+.profile-review-text {
+  margin: 12px 0 0;
+  color: #e8e8ef;
+  line-height: 1.7;
+}
+
+.profile-inline-actions {
+  margin-top: 14px;
+}
+
+.profile-reaction-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(36, 201, 111, 0.14);
+  border: 1px solid rgba(36, 201, 111, 0.35);
+  color: #c7ffe0;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.profile-interest-item strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.account-settings-nav {
+  position: sticky;
+  top: 110px;
+}
+
+.account-settings-card {
+  display: grid;
+  gap: 14px;
+}
+
+.account-settings-card h2 {
+  margin: 0 0 6px;
+  font-size: 1.8rem;
+}
+
+.account-settings-link {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 16px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.account-settings-link.active {
+  background: rgba(126, 70, 255, 0.18);
+  border-color: rgba(126, 70, 255, 0.38);
+}
+
+.account-settings-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 6px 0;
+}
+
+.account-form-head {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+}
+
+.account-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.account-health-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.account-empty-state {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 28px;
+  border-radius: 28px;
+  background: rgba(18, 18, 21, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.profile-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .notification-feed {
@@ -2523,6 +2901,22 @@ button.ghost-link {
     grid-template-columns: 1fr;
   }
 
+  .profile-page-shell,
+  .account-page-shell,
+  .account-form-head,
+  .account-form,
+  .account-health-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-settings-nav {
+    position: static;
+  }
+
+  .profile-collection-grid {
+    grid-template-columns: 1fr;
+  }
+
   .detail-summary {
     margin: 0;
     padding: 22px;
@@ -2656,6 +3050,16 @@ button.ghost-link {
     height: 38px;
   }
 
+  .account-chip {
+    width: auto;
+    min-width: 38px;
+    padding: 5px 10px;
+  }
+
+  .account-chip-label {
+    display: none;
+  }
+
   .brand-compact {
     font-size: 1.35rem;
   }
@@ -2706,6 +3110,12 @@ button.ghost-link {
   .reaction-buttons > *,
   .comment-actions > * {
     width: 100%;
+  }
+
+  .profile-review-card,
+  .profile-post-card,
+  .profile-interest-item {
+    grid-template-columns: 1fr;
   }
 
   .scroll-controls {

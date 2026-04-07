@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=23" />
+    <link rel="stylesheet" href="styles.css?v=24" />
   </head>
   <body data-page="details">
     <div class="page-shell detail-shell">
@@ -28,7 +28,19 @@
         <div class="topbar-actions">
           <a class="ghost-link" href="index.html">Back to Browse</a>
           <a class="ghost-link" href="contact.html">Contact</a>
-          <button class="ghost-link" data-auth-toggle type="button">Sign In</button>
+          <div class="account-menu-wrap">
+            <button class="ghost-link account-top-link" data-auth-toggle type="button">
+              <span class="account-chip-avatar hidden" data-account-avatar>MM</span>
+              <span class="account-chip-label" data-account-label>Sign In</span>
+            </button>
+            <div class="account-menu hidden" aria-hidden="true">
+              <a class="account-menu-link hidden" data-account-only data-profile-link href="profile.html">My Profile</a>
+              <a class="account-menu-link hidden" data-account-only href="profile.html#reviews">My Reviews</a>
+              <a class="account-menu-link hidden" data-account-only data-account-settings-link href="account.html">Settings</a>
+              <button class="account-menu-link hidden danger" data-account-only data-signout-action type="button">Logout</button>
+              <button class="account-menu-link" data-signed-out-only data-signin-action type="button">Sign In</button>
+            </div>
+          </div>
           <button class="ghost-link owner-toggle" id="ownerToggle" type="button">Owner Mode</button>
         </div>
       </nav>
@@ -169,6 +181,6 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=28"></script>
+    <script type="module" src="app.js?v=29"></script>
   </body>
 </html>
