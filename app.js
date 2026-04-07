@@ -816,6 +816,13 @@ function movieCardTemplate(title) {
 }
 
 function featuredCardTemplate(title) {
+  const cardLabel = title.importBuckets.includes("trending")
+    ? "Trending Now"
+    : title.importBuckets.includes("popular")
+      ? `Popular ${title.type}`
+      : title.status === "Upcoming"
+        ? "Coming Soon"
+        : `New ${title.type}`;
   const badges = `
     ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
     ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
@@ -828,11 +835,78 @@ function featuredCardTemplate(title) {
       <img class="featured-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
       <div class="featured-copy">
         <h3>${escapeHtml(title.title)}</h3>
-        <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.status)}</p>
+        <p class="movie-meta">${escapeHtml(cardLabel)}</p>
+        <p class="movie-meta subtle-line">${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
         <div class="status-row">${badges}</div>
       </div>
     </a>
   `;
+}
+
+function mostInterestedItemTemplate(title, index) {
+  const stats = getReactionStats(title);
+
+  return `
+    <a class="interest-item" href="details.html?id=${title.id}">
+      <span class="interest-rank">${index + 1}</span>
+      <img class="interest-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <div class="interest-copy">
+        <h3>${escapeHtml(title.title)}</h3>
+        <p>${escapeHtml(formatReleaseDate(title.releaseDate))} • ${escapeHtml(title.status)}</p>
+        <span>${stats.recommendedPercent}% recommend</span>
+      </div>
+    </a>
+  `;
+}
+
+function getInterestWindowDays(windowKey) {
+  switch (windowKey) {
+    case "week":
+      return 7;
+    case "month":
+      return 31;
+    case "year":
+      return 366;
+    default:
+      return null;
+  }
+}
+
+function isInsideInterestWindow(title, windowKey) {
+  const days = getInterestWindowDays(windowKey);
+
+  if (!days) {
+    return true;
+  }
+
+  if (!title.releaseDate) {
+    return false;
+  }
+
+  const today = new Date();
+  const releaseDate = new Date(title.releaseDate);
+  const diffMs = Math.abs(releaseDate.getTime() - today.getTime());
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  return diffDays <= days;
+}
+
+function getInterestScore(title) {
+  const stats = getReactionStats(title);
+  const popularity = Number(title.tmdbPopularity || 0);
+  const votes =
+    Number(title.votePerfect || 0) +
+    Number(title.voteGoForIt || 0) +
+    Number(title.voteTimepass || 0) +
+    Number(title.voteSkip || 0);
+
+  return (
+    stats.recommendedPercent * 2 +
+    popularity * 0.45 +
+    votes * 6 +
+    (title.trending ? 26 : 0) +
+    (title.pinned ? 16 : 0) +
+    (title.status === "Upcoming" ? 8 : 0)
+  );
 }
 
 function upcomingCardTemplate(title) {
@@ -938,7 +1012,7 @@ function renderFeaturedTitles(titles) {
 
       return b.likes - a.likes;
     })
-    .slice(0, 4);
+    .slice(0, 10);
   container.innerHTML = featured.map(featuredCardTemplate).join("");
 }
 
@@ -959,7 +1033,7 @@ function renderTrendingTitles(titles) {
 
       return getReactionStats(b).recommendedPercent - getReactionStats(a).recommendedPercent;
     })
-    .slice(0, 4);
+    .slice(0, 6);
 
   grid.innerHTML = trendingTitles.map(featuredCardTemplate).join("");
   emptyState.classList.toggle("hidden", trendingTitles.length > 0);
@@ -1088,6 +1162,28 @@ function renderTmdbTrendingGrid(titles) {
   emptyState.classList.toggle("hidden", items.length > 0);
 }
 
+function renderMostInterestedList(titles) {
+  const list = document.querySelector("#mostInterestedList");
+  const windowSelect = document.querySelector("#interestWindowSelect");
+
+  if (!list) {
+    return;
+  }
+
+  const selectedWindow = windowSelect?.value || "week";
+  let filteredTitles = titles.filter((title) => isInsideInterestWindow(title, selectedWindow));
+
+  if (!filteredTitles.length) {
+    filteredTitles = [...titles];
+  }
+
+  const items = [...filteredTitles]
+    .sort((a, b) => getInterestScore(b) - getInterestScore(a))
+    .slice(0, 10);
+
+  list.innerHTML = items.map(mostInterestedItemTemplate).join("");
+}
+
 function filterTitles(titles) {
   const searchValue = document.querySelector("#searchInput")?.value.trim().toLowerCase() || "";
   const typeValue = document.querySelector("#typeFilter")?.value || "all";
@@ -1171,6 +1267,7 @@ async function renderHomePage() {
   renderPopularMoviesGrid(visibleTitles);
   renderPopularSeriesGrid(visibleTitles);
   renderTmdbTrendingGrid(visibleTitles);
+  renderMostInterestedList(visibleTitles);
   renderOwnerPanel(titles);
   renderOwnerNotifications(titles);
   renderHeroStats(visibleTitles);
@@ -1926,6 +2023,35 @@ function setupFilters() {
   });
 }
 
+function setupInterestWindow() {
+  const select = document.querySelector("#interestWindowSelect");
+
+  if (!select) {
+    return;
+  }
+
+  select.addEventListener("change", () => {
+    renderMostInterestedList(getVisibleTitles(titlesCache));
+  });
+}
+
+function setupScrollControls() {
+  const upButton = document.querySelector("#scrollUpBtn");
+  const downButton = document.querySelector("#scrollDownBtn");
+
+  upButton?.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  downButton?.addEventListener("click", () => {
+    const nextTarget =
+      document.querySelector("#browse") ||
+      document.querySelector("#upcoming") ||
+      document.body;
+    nextTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
 function setupSuggestForm() {
   const form = document.querySelector("#suggestForm");
 
@@ -1996,6 +2122,8 @@ async function init() {
 
   if (document.body.dataset.page === "home") {
     setupFilters();
+    setupInterestWindow();
+    setupScrollControls();
     setupSuggestForm();
     await renderHomePage();
   }

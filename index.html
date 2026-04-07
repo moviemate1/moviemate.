@@ -28,110 +28,124 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=10" />
+    <link rel="stylesheet" href="styles.css?v=12" />
   </head>
   <body data-page="home">
     <div class="page-shell">
-      <header class="hero">
-        <nav class="topbar">
-          <a class="brand" href="index.html">
-            <span class="brand-mark" aria-hidden="true"></span>
-            <span class="brand-text">MovieMate</span>
-          </a>
-          <div class="topbar-actions">
-            <a class="ghost-link" href="#browse">Browse</a>
-            <a class="ghost-link" href="#upcoming">Upcoming</a>
-            <a class="cta-link" href="#suggest">Suggest a Title</a>
-            <button class="ghost-link owner-toggle" id="ownerToggle" type="button">Owner Mode</button>
+      <header class="explore-header">
+        <nav class="explore-topbar">
+          <div class="explore-topbar-left">
+            <a class="home-chip" href="#trending" aria-label="Go to explore">⌂</a>
+            <a class="brand brand-compact" href="index.html">
+              <span class="brand-mark" aria-hidden="true"></span>
+              <span class="brand-text">MovieMate</span>
+            </a>
+            <span class="beta-chip">explore</span>
           </div>
-          <div class="topbar-icon-actions" aria-hidden="true">
-            <span class="icon-chip">⌕</span>
-            <span class="icon-chip">◌</span>
+          <div class="explore-nav-center">
+            <a class="explore-nav-link active" href="#trending"><span>◉</span> Explore</a>
+            <a class="explore-nav-link" href="#upcoming"><span>◌</span> Schedule</a>
+            <a class="explore-nav-link" href="#browse"><span>▣</span> Collections</a>
+            <a class="explore-nav-link" href="#suggest"><span>✦</span> Suggest</a>
+            <button class="explore-nav-link owner-toggle" id="ownerToggle" type="button"><span>◈</span> Owner</button>
+          </div>
+          <div class="explore-actions-right">
+            <button class="icon-chip" type="button" aria-label="Search">⌕</button>
+            <button class="icon-chip" type="button" aria-label="Notifications">◌</button>
+            <button class="avatar-chip" type="button" aria-label="MovieMate profile">MM</button>
           </div>
         </nav>
-
-        <div class="explore-hero">
-          <section class="explore-intro">
-            <p class="eyebrow" id="heroEyebrowText">MoviemateHub picks for every mood</p>
-            <h1 id="heroHeadlineText">Explore what to watch next.</h1>
-            <p class="hero-text" id="heroSupportText">
-              A cleaner explore feed for movies, series, trailers, and real community reactions.
-            </p>
-
-            <div class="explore-chip-row">
-              <a class="explore-chip" href="#browse">Movies</a>
-              <a class="explore-chip" href="#browse">Series</a>
-              <a class="explore-chip" href="#upcoming">Upcoming</a>
-              <a class="explore-chip" href="#tmdb-trending">Trending</a>
-            </div>
-
-            <div class="hero-stats hero-stats-compact" id="heroStats">
-              <article class="stat-card">
-                <span class="stat-label">Titles</span>
-                <strong id="titlesStat">0</strong>
-              </article>
-              <article class="stat-card">
-                <span class="stat-label">Upcoming</span>
-                <strong id="upcomingStat">0</strong>
-              </article>
-              <article class="stat-card">
-                <span class="stat-label">Reviews</span>
-                <strong id="reviewsStat">0</strong>
-              </article>
-            </div>
-
-            <div class="hero-actions">
-              <a class="primary-btn" href="#browse">Explore Titles</a>
-              <a class="secondary-btn" href="#tmdb-trending">See Trending</a>
-            </div>
-          </section>
-
-          <section class="explore-feed-card" aria-labelledby="featured-heading">
-            <div class="panel-header explore-panel-header">
-              <div>
-                <p class="panel-label">Explore feed</p>
-                <h2 id="featured-heading">
-                  <span id="featuredHeadingText">Top liked picks from the community</span>
-                </h2>
-              </div>
-              <a class="ghost-link mini-ghost" href="#browse">See all</a>
-            </div>
-            <div class="featured-grid explore-feed-grid" id="featuredMovies"></div>
-          </section>
-        </div>
       </header>
 
-      <main>
-        <section class="community-strip">
-          <article class="community-card">
-            <p class="eyebrow">What you can do</p>
-            <h3 id="communityBrowseHeading">Browse freely</h3>
-            <p class="section-copy" id="communityBrowseCopy">Anyone can explore movies and series without creating an account.</p>
-          </article>
-          <article class="community-card">
-            <p class="eyebrow">Community powered</p>
-            <h3 id="communitySuggestHeading">Suggest new titles</h3>
-            <p class="section-copy" id="communitySuggestCopy">Help others discover hidden gems across platforms, genres, and languages.</p>
-          </article>
-          <article class="community-card">
-            <p class="eyebrow">Quick discovery</p>
-            <h3 id="communityReviewHeading">Review and like</h3>
-            <p class="section-copy" id="communityReviewCopy">Read public reviews, post your own thoughts, and boost titles you enjoyed.</p>
-          </article>
-        </section>
+      <main class="explore-main">
+        <section class="explore-layout">
+          <div class="explore-primary">
+            <section class="explore-showcase">
+              <div class="showcase-header">
+                <div class="showcase-copy">
+                  <p class="eyebrow" id="heroEyebrowText">Talk Of The Town</p>
+                  <h1 id="heroHeadlineText">Explore what to watch next.</h1>
+                  <p class="hero-text" id="heroSupportText">
+                    Posters, trailers, community reactions, and auto-updated picks in one dark explore feed.
+                  </p>
+                  <div class="explore-chip-row">
+                    <span class="explore-chip">New trailers</span>
+                    <span class="explore-chip">Community picks</span>
+                    <span class="explore-chip">Owner approved</span>
+                  </div>
+                </div>
+                <div class="hero-stats hero-stats-compact" id="heroStats">
+                  <article class="stat-card">
+                    <span class="stat-label">Titles</span>
+                    <strong id="titlesStat">0</strong>
+                  </article>
+                  <article class="stat-card">
+                    <span class="stat-label">Upcoming</span>
+                    <strong id="upcomingStat">0</strong>
+                  </article>
+                  <article class="stat-card">
+                    <span class="stat-label">Reviews</span>
+                    <strong id="reviewsStat">0</strong>
+                  </article>
+                </div>
+              </div>
+              <div class="featured-grid explore-feed-grid" id="featuredMovies"></div>
+            </section>
 
-        <section class="section trend-section" id="trending">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Right now</p>
-              <h2 id="trendingHeadingText">Trending with the community</h2>
-            </div>
-            <p class="section-copy" id="trendingCopyText">
-              A fast shortlist of the movies and series getting the strongest reactions and owner picks.
-            </p>
+            <section class="section explore-row-section trend-section" id="trending">
+              <div class="section-heading compact-section-heading">
+                <div>
+                  <p class="eyebrow">Watch It With MovieMate</p>
+                  <h2 id="trendingHeadingText">Trending with the community</h2>
+                </div>
+                <p class="section-copy" id="trendingCopyText">
+                  A fast shortlist of the movies and series getting the strongest reactions and owner picks.
+                </p>
+              </div>
+              <div class="featured-grid trend-grid" id="trendingGrid"></div>
+              <p class="empty-state hidden" id="trendingEmptyState">No trending titles yet.</p>
+            </section>
           </div>
-          <div class="featured-grid trend-grid" id="trendingGrid"></div>
-          <p class="empty-state hidden" id="trendingEmptyState">No trending titles yet.</p>
+
+          <aside class="explore-sidebar">
+            <section class="sidebar-card browse-panel">
+              <div class="panel-header explore-panel-header">
+                <div>
+                  <p class="panel-label">Browse By</p>
+                  <h2>Explore faster</h2>
+                </div>
+              </div>
+              <div class="browse-panel-grid">
+                <a class="browse-box" href="#browse"><span class="browse-box-icon">◫</span><span>Category</span></a>
+                <a class="browse-box" href="#browse"><span class="browse-box-icon">◎</span><span>Genre</span></a>
+                <a class="browse-box" href="#browse"><span class="browse-box-icon">◍</span><span>Country</span></a>
+                <a class="browse-box" href="#browse"><span class="browse-box-icon">文</span><span>Language</span></a>
+                <a class="browse-box" href="#suggest"><span class="browse-box-icon">☺</span><span>Community</span></a>
+                <a class="browse-box" href="#tmdb-trending"><span class="browse-box-icon">↗</span><span>Trending</span></a>
+                <a class="browse-box" href="#popular-movies"><span class="browse-box-icon">★</span><span>Popular</span></a>
+                <a class="browse-box" href="#upcoming"><span class="browse-box-icon">◷</span><span>Upcoming</span></a>
+                <a class="browse-box" href="#auto-updated"><span class="browse-box-icon">⟳</span><span>Auto Updated</span></a>
+              </div>
+            </section>
+
+            <section class="sidebar-card most-interested-panel">
+              <div class="panel-header explore-panel-header">
+                <div>
+                  <p class="panel-label">Most Interested</p>
+                  <h2>Top 10 picks</h2>
+                </div>
+                <label class="interest-filter-wrap" aria-label="Most interested time filter">
+                  <select id="interestWindowSelect" class="interest-window-select">
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                    <option value="all">All Time</option>
+                  </select>
+                </label>
+              </div>
+              <div class="most-interested-list" id="mostInterestedList"></div>
+            </section>
+          </aside>
         </section>
 
         <section class="section" id="browse">
@@ -469,6 +483,11 @@
       </button>
     </nav>
 
+    <div class="scroll-controls" aria-label="Quick scroll controls">
+      <button class="scroll-control-btn" id="scrollUpBtn" type="button" aria-label="Scroll to top">↑</button>
+      <button class="scroll-control-btn" id="scrollDownBtn" type="button" aria-label="Scroll down">↓</button>
+    </div>
+
     <div class="overlay-modal hidden" id="ownerEditModal" aria-hidden="true">
       <button class="overlay-backdrop" data-close-owner-edit="true" type="button" aria-label="Close edit form"></button>
       <div class="overlay-card">
@@ -651,6 +670,6 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=13"></script>
+    <script type="module" src="app.js?v=15"></script>
   </body>
 </html>
