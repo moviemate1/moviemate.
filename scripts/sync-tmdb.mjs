@@ -5,6 +5,7 @@ const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w780";
 const TMDB_PROFILE_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
 const TITLES_COLLECTION = "moviemate_titles";
 const ALLOWED_LANGUAGE_CODES = new Set(["en", "hi", "ja", "ko", "ne"]);
+const WATCH_PROVIDER_REGIONS = ["IN", "US", "GB"];
 const UPCOMING_PAGE_COUNT = 6;
 const POPULAR_PAGE_COUNT = 10;
 const TRENDING_PAGE_COUNT = 10;
@@ -74,6 +75,59 @@ function buildTrailerSearchUrl(item, type) {
 
 function buildYouTubeWatchUrl(key) {
   return key ? `https://www.youtube.com/watch?v=${key}` : "";
+}
+
+function normalizePlatformName(name) {
+  const value = String(name || "").trim();
+  const lower = value.toLowerCase();
+
+  if (!value) {
+    return "";
+  }
+
+  if (lower.includes("netflix")) {
+    return "Netflix";
+  }
+
+  if (
+    lower.includes("jiohotstar") ||
+    lower.includes("hotstar") ||
+    lower.includes("disney+ hotstar") ||
+    lower.includes("disney plus hotstar") ||
+    lower.includes("disney hotstar")
+  ) {
+    return "JioHotstar";
+  }
+
+  if (
+    lower.includes("prime video") ||
+    lower.includes("amazon prime") ||
+    lower.includes("amazon video")
+  ) {
+    return "Prime Video";
+  }
+
+  if (lower.includes("crunchyroll")) {
+    return "Crunchyroll";
+  }
+
+  if (lower.includes("zee5")) {
+    return "ZEE5";
+  }
+
+  if (lower.includes("sony liv") || lower.includes("sonyliv")) {
+    return "SonyLIV";
+  }
+
+  if (lower.includes("apple tv")) {
+    return "Apple TV+";
+  }
+
+  if (lower.includes("theatre") || lower.includes("theater") || lower.includes("cinema")) {
+    return "Theatres";
+  }
+
+  return value;
 }
 
 function pickBestVideo(videos = []) {
@@ -270,6 +324,39 @@ async function fetchCredits(item, type) {
   };
 }
 
+async function fetchWatchProviders(item, type) {
+  const endpoint =
+    type === "Movie"
+      ? `/movie/${item.tmdbId}/watch/providers`
+      : `/tv/${item.tmdbId}/watch/providers`;
+
+  const payload = await fetchTmdb(endpoint);
+  const results = payload.results || {};
+  const collected = [];
+
+  WATCH_PROVIDER_REGIONS.forEach((region) => {
+    const regionResult = results[region];
+
+    if (!regionResult) {
+      return;
+    }
+
+    ["flatrate", "ads", "buy", "rent"].forEach((groupKey) => {
+      const providers = Array.isArray(regionResult[groupKey]) ? regionResult[groupKey] : [];
+
+      providers.forEach((provider) => {
+        const normalized = normalizePlatformName(provider.provider_name);
+
+        if (normalized) {
+          collected.push(normalized);
+        }
+      });
+    });
+  });
+
+  return [...new Set(collected)];
+}
+
 function isAllowedLanguage(item) {
   return ALLOWED_LANGUAGE_CODES.has(item.original_language);
 }
@@ -318,6 +405,12 @@ async function upsertTitles(items) {
         likes: Number(existingData.likes || 0),
         dislikes: Number(existingData.dislikes || 0),
         comments: Array.isArray(existingData.comments) ? existingData.comments : [],
+        platforms:
+          Array.isArray(item.platforms) && item.platforms.length
+            ? item.platforms
+            : Array.isArray(existingData.platforms)
+              ? existingData.platforms
+              : [],
         pinned: Boolean(existingData.pinned ?? item.pinned),
         trending: Boolean(existingData.trending ?? item.trending),
         approved: existingData.approved ?? item.approved,
@@ -360,7 +453,8 @@ async function enrichWithTrailers(items) {
       chunk.map(async (item) => ({
         ...item,
         trailerUrl: await fetchTrailerUrl(item, item.type),
-        ...(await fetchCredits(item, item.type))
+        ...(await fetchCredits(item, item.type)),
+        platforms: await fetchWatchProviders(item, item.type)
       }))
     );
     enriched.push(...results);
