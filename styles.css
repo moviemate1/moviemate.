@@ -1596,7 +1596,7 @@ button.ghost-link {
 .trailer-stage-button {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 3;
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -1632,6 +1632,7 @@ button.ghost-link {
   position: absolute;
   inset: 0;
   z-index: 2;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   justify-content: end;
@@ -1651,7 +1652,7 @@ button.ghost-link {
   margin: -128px 28px 28px;
   padding: 28px;
   position: relative;
-  z-index: 2;
+  z-index: 5;
   background: linear-gradient(180deg, rgba(14, 14, 20, 0.94), rgba(10, 10, 15, 0.98));
 }
 
@@ -1722,10 +1723,24 @@ button.ghost-link {
   margin-top: 24px;
   display: grid;
   gap: 16px;
+  position: relative;
+  z-index: 6;
 }
 
 .detail-actions .form-message {
   min-height: 1.2em;
+}
+
+.reaction-panel,
+.reaction-buttons,
+.reaction-btn,
+.trailer-btn {
+  position: relative;
+  z-index: 6;
+}
+
+.trailer-btn {
+  pointer-events: auto;
 }
 
 .detail-insights-grid {
