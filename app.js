@@ -538,6 +538,25 @@ function getYouTubeEmbedUrl(url) {
   return "";
 }
 
+function playTrailerInline(embedUrl, title) {
+  const section = document.querySelector("#trailerSection");
+
+  if (!section || !embedUrl) {
+    return;
+  }
+
+  section.innerHTML = `
+    <iframe
+      class="trailer-frame"
+      src="${embedUrl}?autoplay=1"
+      title="${escapeHtml(title || "MovieMate trailer")}"
+      loading="lazy"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+    ></iframe>
+  `;
+}
+
 function formatLargeNumber(value) {
   if (value >= 1000000) {
     return `${(value / 1000000).toFixed(1)}M`;
@@ -1915,42 +1934,51 @@ async function reactToTitle(titleId, nextReaction) {
     return false;
   }
 
-  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+  const fieldMap = {
+    perfect: "votePerfect",
+    goForIt: "voteGoForIt",
+    timepass: "voteTimepass",
+    skip: "voteSkip"
+  };
 
-  await runTransaction(db, async (transaction) => {
-    const snapshot = await transaction.get(titleRef);
+  const positiveReactions = new Set(["perfect", "goForIt"]);
+  const negativeReactions = new Set(["skip"]);
+  const updates = {
+    [fieldMap[nextReaction]]: increment(1)
+  };
 
-    if (!snapshot.exists()) {
-      throw new Error("Title not found.");
-    }
+  if (currentReaction && fieldMap[currentReaction]) {
+    updates[fieldMap[currentReaction]] = increment(-1);
+  }
 
-    const data = normalizeTitle(snapshot);
-    const votes = {
-      votePerfect: Number(data.votePerfect || 0),
-      voteGoForIt: Number(data.voteGoForIt || 0),
-      voteTimepass: Number(data.voteTimepass || 0),
-      voteSkip: Number(data.voteSkip || 0)
-    };
+  let likesDelta = 0;
+  let dislikesDelta = 0;
 
-    const fieldMap = {
-      perfect: "votePerfect",
-      goForIt: "voteGoForIt",
-      timepass: "voteTimepass",
-      skip: "voteSkip"
-    };
+  if (currentReaction && positiveReactions.has(currentReaction)) {
+    likesDelta -= 1;
+  }
 
-    if (currentReaction && fieldMap[currentReaction]) {
-      votes[fieldMap[currentReaction]] = Math.max(0, votes[fieldMap[currentReaction]] - 1);
-    }
+  if (positiveReactions.has(nextReaction)) {
+    likesDelta += 1;
+  }
 
-    votes[fieldMap[nextReaction]] += 1;
+  if (currentReaction && negativeReactions.has(currentReaction)) {
+    dislikesDelta -= 1;
+  }
 
-    transaction.update(titleRef, {
-      ...votes,
-      likes: votes.votePerfect + votes.voteGoForIt,
-      dislikes: votes.voteSkip
-    });
-  });
+  if (negativeReactions.has(nextReaction)) {
+    dislikesDelta += 1;
+  }
+
+  if (likesDelta !== 0) {
+    updates.likes = increment(likesDelta);
+  }
+
+  if (dislikesDelta !== 0) {
+    updates.dislikes = increment(dislikesDelta);
+  }
+
+  await updateDoc(doc(db, TITLES_COLLECTION, titleId), updates);
 
   setReaction(titleId, nextReaction);
   return true;
@@ -2342,6 +2370,12 @@ function setupTrailerModal() {
     }
 
     event.preventDefault();
+
+    if (document.body.dataset.page === "details") {
+      playTrailerInline(openButton.dataset.embedUrl, openButton.dataset.trailerTitle);
+      return;
+    }
+
     openTrailerModal(openButton.dataset.embedUrl, openButton.dataset.trailerTitle);
   });
 }

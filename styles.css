@@ -1739,6 +1739,11 @@ button.ghost-link {
 
 .detail-actions .form-message {
   min-height: 1.2em;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
 .detail-action-strip {
