@@ -1994,6 +1994,7 @@ async function renderDetailsPage() {
   }
 
   const stats = getReactionStats(title);
+  const saved = isSavedTitle(title.id);
   const ownerControls = isOwnerMode()
     ? `
         <div class="owner-actions">
