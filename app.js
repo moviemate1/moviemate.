@@ -1996,6 +1996,9 @@ async function renderDetailsPage() {
   const stats = getReactionStats(title);
   const saved = isSavedTitle(title.id);
   const embeddedTrailerUrl = getYouTubeEmbedUrl(title.trailerUrl);
+  const releaseYear = title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now";
+  const leadDirector = title.director || "MovieMate";
+  const primaryLanguage = title.language?.[0] || "Not added";
   const ownerControls = isOwnerMode()
     ? `
         <div class="owner-actions">
@@ -2023,18 +2026,28 @@ async function renderDetailsPage() {
         <div class="detail-summary-header">
           <img class="detail-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
           <div class="detail-copy">
-            <p class="eyebrow">${title.type} • ${new Date().getFullYear()}</p>
+            <p class="eyebrow">${escapeHtml(title.type)} • ${escapeHtml(String(releaseYear))}</p>
             <h1>${escapeHtml(title.title)}</h1>
             <div class="status-row">${badges}</div>
-            <div class="detail-meta-stack">
-              <p class="movie-meta"><strong>Type:</strong> ${escapeHtml(title.type)}</p>
-              <p class="movie-meta"><strong>Genre:</strong> ${escapeHtml(title.genre)}</p>
-              <p class="movie-meta"><strong>Language:</strong> ${escapeHtml(title.language.join(", "))}</p>
-              <p class="movie-meta"><strong>Release date:</strong> ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
-              ${title.director ? `<p class="movie-meta"><strong>Director:</strong> ${escapeHtml(title.director)}</p>` : ""}
-              ${title.mainLead ? `<p class="movie-meta"><strong>Main lead:</strong> ${escapeHtml(title.mainLead)}</p>` : ""}
-              ${title.heroine ? `<p class="movie-meta"><strong>Heroine:</strong> ${escapeHtml(title.heroine)}</p>` : ""}
+            <div class="detail-facts-grid">
+              <div class="detail-fact">
+                <span>Directed by</span>
+                <strong>${escapeHtml(leadDirector)}</strong>
+              </div>
+              <div class="detail-fact">
+                <span>Genre</span>
+                <strong>${escapeHtml(title.genre)}</strong>
+              </div>
+              <div class="detail-fact">
+                <span>Language</span>
+                <strong>${escapeHtml(primaryLanguage)}</strong>
+              </div>
+              <div class="detail-fact">
+                <span>Release</span>
+                <strong>${escapeHtml(formatReleaseDate(title.releaseDate))}</strong>
+              </div>
             </div>
+            <p class="detail-hero-description">${escapeHtml(title.description)}</p>
           </div>
         </div>
         <div class="detail-actions">
@@ -2098,6 +2111,21 @@ async function renderDetailsPage() {
       </div>
     </section>
   `;
+
+  target.querySelectorAll(".reaction-btn").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const changed = await reactToTitle(button.dataset.id, button.dataset.reaction);
+
+      if (!changed) {
+        return;
+      }
+
+      await renderDetailsPage();
+    });
+  });
 
   setupCommentForm(title.id);
 }
@@ -2480,17 +2508,39 @@ function setupUserNotificationsModal() {
 function setupScrollControls() {
   const upButton = document.querySelector("#scrollUpBtn");
   const downButton = document.querySelector("#scrollDownBtn");
+  const scrollTargets = [
+    "#trending",
+    "#browse",
+    "#schedule",
+    "#collections",
+    "#auto-updated",
+    "#popular-movies",
+    "#popular-series",
+    "#tmdb-trending",
+    "#suggest",
+    ".site-footer"
+  ];
 
   upButton?.addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   downButton?.addEventListener("click", () => {
-    const nextTarget =
-      document.querySelector("#browse") ||
-      document.querySelector("#upcoming") ||
-      document.body;
-    nextTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+    const currentY = window.scrollY + 160;
+    const nextTarget = scrollTargets
+      .map((selector) => document.querySelector(selector))
+      .filter(Boolean)
+      .find((element) => element.offsetTop > currentY);
+
+    if (nextTarget) {
+      nextTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: "smooth"
+    });
   });
 }
 
