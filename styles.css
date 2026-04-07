@@ -307,6 +307,20 @@ select {
   padding: 6px 12px;
 }
 
+.account-chip.signed-in {
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  padding: 0;
+  gap: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.28),
+    0 0 0 2px rgba(126, 70, 255, 0.18);
+}
+
 .account-chip-avatar {
   width: 30px;
   height: 30px;
@@ -320,10 +334,21 @@ select {
   flex-shrink: 0;
 }
 
+.account-chip.signed-in .account-chip-avatar {
+  width: 38px;
+  height: 38px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+}
+
 .account-chip-label {
   white-space: nowrap;
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+.account-chip.signed-in .account-chip-label {
+  display: none;
 }
 
 .account-menu {

@@ -28,7 +28,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=27" />
+    <link rel="stylesheet" href="styles.css?v=29" />
   </head>
   <body data-page="home">
     <div class="page-shell">
@@ -110,15 +110,85 @@
             <section class="section explore-row-section trend-section" id="trending">
               <div class="section-heading compact-section-heading">
                 <div>
-                  <p class="eyebrow">Watch It With MovieMate</p>
-                  <h2 id="trendingHeadingText">Trending with the community</h2>
+                  <p class="eyebrow">Curated row</p>
+                  <h2 id="trendingHeadingText">Watch It With District</h2>
                 </div>
                 <p class="section-copy" id="trendingCopyText">
-                  A fast shortlist of the movies and series getting the strongest reactions and owner picks.
+                  Quick trending picks and high-interest titles that feel right for a shared watch mood.
                 </p>
               </div>
               <div class="featured-grid trend-grid" id="trendingGrid"></div>
               <p class="empty-state hidden" id="trendingEmptyState">No trending titles yet.</p>
+            </section>
+
+            <section class="section explore-row-section">
+              <div class="section-heading compact-section-heading">
+                <div>
+                  <p class="eyebrow">Curated row</p>
+                  <h2 id="editorsRowHeading">Editor's Pick Of The Week</h2>
+                </div>
+                <p class="section-copy" id="editorsRowCopy">
+                  Owner-backed and high-recommendation titles that deserve extra attention this week.
+                </p>
+              </div>
+              <div class="featured-grid trend-grid" id="editorsRowGrid"></div>
+              <p class="empty-state hidden" id="editorsRowEmptyState">No editor picks yet.</p>
+            </section>
+
+            <section class="section explore-row-section">
+              <div class="section-heading compact-section-heading">
+                <div>
+                  <p class="eyebrow">Platform row</p>
+                  <h2 id="netflixRowHeading">Don't Miss These on Netflix</h2>
+                </div>
+                <p class="section-copy" id="netflixRowCopy">
+                  Strong Netflix picks already inside your MovieMate library.
+                </p>
+              </div>
+              <div class="featured-grid trend-grid" id="netflixRowGrid"></div>
+              <p class="empty-state hidden" id="netflixRowEmptyState">No Netflix picks yet.</p>
+            </section>
+
+            <section class="section explore-row-section">
+              <div class="section-heading compact-section-heading">
+                <div>
+                  <p class="eyebrow">Platform row</p>
+                  <h2 id="hotstarRowHeading">Don't Miss These on JioHotstar</h2>
+                </div>
+                <p class="section-copy" id="hotstarRowCopy">
+                  Hotstar-friendly picks across movies and series.
+                </p>
+              </div>
+              <div class="featured-grid trend-grid" id="hotstarRowGrid"></div>
+              <p class="empty-state hidden" id="hotstarRowEmptyState">No JioHotstar picks yet.</p>
+            </section>
+
+            <section class="section explore-row-section">
+              <div class="section-heading compact-section-heading">
+                <div>
+                  <p class="eyebrow">Platform row</p>
+                  <h2 id="primeRowHeading">Worth Watching on Prime</h2>
+                </div>
+                <p class="section-copy" id="primeRowCopy">
+                  Prime Video titles with good buzz or recommendation strength.
+                </p>
+              </div>
+              <div class="featured-grid trend-grid" id="primeRowGrid"></div>
+              <p class="empty-state hidden" id="primeRowEmptyState">No Prime picks yet.</p>
+            </section>
+
+            <section class="section explore-row-section">
+              <div class="section-heading compact-section-heading">
+                <div>
+                  <p class="eyebrow">Platform row</p>
+                  <h2 id="crunchyrollRowHeading">Worth Watching on Crunchyroll</h2>
+                </div>
+                <p class="section-copy" id="crunchyrollRowCopy">
+                  Anime and Crunchyroll-ready titles worth opening next.
+                </p>
+              </div>
+              <div class="featured-grid trend-grid" id="crunchyrollRowGrid"></div>
+              <p class="empty-state hidden" id="crunchyrollRowEmptyState">No Crunchyroll picks yet.</p>
             </section>
           </div>
 
@@ -136,10 +206,10 @@
                 <a class="browse-box" href="#browse"><span class="browse-box-icon">◍</span><span>Country</span></a>
                 <a class="browse-box" href="#browse"><span class="browse-box-icon">文</span><span>Language</span></a>
                 <a class="browse-box" href="#suggest"><span class="browse-box-icon">☺</span><span>Community</span></a>
-                <a class="browse-box" href="#tmdb-trending"><span class="browse-box-icon">↗</span><span>Trending</span></a>
-                <a class="browse-box" href="#popular-movies"><span class="browse-box-icon">★</span><span>Popular</span></a>
+                <a class="browse-box" href="#trending"><span class="browse-box-icon">★</span><span>District</span></a>
+                <a class="browse-box" href="#netflixRowHeading"><span class="browse-box-icon">N</span><span>Netflix</span></a>
                 <a class="browse-box" href="#schedule"><span class="browse-box-icon">◷</span><span>Schedule</span></a>
-                <a class="browse-box" href="#auto-updated"><span class="browse-box-icon">⟳</span><span>Auto Updated</span></a>
+                <a class="browse-box" href="#primeRowHeading"><span class="browse-box-icon">P</span><span>Prime</span></a>
               </div>
             </section>
 
@@ -277,74 +347,6 @@
           <div class="collection-grid" id="collectionsGrid"></div>
           <p class="empty-state hidden" id="collectionsEmptyState">
             No collections are ready yet. Save titles and react to build a more personal collection area.
-          </p>
-        </section>
-
-        <section class="section" id="auto-updated">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Fresh from TMDb</p>
-              <h2>Auto Updated Movies & Series</h2>
-            </div>
-            <p class="section-copy">
-              These titles are imported automatically from TMDb so visitors can quickly discover fresh upcoming movies and series.
-            </p>
-          </div>
-
-          <div class="movie-grid" id="autoUpdatedGrid"></div>
-          <p class="empty-state hidden" id="autoUpdatedEmptyState">
-            No auto updated titles are available right now.
-          </p>
-        </section>
-
-        <section class="section" id="popular-movies">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Popular picks</p>
-              <h2>Popular Movies</h2>
-            </div>
-            <p class="section-copy">
-              Auto-imported popular movies from TMDb that people are watching and searching for right now.
-            </p>
-          </div>
-
-          <div class="movie-grid" id="popularMoviesGrid"></div>
-          <p class="empty-state hidden" id="popularMoviesEmptyState">
-            No popular movies are available right now.
-          </p>
-        </section>
-
-        <section class="section" id="popular-series">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Popular picks</p>
-              <h2>Popular Series</h2>
-            </div>
-            <p class="section-copy">
-              Auto-imported popular series from TMDb so your homepage stays fresh without manual updates.
-            </p>
-          </div>
-
-          <div class="movie-grid" id="popularSeriesGrid"></div>
-          <p class="empty-state hidden" id="popularSeriesEmptyState">
-            No popular series are available right now.
-          </p>
-        </section>
-
-        <section class="section" id="tmdb-trending">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Hot right now</p>
-              <h2>Trending Movies & Series</h2>
-            </div>
-            <p class="section-copy">
-              Fast-moving TMDb trending titles so visitors can spot what is buzzing now across movies and series.
-            </p>
-          </div>
-
-          <div class="movie-grid" id="tmdbTrendingGrid"></div>
-          <p class="empty-state hidden" id="tmdbTrendingEmptyState">
-            No trending TMDb titles are available right now.
           </p>
         </section>
 
@@ -793,6 +795,6 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=32"></script>
+    <script type="module" src="app.js?v=34"></script>
   </body>
 </html>

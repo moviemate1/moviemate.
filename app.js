@@ -49,7 +49,7 @@ const DEFAULT_HOMEPAGE_CONTENT = {
   featuredTitle: "Top liked picks from the community",
   trendingTitle: "Trending with the community",
   trendingText:
-    "A fast shortlist of the movies and series getting the strongest reactions and owner picks.",
+    "Quick trending picks and high-interest titles that feel right for a shared watch mood.",
   browseTitle: "Search by title, genre, language, or format",
   browseText:
     "Explore community suggestions for movies and series across genres, languages, and platforms with easy filters and quick actions.",
@@ -1589,6 +1589,128 @@ function renderTrendingTitles(titles) {
   emptyState.classList.toggle("hidden", trendingTitles.length > 0);
 }
 
+function hasPlatformMatch(title, matchers) {
+  const platforms = (title.platforms || []).map((value) => String(value).toLowerCase());
+  return matchers.some((matcher) => platforms.some((platform) => platform.includes(matcher)));
+}
+
+function getCuratedTitles(titles, predicate, sortFn, limit = 6) {
+  return [...titles]
+    .filter(predicate)
+    .sort(sortFn)
+    .slice(0, limit);
+}
+
+function renderNamedExploreRow(sectionId, titles, heading, copy) {
+  const grid = document.querySelector(`#${sectionId}Grid`);
+  const emptyState = document.querySelector(`#${sectionId}EmptyState`);
+  const headingNode = document.querySelector(`#${sectionId}Heading`);
+  const copyNode = document.querySelector(`#${sectionId}Copy`);
+
+  if (!grid || !emptyState) {
+    return;
+  }
+
+  if (headingNode) {
+    headingNode.textContent = heading;
+  }
+
+  if (copyNode) {
+    copyNode.textContent = copy;
+  }
+
+  grid.innerHTML = titles.map(featuredCardTemplate).join("");
+  emptyState.classList.toggle("hidden", titles.length > 0);
+}
+
+function renderCuratedExploreRows(titles) {
+  const watchWithDistrict = getCuratedTitles(
+    titles,
+    (title) => title.trending || title.importBuckets.includes("trending") || getInterestScore(title) > 140,
+    (a, b) => getInterestScore(b) - getInterestScore(a)
+  );
+
+  const editorsPick = getCuratedTitles(
+    titles,
+    (title) => title.pinned || getReactionStats(title).recommendedPercent >= 70,
+    (a, b) => getInterestScore(b) - getInterestScore(a)
+  );
+
+  const netflixPicks = getCuratedTitles(
+    titles,
+    (title) => hasPlatformMatch(title, ["netflix"]),
+    (a, b) => getInterestScore(b) - getInterestScore(a)
+  );
+
+  const hotstarPicks = getCuratedTitles(
+    titles,
+    (title) => hasPlatformMatch(title, ["jiohotstar", "hotstar", "disney+ hotstar", "disney hotstar"]),
+    (a, b) => getInterestScore(b) - getInterestScore(a)
+  );
+
+  const primePicks = getCuratedTitles(
+    titles,
+    (title) => hasPlatformMatch(title, ["prime", "prime video", "amazon prime"]),
+    (a, b) => getInterestScore(b) - getInterestScore(a)
+  );
+
+  const crunchyrollPicks = getCuratedTitles(
+    titles,
+    (title) => hasPlatformMatch(title, ["crunchyroll"]),
+    (a, b) => getInterestScore(b) - getInterestScore(a)
+  );
+
+  const trendingGrid = document.querySelector("#trendingGrid");
+  const trendingEmptyState = document.querySelector("#trendingEmptyState");
+  const trendingHeading = document.querySelector("#trendingHeadingText");
+  const trendingCopy = document.querySelector("#trendingCopyText");
+
+  if (trendingHeading) {
+    trendingHeading.textContent = "Watch It With District";
+  }
+
+  if (trendingCopy) {
+    trendingCopy.textContent =
+      "Quick trending picks and high-interest titles that feel right for a shared watch mood.";
+  }
+
+  if (trendingGrid && trendingEmptyState) {
+    trendingGrid.innerHTML = watchWithDistrict.map(featuredCardTemplate).join("");
+    trendingEmptyState.classList.toggle("hidden", watchWithDistrict.length > 0);
+  }
+
+  renderNamedExploreRow(
+    "editorsRow",
+    editorsPick,
+    "Editor's Pick Of The Week",
+    "Owner-backed and high-recommendation titles that deserve extra attention this week."
+  );
+  renderNamedExploreRow(
+    "netflixRow",
+    netflixPicks,
+    "Don't Miss These on Netflix",
+    "Strong Netflix picks already inside your MovieMate library."
+  );
+  renderNamedExploreRow(
+    "hotstarRow",
+    hotstarPicks,
+    "Don't Miss These on JioHotstar",
+    "Hotstar-friendly picks across movies and series."
+  );
+  renderNamedExploreRow(
+    "primeRow",
+    primePicks,
+    "Worth Watching on Prime",
+    "Prime Video titles with good buzz or recommendation strength."
+  );
+  renderNamedExploreRow(
+    "crunchyrollRow",
+    crunchyrollPicks,
+    "Worth Watching on Crunchyroll",
+    "Anime and Crunchyroll-ready titles worth opening next."
+  );
+}
+
 function renderOwnerPanel(titles) {
   const panel = document.querySelector("#ownerPanel");
   const grid = document.querySelector("#pendingGrid");
@@ -2487,12 +2609,9 @@ async function renderHomePage() {
   );
   renderFeaturedTitles(visibleTitles);
   renderTrendingTitles(visibleTitles);
+  renderCuratedExploreRows(visibleTitles);
   refreshBrowseResults();
   renderScheduleGrid(visibleTitles);
-  renderAutoUpdatedGrid(visibleTitles);
-  renderPopularMoviesGrid(visibleTitles);
-  renderPopularSeriesGrid(visibleTitles);
-  renderTmdbTrendingGrid(visibleTitles);
   renderMostInterestedList(visibleTitles);
   renderCollectionsGrid(visibleTitles);
   renderUserNotifications(visibleTitles);
@@ -2706,11 +2825,24 @@ function updateAuthUI() {
 
     const avatar = button.querySelector("[data-account-avatar]");
     const label = button.querySelector("[data-account-label]");
+    const avatarData = getProfileAvatar();
 
     if (isSignedIn()) {
       button.classList.add("signed-in");
       if (avatar) {
-        avatar.textContent = getProfileInitials();
+        if (avatarData.image) {
+          avatar.textContent = "";
+          avatar.style.backgroundImage = `url("${avatarData.image}")`;
+          avatar.style.backgroundSize = "cover";
+          avatar.style.backgroundPosition = "center";
+          avatar.style.backgroundRepeat = "no-repeat";
+        } else {
+          avatar.textContent = getProfileInitials();
+          avatar.style.backgroundImage = "";
+          avatar.style.backgroundSize = "";
+          avatar.style.backgroundPosition = "";
+          avatar.style.backgroundRepeat = "";
+        }
         avatar.classList.remove("hidden");
       }
       if (label) {
@@ -2722,6 +2854,10 @@ function updateAuthUI() {
       button.classList.remove("signed-in");
       if (avatar) {
         avatar.textContent = "MM";
+        avatar.style.backgroundImage = "";
+        avatar.style.backgroundSize = "";
+        avatar.style.backgroundPosition = "";
+        avatar.style.backgroundRepeat = "";
         avatar.classList.add("hidden");
       }
       if (label) {
