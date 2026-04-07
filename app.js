@@ -1636,6 +1636,14 @@ function renderCuratedExploreRows(titles) {
     (a, b) => getInterestScore(b) - getInterestScore(a)
   );
 
+  const bollywoodPicks = getCuratedTitles(
+    titles,
+    (title) =>
+      title.importBuckets.includes("bollywood") ||
+      title.language.some((language) => String(language).toLowerCase().includes("hindi")),
+    (a, b) => getInterestScore(b) - getInterestScore(a)
+  );
+
   const netflixPicks = getCuratedTitles(
     titles,
     (title) => hasPlatformMatch(title, ["netflix"]),
@@ -1684,6 +1692,12 @@ function renderCuratedExploreRows(titles) {
     editorsPick,
     "Editor's Pick Of The Week",
     "Owner-backed and high-recommendation titles that deserve extra attention this week."
+  );
+  renderNamedExploreRow(
+    "bollywoodRow",
+    bollywoodPicks,
+    "Bollywood Buzz",
+    "Hindi movie picks with strong India buzz and Bollywood energy."
   );
   renderNamedExploreRow(
     "netflixRow",
