@@ -4010,6 +4010,65 @@ function interestedTitleTemplate(title) {
   `;
 }
 
+async function saveProfileAvatar(avatarUrl) {
+  if (!currentUserProfile) {
+    return;
+  }
+
+  await persistUserProfile({
+    avatarUrl: String(avatarUrl || "").trim()
+  });
+
+  updateAuthUI();
+  if (document.body.dataset.page === "profile") {
+    renderProfilePage();
+  }
+  if (document.body.dataset.page === "account") {
+    renderAccountPage();
+  }
+}
+
+function setupProfileAvatarQuickActions() {
+  const uploadTrigger = document.querySelector("#profileAvatarUploadTrigger");
+  const uploadInput = document.querySelector("#profileAvatarUploadInput");
+  const generateButton = document.querySelector("#profileAvatarGenerateBtn");
+
+  uploadTrigger?.addEventListener("click", () => {
+    uploadInput?.click();
+  });
+
+  uploadInput?.addEventListener("change", async () => {
+    const file = uploadInput.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please choose an image file.");
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      await saveProfileAvatar(dataUrl);
+    } catch (error) {
+      console.error(error);
+      alert("Could not upload that image.");
+    }
+  });
+
+  generateButton?.addEventListener("click", async () => {
+    try {
+      const generatedAvatar = createGeneratedAvatarDataUrl(getProfileDisplayName());
+      await saveProfileAvatar(generatedAvatar);
+    } catch (error) {
+      console.error(error);
+      alert("Could not create avatar right now.");
+    }
+  });
+}
+
 function renderProfilePage() {
   const target = document.querySelector("#profilePage");
 
@@ -4050,6 +4109,11 @@ function renderProfilePage() {
       <aside class="profile-side-card">
         <div class="profile-avatar-wrap">
           ${profileAvatarTemplate(currentUserProfile, currentUser, "profile-avatar")}
+        </div>
+        <div class="profile-avatar-actions">
+          <button class="secondary-btn" type="button" id="profileAvatarUploadTrigger">Upload profile photo</button>
+          <button class="ghost-link" type="button" id="profileAvatarGenerateBtn">Create avatar</button>
+          <input class="hidden" id="profileAvatarUploadInput" type="file" accept="image/*" />
         </div>
         <h1>${escapeHtml(getProfileDisplayName())}</h1>
         <p class="profile-handle">@${escapeHtml(getProfileUsername())}</p>
@@ -4136,6 +4200,7 @@ function renderProfilePage() {
   `;
 
   setupProfileTabs(reviewEntries);
+  setupProfileAvatarQuickActions();
 }
 
 function renderAccountPage() {
@@ -4293,11 +4358,12 @@ function renderAccountPage() {
           </div>
           <div class="health-card">
             <h3>Verification</h3>
-            <p>${emailVerified ? "Your email is verified." : "Your email is not verified yet. Verification helps secure your account."}</p>
+            <p>${emailVerified ? "Your email is verified." : "Your email is not verified yet. Verification helps secure your account and makes password recovery safer."}</p>
+            ${!emailVerified && currentUser?.email ? `<p class="health-help-copy">Current email: ${escapeHtml(currentUser.email)}</p>` : ""}
             ${
               emailVerified
                 ? '<span class="profile-reaction-badge">Verified</span>'
-                : '<button class="secondary-btn" id="resendVerificationBtn" type="button">Send verification email</button>'
+                : '<button class="primary-btn health-action-btn" id="resendVerificationBtn" type="button">Send verification email</button>'
             }
           </div>
           <div class="health-card">
