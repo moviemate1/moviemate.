@@ -930,6 +930,81 @@ function featuredCardTemplate(title) {
   `;
 }
 
+function getGenreSet(title) {
+  return new Set(
+    String(title.genre || "")
+      .split(",")
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+function countSharedValues(left = [], right = []) {
+  const rightSet = new Set((right || []).map((value) => String(value).trim().toLowerCase()));
+  return (left || []).filter((value) => rightSet.has(String(value).trim().toLowerCase())).length;
+}
+
+function getSimilarityScore(baseTitle, candidate) {
+  let score = 0;
+  const baseGenres = getGenreSet(baseTitle);
+  const candidateGenres = getGenreSet(candidate);
+
+  candidateGenres.forEach((genre) => {
+    if (baseGenres.has(genre)) {
+      score += 18;
+    }
+  });
+
+  if (candidate.type === baseTitle.type) {
+    score += 16;
+  }
+
+  score += countSharedValues(baseTitle.language, candidate.language) * 12;
+
+  if (candidate.trending) {
+    score += 8;
+  }
+
+  if (candidate.pinned) {
+    score += 6;
+  }
+
+  score += Math.min(getReactionStats(candidate).recommendedPercent / 5, 20);
+  return score;
+}
+
+function similarTitlesTemplate(baseTitle, titles) {
+  const matches = titles
+    .filter((candidate) => candidate.id !== baseTitle.id && candidate.approved)
+    .map((candidate) => ({
+      candidate,
+      score: getSimilarityScore(baseTitle, candidate)
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 8)
+    .map((entry) => entry.candidate);
+
+  if (!matches.length) {
+    return "";
+  }
+
+  return `
+    <section class="similar-section">
+      <div class="section-heading compact-heading">
+        <div>
+          <p class="eyebrow">Similar picks</p>
+          <h2>You may also like</h2>
+        </div>
+        <p class="section-copy">More ${escapeHtml(baseTitle.type.toLowerCase())} picks with a similar vibe, language, or genre mix.</p>
+      </div>
+      <div class="featured-grid detail-similar-grid">
+        ${matches.map(featuredCardTemplate).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function mostInterestedItemTemplate(title, index) {
   const stats = getReactionStats(title);
 
@@ -2143,6 +2218,8 @@ async function renderDetailsPage() {
     </section>
 
     ${peopleSectionTemplate(title)}
+
+    ${similarTitlesTemplate(title, getVisibleTitles(titlesCache))}
 
     <section class="comment-section">
       <div class="section-heading">
