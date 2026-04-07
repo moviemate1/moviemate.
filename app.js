@@ -659,6 +659,14 @@ function trailerPanelTemplate(title) {
           data-embed-url="${embedUrl}"
           data-trailer-title="${escapeHtml(title.title)} trailer"
           aria-label="Play ${escapeHtml(title.title)} trailer"
+        ></button>
+        <button
+          class="trailer-play-button"
+          type="button"
+          data-open-trailer="true"
+          data-embed-url="${embedUrl}"
+          data-trailer-title="${escapeHtml(title.title)} trailer"
+          aria-label="Play ${escapeHtml(title.title)} trailer"
         >
           <span class="trailer-play-badge" aria-hidden="true">▶</span>
         </button>
@@ -2093,17 +2101,20 @@ async function renderDetailsPage() {
             <p class="detail-hero-description">${escapeHtml(title.description)}</p>
           </div>
         </div>
-        <div class="detail-actions">
-          ${reactionButtonsTemplate(title)}
-          ${
-            embeddedTrailerUrl
-              ? '<a class="secondary-btn trailer-btn" href="#trailerSection">Watch Trailer Here</a>'
-              : `<a class="secondary-btn trailer-btn" href="${getTrailerLink(title)}" target="_blank" rel="noreferrer">Open Trailer</a>`
-          }
-          <button class="secondary-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collections" : "Save to Collections"}</button>
-          ${ownerControls}
-          <p class="form-message" id="detailVoteMessage" aria-live="polite"></p>
-        </div>
+      </div>
+    </section>
+
+    <section class="detail-action-strip">
+      <div class="detail-actions">
+        ${reactionButtonsTemplate(title)}
+        ${
+          embeddedTrailerUrl
+            ? '<a class="secondary-btn trailer-btn" href="#trailerSection">Watch Trailer Here</a>'
+            : `<a class="secondary-btn trailer-btn" href="${getTrailerLink(title)}" target="_blank" rel="noreferrer">Open Trailer</a>`
+        }
+        <button class="secondary-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collections" : "Save to Collections"}</button>
+        ${ownerControls}
+        <p class="form-message" id="detailVoteMessage" aria-live="polite"></p>
       </div>
     </section>
 

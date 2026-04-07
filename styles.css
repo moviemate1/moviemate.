@@ -1602,6 +1602,18 @@ button.ghost-link {
   cursor: pointer;
 }
 
+.trailer-play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 4;
+  transform: translate(-50%, -50%);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
 .trailer-play-badge {
   position: absolute;
   top: 50%;
@@ -1723,24 +1735,37 @@ button.ghost-link {
   margin-top: 24px;
   display: grid;
   gap: 16px;
-  position: relative;
-  z-index: 6;
 }
 
 .detail-actions .form-message {
   min-height: 1.2em;
 }
 
-.reaction-panel,
-.reaction-buttons,
-.reaction-btn,
-.trailer-btn {
-  position: relative;
-  z-index: 6;
+.detail-action-strip {
+  margin-top: 18px;
 }
 
-.trailer-btn {
-  pointer-events: auto;
+.detail-action-strip .detail-actions {
+  padding: 22px 24px;
+  border-radius: 28px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.reaction-panel,
+.reaction-buttons {
+  position: relative;
+}
+
+.trailer-btn,
+.save-title-btn {
+  color: #fff;
+}
+
+.save-title-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .detail-insights-grid {
