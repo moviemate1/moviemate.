@@ -538,25 +538,6 @@ function getYouTubeEmbedUrl(url) {
   return "";
 }
 
-function playTrailerInline(embedUrl, title) {
-  const section = document.querySelector("#trailerSection");
-
-  if (!section || !embedUrl) {
-    return;
-  }
-
-  section.innerHTML = `
-    <iframe
-      class="trailer-frame"
-      src="${embedUrl}?autoplay=1"
-      title="${escapeHtml(title || "MovieMate trailer")}"
-      loading="lazy"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowfullscreen
-    ></iframe>
-  `;
-}
-
 function formatLargeNumber(value) {
   if (value >= 1000000) {
     return `${(value / 1000000).toFixed(1)}M`;
@@ -1779,7 +1760,7 @@ function openTrailerModal(embedUrl, title) {
     return;
   }
 
-  frame.src = embedUrl;
+  frame.src = embedUrl.includes("?") ? `${embedUrl}&autoplay=1` : `${embedUrl}?autoplay=1`;
   frame.title = title || "MovieMate trailer";
   modal.classList.remove("hidden");
   syncModalVisibility();
@@ -2137,7 +2118,7 @@ async function renderDetailsPage() {
         ${reactionButtonsTemplate(title)}
         ${
           embeddedTrailerUrl
-            ? '<a class="secondary-btn trailer-btn" href="#trailerSection">Watch Trailer Here</a>'
+            ? `<button class="secondary-btn trailer-btn" type="button" data-open-trailer="true" data-embed-url="${embeddedTrailerUrl}" data-trailer-title="${escapeHtml(title.title)} trailer">Watch Trailer</button>`
             : `<a class="secondary-btn trailer-btn" href="${getTrailerLink(title)}" target="_blank" rel="noreferrer">Open Trailer</a>`
         }
         <button class="secondary-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collections" : "Save to Collections"}</button>
@@ -2195,13 +2176,24 @@ async function renderDetailsPage() {
     </section>
   `;
 
-  target.querySelectorAll(".reaction-btn").forEach((button) => {
-    button.addEventListener("click", async (event) => {
+  const detailActions = target.querySelector(".detail-actions");
+
+  detailActions?.addEventListener("click", async (event) => {
+    const actionTarget = event.target instanceof HTMLElement ? event.target : null;
+
+    if (!actionTarget) {
+      return;
+    }
+
+    const reactionButton = actionTarget.closest(".reaction-btn");
+
+    if (reactionButton) {
       event.preventDefault();
       event.stopPropagation();
+      showMessage("#detailVoteMessage", "Saving your vote...");
 
       try {
-        const changed = await reactToTitle(button.dataset.id, button.dataset.reaction);
+        const changed = await reactToTitle(reactionButton.dataset.id, reactionButton.dataset.reaction);
 
         if (!changed) {
           showMessage("#detailVoteMessage", "You already picked that option.");
@@ -2214,7 +2206,18 @@ async function renderDetailsPage() {
         console.error(error);
         showMessage("#detailVoteMessage", "Could not save your vote right now.");
       }
-    });
+
+      return;
+    }
+
+    const saveButton = actionTarget.closest(".save-title-btn");
+
+    if (saveButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleSavedTitle(saveButton.dataset.saveId);
+      await renderDetailsPage();
+    }
   });
 
   setupCommentForm(title.id);
@@ -2224,7 +2227,7 @@ function setupLikeButtons() {
   document.addEventListener("click", async (event) => {
     const button = event.target.closest(".reaction-btn");
 
-    if (!button) {
+    if (!button || document.body.dataset.page === "details") {
       return;
     }
 
@@ -2370,11 +2373,6 @@ function setupTrailerModal() {
     }
 
     event.preventDefault();
-
-    if (document.body.dataset.page === "details") {
-      playTrailerInline(openButton.dataset.embedUrl, openButton.dataset.trailerTitle);
-      return;
-    }
 
     openTrailerModal(openButton.dataset.embedUrl, openButton.dataset.trailerTitle);
   });
@@ -2683,7 +2681,7 @@ function setupSaveButtons() {
   document.addEventListener("click", async (event) => {
     const button = event.target.closest(".save-title-btn");
 
-    if (!button) {
+    if (!button || document.body.dataset.page === "details") {
       return;
     }
 

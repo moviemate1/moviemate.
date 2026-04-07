@@ -1748,6 +1748,8 @@ button.ghost-link {
 
 .detail-action-strip {
   margin-top: 18px;
+  position: relative;
+  z-index: 12;
 }
 
 .detail-action-strip .detail-actions {
@@ -1756,16 +1758,21 @@ button.ghost-link {
   background: var(--bg-elevated);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
+  position: relative;
+  z-index: 12;
 }
 
 .reaction-panel,
 .reaction-buttons {
   position: relative;
+  z-index: 13;
 }
 
 .trailer-btn,
 .save-title-btn {
   color: #fff;
+  position: relative;
+  z-index: 13;
 }
 
 .save-title-btn {
