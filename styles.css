@@ -870,6 +870,8 @@ button.ghost-link {
 
 .profile-card-actions {
   display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .profile-tabs {
@@ -1043,16 +1045,154 @@ button.ghost-link {
   align-items: center;
 }
 
+.account-avatar-stack {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+
+.account-avatar-preview {
+  width: 128px;
+  height: 128px;
+}
+
+.account-avatar-preview .account-avatar,
+.account-avatar-preview .profile-avatar-fallback {
+  width: 128px;
+  height: 128px;
+}
+
+.account-avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .account-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
+.input-help {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .account-health-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
+}
+
+.health-status-strip {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.health-status-dot {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #c7c7d4;
+  font-size: 1.1rem;
+}
+
+.health-status-dot.active.good,
+.health-status-dot.active {
+  background: rgba(36, 201, 111, 0.16);
+  border-color: rgba(36, 201, 111, 0.36);
+  color: #9ef0bf;
+}
+
+.health-banner,
+.health-card {
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.health-banner.good {
+  background: rgba(36, 201, 111, 0.16);
+  border-color: rgba(36, 201, 111, 0.3);
+  color: #ccffe0;
+}
+
+.health-banner.warn {
+  background: rgba(255, 191, 71, 0.12);
+  border-color: rgba(255, 191, 71, 0.28);
+  color: #ffe0a6;
+}
+
+.health-card h3,
+.health-faq h3 {
+  margin: 0 0 8px;
+}
+
+.health-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.health-faq {
+  display: grid;
+  gap: 14px;
+}
+
+.health-faq-list {
+  display: grid;
+  gap: 10px;
+}
+
+.health-faq-item {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.health-faq-btn {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 16px 18px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.health-faq-number {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(126, 70, 255, 0.18);
+  color: #efe4ff;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.health-faq-answer {
+  padding: 0 18px 18px 62px;
+}
+
+.health-faq-answer p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
 }
 
 .account-empty-state {

@@ -17,6 +17,7 @@ import {
   createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut
@@ -266,6 +267,67 @@ function getProfileAvatar(profile = currentUserProfile, user = currentUser) {
     image: "",
     initials: getProfileInitials(profile, user)
   };
+}
+
+function buildAuthActionSettings() {
+  return {
+    url: `${window.location.origin}/account.html`,
+    handleCodeInApp: false
+  };
+}
+
+function createGeneratedAvatarDataUrl(source = getProfileInitials()) {
+  const initials = String(source || "MM")
+    .trim()
+    .split(" ")
+    .map((part) => part.charAt(0))
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "MM";
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#7e46ff" />
+          <stop offset="55%" stop-color="#cf4dff" />
+          <stop offset="100%" stop-color="#e50914" />
+        </linearGradient>
+      </defs>
+      <rect width="160" height="160" rx="80" fill="url(#bg)" />
+      <circle cx="80" cy="80" r="70" fill="rgba(255,255,255,0.12)" />
+      <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Manrope, Arial, sans-serif" font-size="56" font-weight="800">${escapeHtml(initials)}</text>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function updateAccountAvatarPreview(value) {
+  const preview = document.querySelector("#accountAvatarPreview");
+
+  if (!preview) {
+    return;
+  }
+
+  const avatarUrl = String(value || "").trim();
+
+  if (avatarUrl) {
+    preview.innerHTML = `<img class="account-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(getProfileDisplayName())} avatar" />`;
+    return;
+  }
+
+  preview.innerHTML = profileAvatarTemplate(currentUserProfile, currentUser, "account-avatar");
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Could not read selected image."));
+    reader.readAsDataURL(file);
+  });
 }
 
 function getUserDocRef(uid = currentUser?.uid) {
@@ -2718,6 +2780,11 @@ async function handleAuthSubmit(form) {
     await persistUserProfile({
       displayName: name || email
     });
+    await sendEmailVerification(credentials.user, buildAuthActionSettings());
+    showMessage(
+      "#authMessage",
+      "Account created. Verification email sent. Check inbox, spam, and promotions."
+    );
     closeAuthModal();
     return;
   }
@@ -2810,11 +2877,11 @@ function setupAuthModal() {
     }
 
     try {
-      await sendPasswordResetEmail(auth, email);
-      showMessage("#authMessage", "Password reset email sent.");
+      await sendPasswordResetEmail(auth, email, buildAuthActionSettings());
+      showMessage("#authMessage", "Password reset email sent. Check inbox, spam, and promotions.");
     } catch (error) {
       console.error(error);
-      showMessage("#authMessage", "Could not send reset email right now.");
+      showMessage("#authMessage", "Could not send reset email. Check Firebase Email/Password and authorized domains.");
     }
   });
 
@@ -2827,7 +2894,7 @@ function setupAuthModal() {
       updateAuthUI();
     } catch (error) {
       console.error(error);
-      showMessage("#authMessage", "Sign in failed. Check your email/password or Firebase Auth settings.");
+      showMessage("#authMessage", "Sign in failed. Check your email/password, Firebase Email/Password, and authorized domains.");
     }
   });
 }
@@ -4094,6 +4161,35 @@ function renderAccountPage() {
   const reviewEntries = getProfileReviewEntries(getVisibleTitles(titlesCache));
   const submittedTitles = getProfilePosts(titlesCache);
   const personalCollections = buildPersonalCollections(getVisibleTitles(titlesCache));
+  const activeStrikes = 0;
+  const emailVerified = Boolean(currentUser?.emailVerified);
+  const healthFaq = [
+    {
+      question: "What is Profile Health?",
+      answer:
+        "Profile Health helps you understand whether your MovieMate account is in good standing. Right now it tracks strikes and email verification."
+    },
+    {
+      question: "What types of content can result in a strike?",
+      answer:
+        "Spam, abusive comments, repeated fake suggestions, and harmful content can all lead to moderation action from the owner."
+    },
+    {
+      question: "How does the strike system work?",
+      answer:
+        "If content breaks community rules, the owner can review it and mark a strike on the account. Accounts with no issues stay in good standing."
+    },
+    {
+      question: "What happens when I receive my first strike?",
+      answer:
+        "You will still keep your account, but your profile health will no longer be perfect and future moderation may affect posting privileges."
+    },
+    {
+      question: "Are strikes permanent?",
+      answer:
+        "For now, strikes remain on the account until the owner clears them. MovieMate currently starts everyone with zero active strikes."
+    }
+  ];
 
   target.innerHTML = `
     <section class="account-page-shell">
@@ -4113,7 +4209,16 @@ function renderAccountPage() {
       <section class="account-settings-main">
         <article class="account-settings-card" id="edit-profile">
           <div class="account-form-head">
-            ${profileAvatarTemplate(currentUserProfile, currentUser, "account-avatar")}
+            <div class="account-avatar-stack">
+              <div class="account-avatar-preview" id="accountAvatarPreview">
+                ${profileAvatarTemplate(currentUserProfile, currentUser, "account-avatar")}
+              </div>
+              <div class="account-avatar-actions">
+                <button class="secondary-btn" type="button" id="avatarUploadTrigger">Upload from device</button>
+                <button class="ghost-link" type="button" id="avatarGenerateBtn">Create avatar</button>
+                <input class="hidden" id="avatarUploadInput" type="file" accept="image/*" />
+              </div>
+            </div>
             <div>
               <p class="eyebrow">Edit Profile</p>
               <h1>Make your MovieMate profile yours</h1>
@@ -4143,7 +4248,8 @@ function renderAccountPage() {
             </label>
             <label class="input-group form-span">
               <span>Profile photo URL</span>
-              <input name="avatarUrl" type="url" placeholder="https://..." value="${escapeHtml(currentUserProfile.avatarUrl || "")}" />
+              <input name="avatarUrl" type="url" id="avatarUrlField" placeholder="https://..." value="${escapeHtml(currentUserProfile.avatarUrl || "")}" />
+              <small class="input-help">You can paste an image link, upload from your device, or create a generated avatar.</small>
             </label>
             <label class="input-group form-span">
               <span>Bio</span>
@@ -4167,11 +4273,57 @@ function renderAccountPage() {
         <article class="account-settings-card" id="profile-health">
           <p class="eyebrow">Profile Health</p>
           <h2>Your account at a glance</h2>
+          <div class="health-status-strip">
+            <span class="health-status-dot good ${activeStrikes === 0 ? "active" : ""}">❤</span>
+            <span class="health-status-dot ${emailVerified ? "active" : ""}">✉</span>
+            <span class="health-status-dot ${reviewEntries.length > 0 ? "active" : ""}">★</span>
+          </div>
+          <div class="health-banner ${activeStrikes === 0 ? "good" : "warn"}">
+            ${
+              activeStrikes === 0
+                ? "Your account is in good standing with no active strikes."
+                : `You currently have ${activeStrikes} active strike${activeStrikes === 1 ? "" : "s"}.`
+            }
+          </div>
           <div class="account-health-grid">
             <div class="account-health-item"><strong>${reviewEntries.length}</strong><span>Reviews captured</span></div>
             <div class="account-health-item"><strong>${submittedTitles.length}</strong><span>Posts suggested</span></div>
             <div class="account-health-item"><strong>${personalCollections.length}</strong><span>Collections built</span></div>
             <div class="account-health-item"><strong>${getSavedTitles().length}</strong><span>Titles saved</span></div>
+          </div>
+          <div class="health-card">
+            <h3>Verification</h3>
+            <p>${emailVerified ? "Your email is verified." : "Your email is not verified yet. Verification helps secure your account."}</p>
+            ${
+              emailVerified
+                ? '<span class="profile-reaction-badge">Verified</span>'
+                : '<button class="secondary-btn" id="resendVerificationBtn" type="button">Send verification email</button>'
+            }
+          </div>
+          <div class="health-card">
+            <h3>Active Strikes (${activeStrikes})</h3>
+            <p>${activeStrikes === 0 ? "No active strikes." : "Review your recent activity and contact MovieMate if you think this is a mistake."}</p>
+          </div>
+          <div class="health-faq">
+            <h3>Frequently Asked Questions</h3>
+            <div class="health-faq-list">
+              ${healthFaq
+                .map(
+                  (item, index) => `
+                    <article class="health-faq-item">
+                      <button class="health-faq-btn" type="button" data-health-faq>
+                        <span class="health-faq-number">${index + 1}</span>
+                        <span>${escapeHtml(item.question)}</span>
+                        <strong>+</strong>
+                      </button>
+                      <div class="health-faq-answer hidden">
+                        <p>${escapeHtml(item.answer)}</p>
+                      </div>
+                    </article>
+                  `
+                )
+                .join("")}
+            </div>
           </div>
         </article>
       </section>
@@ -4215,6 +4367,64 @@ function setupProfileTabs(reviewEntries) {
 function setupAccountSettingsForm() {
   const form = document.querySelector("#profileSettingsForm");
   const resetPasswordButton = document.querySelector("#resetPasswordBtn");
+  const resendVerificationButton = document.querySelector("#resendVerificationBtn");
+  const avatarUploadTrigger = document.querySelector("#avatarUploadTrigger");
+  const avatarUploadInput = document.querySelector("#avatarUploadInput");
+  const avatarGenerateButton = document.querySelector("#avatarGenerateBtn");
+  const avatarUrlField = document.querySelector("#avatarUrlField");
+
+  avatarUploadTrigger?.addEventListener("click", () => {
+    avatarUploadInput?.click();
+  });
+
+  avatarUploadInput?.addEventListener("change", async () => {
+    const file = avatarUploadInput.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      showMessage("#profileSettingsMessage", "Please choose an image file.");
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+
+      if (avatarUrlField instanceof HTMLInputElement) {
+        avatarUrlField.value = dataUrl;
+      }
+
+      updateAccountAvatarPreview(dataUrl);
+      showMessage("#profileSettingsMessage", "Profile photo selected. Save profile to keep it.");
+    } catch (error) {
+      console.error(error);
+      showMessage("#profileSettingsMessage", "Could not load that image.");
+    }
+  });
+
+  avatarGenerateButton?.addEventListener("click", () => {
+    const displayName =
+      (form?.querySelector("[name='displayName']") instanceof HTMLInputElement
+        ? form.querySelector("[name='displayName']").value
+        : "") ||
+      getProfileDisplayName();
+    const generatedAvatar = createGeneratedAvatarDataUrl(displayName);
+
+    if (avatarUrlField instanceof HTMLInputElement) {
+      avatarUrlField.value = generatedAvatar;
+    }
+
+    updateAccountAvatarPreview(generatedAvatar);
+    showMessage("#profileSettingsMessage", "Generated avatar ready. Save profile to keep it.");
+  });
+
+  avatarUrlField?.addEventListener("input", () => {
+    if (avatarUrlField instanceof HTMLInputElement) {
+      updateAccountAvatarPreview(avatarUrlField.value);
+    }
+  });
 
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -4251,12 +4461,40 @@ function setupAccountSettingsForm() {
     }
 
     try {
-      await sendPasswordResetEmail(auth, currentUser.email);
-      showMessage("#profileSettingsMessage", "Password reset email sent.");
+      await sendPasswordResetEmail(auth, currentUser.email, buildAuthActionSettings());
+      showMessage("#profileSettingsMessage", "Password reset email sent. Check spam and promotions too.");
     } catch (error) {
       console.error(error);
-      showMessage("#profileSettingsMessage", "Could not send password reset email right now.");
+      showMessage("#profileSettingsMessage", "Could not send reset email. Check Firebase Email/Password and authorized domains.");
     }
+  });
+
+  resendVerificationButton?.addEventListener("click", async () => {
+    if (!currentUser) {
+      return;
+    }
+
+    try {
+      await sendEmailVerification(currentUser, buildAuthActionSettings());
+      showMessage("#profileSettingsMessage", "Verification email sent. Check inbox, spam, and promotions.");
+    } catch (error) {
+      console.error(error);
+      showMessage("#profileSettingsMessage", "Could not send verification email right now.");
+    }
+  });
+
+  document.querySelectorAll("[data-health-faq]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const item = button.closest(".health-faq-item");
+      const answer = item?.querySelector(".health-faq-answer");
+      const icon = button.querySelector("strong");
+
+      answer?.classList.toggle("hidden");
+
+      if (icon) {
+        icon.textContent = answer?.classList.contains("hidden") ? "+" : "−";
+      }
+    });
   });
 }
 
