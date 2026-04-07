@@ -650,7 +650,7 @@ function trailerPanelTemplate(title) {
 
   if (embedUrl) {
     return `
-      <section class="trailer-stage">
+      <section class="trailer-stage" id="trailerSection">
         <iframe
           class="trailer-frame"
           src="${embedUrl}"
@@ -664,7 +664,7 @@ function trailerPanelTemplate(title) {
   }
 
   return `
-    <section class="trailer-stage">
+    <section class="trailer-stage" id="trailerSection">
       <img class="trailer-poster" src="${title.image}" alt="${escapeHtml(title.title)} trailer preview" />
       <div class="trailer-overlay">
         <p class="eyebrow">Trailer</p>
@@ -1995,6 +1995,7 @@ async function renderDetailsPage() {
 
   const stats = getReactionStats(title);
   const saved = isSavedTitle(title.id);
+  const embeddedTrailerUrl = getYouTubeEmbedUrl(title.trailerUrl);
   const ownerControls = isOwnerMode()
     ? `
         <div class="owner-actions">
@@ -2038,7 +2039,11 @@ async function renderDetailsPage() {
         </div>
         <div class="detail-actions">
           ${reactionButtonsTemplate(title)}
-          <a class="secondary-btn trailer-btn" href="${getTrailerLink(title)}" target="_blank" rel="noreferrer">Open Trailer</a>
+          ${
+            embeddedTrailerUrl
+              ? '<a class="secondary-btn trailer-btn" href="#trailerSection">Watch Trailer Here</a>'
+              : `<a class="secondary-btn trailer-btn" href="${getTrailerLink(title)}" target="_blank" rel="noreferrer">Open Trailer</a>`
+          }
           <button class="secondary-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collections" : "Save to Collections"}</button>
           ${ownerControls}
         </div>
