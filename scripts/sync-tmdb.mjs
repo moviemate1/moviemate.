@@ -357,6 +357,39 @@ async function fetchWatchProviders(item, type) {
   return [...new Set(collected)];
 }
 
+async function safeFetchTrailerUrl(item) {
+  try {
+    return await fetchTrailerUrl(item, item.type);
+  } catch (error) {
+    console.warn(`Trailer fetch failed for ${item.id}: ${error.message}`);
+    return buildTrailerSearchUrl(item, item.type);
+  }
+}
+
+async function safeFetchCredits(item) {
+  try {
+    return await fetchCredits(item, item.type);
+  } catch (error) {
+    console.warn(`Credits fetch failed for ${item.id}: ${error.message}`);
+    return {
+      director: "",
+      mainLead: "",
+      heroine: "",
+      cast: [],
+      crew: []
+    };
+  }
+}
+
+async function safeFetchWatchProviders(item) {
+  try {
+    return await fetchWatchProviders(item, item.type);
+  } catch (error) {
+    console.warn(`Watch providers fetch failed for ${item.id}: ${error.message}`);
+    return [];
+  }
+}
+
 function isAllowedLanguage(item) {
   return ALLOWED_LANGUAGE_CODES.has(item.original_language);
 }
@@ -444,7 +477,7 @@ async function cleanupImportedTitles() {
 }
 
 async function enrichWithTrailers(items) {
-  const concurrency = 8;
+  const concurrency = 4;
   const enriched = [];
 
   for (let index = 0; index < items.length; index += concurrency) {
@@ -452,9 +485,9 @@ async function enrichWithTrailers(items) {
     const results = await Promise.all(
       chunk.map(async (item) => ({
         ...item,
-        trailerUrl: await fetchTrailerUrl(item, item.type),
-        ...(await fetchCredits(item, item.type)),
-        platforms: await fetchWatchProviders(item, item.type)
+        trailerUrl: await safeFetchTrailerUrl(item),
+        ...(await safeFetchCredits(item)),
+        platforms: await safeFetchWatchProviders(item)
       }))
     );
     enriched.push(...results);
