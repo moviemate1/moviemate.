@@ -2,6 +2,7 @@ import admin from "firebase-admin";
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w780";
+const TMDB_PROFILE_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
 const TITLES_COLLECTION = "moviemate_titles";
 const ALLOWED_LANGUAGE_CODES = new Set(["en", "hi", "ja", "ko", "ne"]);
 const UPCOMING_PAGE_COUNT = 6;
@@ -60,6 +61,53 @@ function buildPosterUrl(item) {
   }
 
   return "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=900&q=80";
+}
+
+function buildProfileUrl(path) {
+  return path ? `${TMDB_PROFILE_IMAGE_BASE}${path}` : "";
+}
+
+function buildTrailerSearchUrl(item, type) {
+  const title = item.title || item.name || "movie trailer";
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${title} official trailer`)}`;
+}
+
+function buildYouTubeWatchUrl(key) {
+  return key ? `https://www.youtube.com/watch?v=${key}` : "";
+}
+
+function pickBestVideo(videos = []) {
+  if (!Array.isArray(videos) || !videos.length) {
+    return null;
+  }
+
+  const youtubeVideos = videos.filter((video) => video.site === "YouTube" && video.key);
+
+  if (!youtubeVideos.length) {
+    return null;
+  }
+
+  const scoring = (video) => {
+    let score = 0;
+
+    if (video.official) {
+      score += 5;
+    }
+
+    if (video.type === "Trailer") {
+      score += 4;
+    } else if (video.type === "Teaser") {
+      score += 2;
+    }
+
+    if (video.iso_639_1 === "en") {
+      score += 2;
+    }
+
+    return score;
+  };
+
+  return [...youtubeVideos].sort((left, right) => scoring(right) - scoring(left))[0];
 }
 
 async function fetchTmdb(path, params = {}) {
@@ -161,6 +209,67 @@ async function fetchTrendingSeries() {
   return fetchPagedResults("/trending/tv/week", {}, TRENDING_PAGE_COUNT);
 }
 
+async function fetchTrailerUrl(item, type) {
+  const endpoint =
+    type === "Movie" ? `/movie/${item.tmdbId}/videos` : `/tv/${item.tmdbId}/videos`;
+
+  const payload = await fetchTmdb(endpoint, {
+    language: "en-US"
+  });
+
+  const bestVideo = pickBestVideo(payload.results || []);
+  return bestVideo ? buildYouTubeWatchUrl(bestVideo.key) : buildTrailerSearchUrl(item, type);
+}
+
+async function fetchCredits(item, type) {
+  const endpoint =
+    type === "Movie"
+      ? `/movie/${item.tmdbId}/credits`
+      : `/tv/${item.tmdbId}/aggregate_credits`;
+
+  const payload = await fetchTmdb(endpoint, {
+    language: "en-US"
+  });
+
+  const castList = Array.isArray(payload.cast) ? payload.cast : [];
+  const crewList = Array.isArray(payload.crew) ? payload.crew : [];
+
+  const cast = castList.slice(0, 8).map((person) => ({
+    name: person.name || "",
+    role:
+      person.character ||
+      (Array.isArray(person.roles) && person.roles[0]?.character) ||
+      "Cast",
+    image: buildProfileUrl(person.profile_path)
+  }));
+
+  const crew = crewList.slice(0, 6).map((person) => ({
+    name: person.name || "",
+    role:
+      person.job ||
+      (Array.isArray(person.jobs) && person.jobs[0]?.job) ||
+      "Crew",
+    image: buildProfileUrl(person.profile_path)
+  }));
+
+  const directorPerson =
+    crewList.find((person) => person.job === "Director") ||
+    crewList.find((person) => Array.isArray(person.jobs) && person.jobs.some((job) => job.job === "Director")) ||
+    crewList.find((person) => Array.isArray(person.jobs) && person.jobs.some((job) => job.job === "Creator")) ||
+    crewList.find((person) => Array.isArray(person.jobs) && person.jobs.some((job) => job.job === "Executive Producer"));
+
+  const mainLeadPerson = castList[0];
+  const heroinePerson = castList.find((person) => person.gender === 1);
+
+  return {
+    director: directorPerson?.name || "",
+    mainLead: mainLeadPerson?.name || "",
+    heroine: heroinePerson?.name || "",
+    cast,
+    crew
+  };
+}
+
 function isAllowedLanguage(item) {
   return ALLOWED_LANGUAGE_CODES.has(item.original_language);
 }
@@ -182,6 +291,7 @@ function normalizeTmdbItem(item, type, genreMap, bucket) {
       item.overview?.trim() ||
       "Freshly synced from TMDb. Add your own review and reactions on MovieMate.",
     image: buildPosterUrl(item),
+    trailerUrl: buildTrailerSearchUrl(item, type),
     approved: true,
     pinned: false,
     trending: false,
@@ -238,6 +348,25 @@ async function cleanupImportedTitles() {
   // or after they fall out of the current TMDb lists. This lets the site
   // grow into a longer-term library instead of replacing older imports.
   return Promise.resolve();
+}
+
+async function enrichWithTrailers(items) {
+  const concurrency = 8;
+  const enriched = [];
+
+  for (let index = 0; index < items.length; index += concurrency) {
+    const chunk = items.slice(index, index + concurrency);
+    const results = await Promise.all(
+      chunk.map(async (item) => ({
+        ...item,
+        trailerUrl: await fetchTrailerUrl(item, item.type),
+        ...(await fetchCredits(item, item.type))
+      }))
+    );
+    enriched.push(...results);
+  }
+
+  return enriched;
 }
 
 async function run() {
@@ -311,11 +440,12 @@ async function run() {
   });
 
   const merged = [...grouped.values()];
+  const mergedWithTrailers = await enrichWithTrailers(merged);
 
-  await upsertTitles(merged);
+  await upsertTitles(mergedWithTrailers);
   await cleanupImportedTitles();
 
-  console.log(`Sync complete. Updated ${merged.length} titles.`);
+  console.log(`Sync complete. Updated ${mergedWithTrailers.length} titles.`);
 }
 
 run().catch((error) => {
