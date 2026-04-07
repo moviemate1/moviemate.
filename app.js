@@ -599,6 +599,18 @@ function getCreatedAtMs(value) {
   return Number.isNaN(date.getTime()) ? 0 : date.getTime();
 }
 
+function formatMonthLabel(year, monthIndex) {
+  return new Date(year, monthIndex, 1).toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric"
+  });
+}
+
+function getYearOptions() {
+  const currentYear = new Date().getFullYear();
+  return Array.from({ length: 6 }, (_, index) => currentYear - 2 + index);
+}
+
 function getReaction(titleId) {
   const reactions = getStoredReactions();
   return reactions[titleId] || "";
@@ -1804,14 +1816,14 @@ function renderScheduleGrid(titles) {
 
 function collectionCardTemplate(collection) {
   return `
-    <article class="collection-card">
+    <a class="collection-card" href="collection.html?mode=${encodeURIComponent(collection.mode || "discover")}&slug=${encodeURIComponent(collection.slug || slugify(collection.title))}">
       <img class="collection-cover" src="${collection.image}" alt="${escapeHtml(collection.title)} cover" />
       <div class="collection-copy">
         <h3>${escapeHtml(collection.title)}</h3>
         <p>${escapeHtml(collection.subtitle)}</p>
         <span>${collection.count} items • ${collection.likes} likes</span>
       </div>
-    </article>
+    </a>
   `;
 }
 
@@ -1854,6 +1866,8 @@ function buildDiscoverCollections(titles) {
     .filter((group) => group.items.length)
     .map((group) => ({
       ...group,
+      mode: "discover",
+      slug: slugify(group.title),
       image: group.items[0].image,
       count: group.items.length,
       likes: group.items.reduce((sum, item) => sum + getReactionStats(item).total, 0)
@@ -1906,6 +1920,8 @@ function buildPersonalCollections(titles) {
     .filter((group) => group.items.length)
     .map((group) => ({
       ...group,
+      mode: "mine",
+      slug: slugify(group.title),
       image: group.items[0].image,
       count: group.items.length,
       likes: group.items.reduce((sum, item) => sum + getReactionStats(item).recommendedPercent, 0)
@@ -1936,6 +1952,8 @@ function buildSavedCollections(titles) {
     .filter((group) => group.items.length)
     .map((group) => ({
       ...group,
+      mode: "saved",
+      slug: slugify(group.title),
       image: group.items[0].image,
       count: group.items.length,
       likes: group.items.reduce((sum, item) => sum + getReactionStats(item).total, 0)
@@ -1960,6 +1978,302 @@ function renderCollectionsGrid(titles) {
 
   grid.innerHTML = collections.map(collectionCardTemplate).join("");
   emptyState.classList.toggle("hidden", collections.length > 0);
+}
+
+function getReviewEntryMoment(entry) {
+  const commentTimestamp = entry.comments?.[0]?.createdAt;
+  const fromComment = getCreatedAtMs(commentTimestamp);
+
+  if (fromComment) {
+    return fromComment;
+  }
+
+  const release = entry.title.releaseDate ? new Date(`${entry.title.releaseDate}T00:00:00`).getTime() : 0;
+  if (release) {
+    return release;
+  }
+
+  return getCreatedAtMs(entry.title.createdAt);
+}
+
+function buildCalendarCells(monthIndex, year) {
+  const firstDay = new Date(year, monthIndex, 1);
+  const firstWeekday = firstDay.getDay();
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const totalCells = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
+
+  return Array.from({ length: totalCells }, (_, cellIndex) => {
+    const dayNumber = cellIndex - firstWeekday + 1;
+
+    if (dayNumber < 1 || dayNumber > daysInMonth) {
+      return { dateKey: "", dayNumber: "", items: [], empty: true };
+    }
+
+    const date = new Date(year, monthIndex, dayNumber);
+    const dateKey = date.toISOString().slice(0, 10);
+    return {
+      dateKey,
+      dayNumber,
+      items: [],
+      empty: false
+    };
+  });
+}
+
+function reviewCalendarItemTemplate(entry) {
+  const reactionLabel = entry.reaction ? REACTION_OPTIONS[entry.reaction]?.label || entry.reaction : "Comment";
+  return `
+    <a class="review-calendar-item" href="details.html?id=${entry.title.id}">
+      <span>${escapeHtml(entry.title.title)}</span>
+      <small>${escapeHtml(reactionLabel)}</small>
+    </a>
+  `;
+}
+
+function renderReviewCalendar(reviewEntries, monthIndex, year) {
+  const grid = document.querySelector("#reviewCalendarGrid");
+  const label = document.querySelector("#reviewCalendarLabel");
+  const monthSelect = document.querySelector("#reviewMonthSelect");
+  const yearSelect = document.querySelector("#reviewYearSelect");
+
+  if (!grid || !label || !monthSelect || !yearSelect) {
+    return;
+  }
+
+  monthSelect.value = String(monthIndex);
+  yearSelect.value = String(year);
+  label.textContent = formatMonthLabel(year, monthIndex);
+
+  const cells = buildCalendarCells(monthIndex, year);
+
+  reviewEntries.forEach((entry) => {
+    const moment = getReviewEntryMoment(entry);
+
+    if (!moment) {
+      return;
+    }
+
+    const date = new Date(moment);
+
+    if (date.getMonth() !== monthIndex || date.getFullYear() !== year) {
+      return;
+    }
+
+    const key = date.toISOString().slice(0, 10);
+    const cell = cells.find((item) => item.dateKey === key);
+
+    if (cell) {
+      cell.items.push(entry);
+    }
+  });
+
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  grid.innerHTML = `
+    <div class="review-calendar-head">
+      ${weekdays.map((day) => `<span>${day}</span>`).join("")}
+    </div>
+    <div class="review-calendar-body">
+      ${cells
+        .map(
+          (cell) => `
+            <article class="review-calendar-cell ${cell.empty ? "empty" : ""}">
+              ${
+                cell.empty
+                  ? ""
+                  : `
+                    <span class="review-calendar-date">${cell.dayNumber}</span>
+                    <div class="review-calendar-items">
+                      ${cell.items.map(reviewCalendarItemTemplate).join("")}
+                    </div>
+                  `
+              }
+            </article>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderReviewsPage() {
+  const target = document.querySelector("#reviewsPage");
+
+  if (!target) {
+    return;
+  }
+
+  if (!isSignedIn() || !currentUserProfile) {
+    target.innerHTML = `
+      <section class="account-empty-state">
+        <p class="eyebrow">My Reviews</p>
+        <h1>Sign in to see your review diary.</h1>
+        <p class="section-copy">Your votes and comments will be placed into a calendar so you can revisit what you watched each month.</p>
+        <button class="primary-btn" type="button" id="reviewsSignInBtn">Sign In</button>
+      </section>
+    `;
+    document.querySelector("#reviewsSignInBtn")?.addEventListener("click", () => openAuthModal("login"));
+    return;
+  }
+
+  const reviewEntries = getProfileReviewEntries(getVisibleTitles(titlesCache));
+  const now = new Date();
+  const monthOptions = Array.from({ length: 12 }, (_, index) => ({
+    value: index,
+    label: new Date(now.getFullYear(), index, 1).toLocaleDateString("en-IN", { month: "long" })
+  }));
+  const yearOptions = getYearOptions();
+
+  target.innerHTML = `
+    <section class="reviews-page-shell">
+      <div class="section-heading reviews-page-heading">
+        <div>
+          <p class="eyebrow">Your diary</p>
+          <h1>My Reviews</h1>
+        </div>
+        <div class="reviews-calendar-controls">
+          <button class="icon-chip" id="reviewsPrevMonth" type="button" aria-label="Previous month">‹</button>
+          <label>
+            <select id="reviewMonthSelect">
+              ${monthOptions
+                .map((option) => `<option value="${option.value}">${escapeHtml(option.label)}</option>`)
+                .join("")}
+            </select>
+          </label>
+          <label>
+            <select id="reviewYearSelect">
+              ${yearOptions
+                .map((year) => `<option value="${year}">${year}</option>`)
+                .join("")}
+            </select>
+          </label>
+          <button class="icon-chip" id="reviewsNextMonth" type="button" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div class="reviews-calendar-shell">
+        <p class="reviews-calendar-label" id="reviewCalendarLabel"></p>
+        <div class="review-calendar-grid" id="reviewCalendarGrid"></div>
+      </div>
+    </section>
+  `;
+
+  setupReviewsPageControls(reviewEntries);
+  renderReviewCalendar(reviewEntries, now.getMonth(), now.getFullYear());
+}
+
+function setupReviewsPageControls(reviewEntries) {
+  const monthSelect = document.querySelector("#reviewMonthSelect");
+  const yearSelect = document.querySelector("#reviewYearSelect");
+  const prevButton = document.querySelector("#reviewsPrevMonth");
+  const nextButton = document.querySelector("#reviewsNextMonth");
+
+  const renderFromControls = () => {
+    const monthIndex = Number(monthSelect?.value || 0);
+    const year = Number(yearSelect?.value || new Date().getFullYear());
+    renderReviewCalendar(reviewEntries, monthIndex, year);
+  };
+
+  monthSelect?.addEventListener("change", renderFromControls);
+  yearSelect?.addEventListener("change", renderFromControls);
+
+  prevButton?.addEventListener("click", () => {
+    const currentMonth = Number(monthSelect?.value || 0);
+    const currentYear = Number(yearSelect?.value || new Date().getFullYear());
+    const date = new Date(currentYear, currentMonth, 1);
+    date.setMonth(date.getMonth() - 1);
+    monthSelect.value = String(date.getMonth());
+    yearSelect.value = String(date.getFullYear());
+    renderFromControls();
+  });
+
+  nextButton?.addEventListener("click", () => {
+    const currentMonth = Number(monthSelect?.value || 0);
+    const currentYear = Number(yearSelect?.value || new Date().getFullYear());
+    const date = new Date(currentYear, currentMonth, 1);
+    date.setMonth(date.getMonth() + 1);
+    monthSelect.value = String(date.getMonth());
+    yearSelect.value = String(date.getFullYear());
+    renderFromControls();
+  });
+}
+
+function getCollectionsByMode(titles, mode) {
+  if (mode === "mine") {
+    return buildPersonalCollections(titles);
+  }
+
+  if (mode === "saved") {
+    return buildSavedCollections(titles);
+  }
+
+  return buildDiscoverCollections(titles);
+}
+
+function renderCollectionPage() {
+  const target = document.querySelector("#collectionPage");
+
+  if (!target) {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get("mode") || "discover";
+  const slug = params.get("slug") || "";
+  const visibleTitles = getVisibleTitles(titlesCache);
+
+  if ((mode === "mine" || mode === "saved") && !isSignedIn()) {
+    target.innerHTML = `
+      <section class="account-empty-state">
+        <p class="eyebrow">Collections</p>
+        <h1>Sign in to open your personal collections.</h1>
+        <p class="section-copy">Saved titles, watch states, and favorites will open here as full collection pages after sign in.</p>
+        <button class="primary-btn" type="button" id="collectionSignInBtn">Sign In</button>
+      </section>
+    `;
+    document.querySelector("#collectionSignInBtn")?.addEventListener("click", () => openAuthModal("login"));
+    return;
+  }
+
+  const collections = getCollectionsByMode(visibleTitles, mode);
+  const selected = collections.find((collection) => collection.slug === slug) || collections[0];
+
+  if (!selected) {
+    target.innerHTML = `<section class="account-empty-state"><h1>Collection not found.</h1></section>`;
+    return;
+  }
+
+  target.innerHTML = `
+    <section class="collection-page-shell">
+      <aside class="collection-list-card">
+        <p class="eyebrow">${escapeHtml(mode === "mine" ? "My collections" : mode === "saved" ? "Saved shelves" : "Discover collections")}</p>
+        <h1>${escapeHtml(mode === "mine" ? "Your Collections" : mode === "saved" ? "Saved Lists" : "Collection Explorer")}</h1>
+        <div class="collection-link-list">
+          ${collections
+            .map(
+              (collection) => `
+                <a class="collection-link-card ${collection.slug === selected.slug ? "active" : ""}" href="collection.html?mode=${encodeURIComponent(mode)}&slug=${encodeURIComponent(collection.slug)}">
+                  <strong>${escapeHtml(collection.title)}</strong>
+                  <small>${collection.count} items</small>
+                </a>
+              `
+            )
+            .join("")}
+        </div>
+      </aside>
+      <section class="collection-detail-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">${escapeHtml(mode === "mine" ? "Personal collection" : mode === "saved" ? "Saved collection" : "Discover collection")}</p>
+            <h2>${escapeHtml(selected.title)}</h2>
+          </div>
+          <p class="section-copy">${escapeHtml(selected.subtitle)}</p>
+        </div>
+        <div class="movie-grid">
+          ${selected.items.map(movieCardTemplate).join("")}
+        </div>
+      </section>
+    </section>
+  `;
 }
 
 function userNotificationTemplate(item) {
@@ -3697,11 +4011,14 @@ function renderProfilePage() {
 
         <div class="profile-panel-body active" data-profile-panel="reviews">
           <div class="profile-filter-row">
-            <button class="profile-filter-pill active" data-profile-filter="all" type="button">All</button>
-            <button class="profile-filter-pill" data-profile-filter="skip" type="button">Skip</button>
-            <button class="profile-filter-pill" data-profile-filter="timepass" type="button">Timepass</button>
-            <button class="profile-filter-pill" data-profile-filter="goForIt" type="button">Go For It</button>
-            <button class="profile-filter-pill" data-profile-filter="perfect" type="button">Perfect</button>
+            <div class="profile-filter-group">
+              <button class="profile-filter-pill active" data-profile-filter="all" type="button">All</button>
+              <button class="profile-filter-pill" data-profile-filter="skip" type="button">Skip</button>
+              <button class="profile-filter-pill" data-profile-filter="timepass" type="button">Timepass</button>
+              <button class="profile-filter-pill" data-profile-filter="goForIt" type="button">Go For It</button>
+              <button class="profile-filter-pill" data-profile-filter="perfect" type="button">Perfect</button>
+            </div>
+            <a class="secondary-btn" href="my-reviews.html">Open calendar view</a>
           </div>
           <div class="profile-review-list" id="profileReviewList">
             ${
@@ -3965,6 +4282,18 @@ async function refreshCurrentPage() {
   if (document.body.dataset.page === "account") {
     await fetchTitles();
     await renderAccountPage();
+    return;
+  }
+
+  if (document.body.dataset.page === "reviews") {
+    await fetchTitles();
+    await renderReviewsPage();
+    return;
+  }
+
+  if (document.body.dataset.page === "collection") {
+    await fetchTitles();
+    await renderCollectionPage();
   }
 }
 
@@ -4166,6 +4495,16 @@ async function init() {
   if (document.body.dataset.page === "account") {
     await fetchTitles();
     renderAccountPage();
+  }
+
+  if (document.body.dataset.page === "reviews") {
+    await fetchTitles();
+    renderReviewsPage();
+  }
+
+  if (document.body.dataset.page === "collection") {
+    await fetchTitles();
+    renderCollectionPage();
   }
 
   onAuthStateChanged(auth, async (user) => {

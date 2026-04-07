@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MovieMate | My Profile</title>
-    <meta name="description" content="View your MovieMate profile, reviews, posts, collections, and saved interests." />
+    <title>MovieMate | My Reviews</title>
+    <meta name="description" content="Track your MovieMate reviews and votes in a monthly review calendar." />
     <meta name="theme-color" content="#0a0a0f" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -15,7 +15,7 @@
     />
     <link rel="stylesheet" href="styles.css?v=25" />
   </head>
-  <body data-page="profile">
+  <body data-page="reviews">
     <div class="page-shell detail-shell">
       <header class="explore-header">
         <nav class="explore-topbar">
@@ -25,17 +25,14 @@
               <span class="brand-mark" aria-hidden="true"></span>
               <span class="brand-text">MovieMate</span>
             </a>
-            <span class="beta-chip">profile</span>
+            <span class="beta-chip">reviews</span>
           </div>
           <div class="explore-nav-center">
             <a class="explore-nav-link" href="index.html#trending"><span>◉</span> Explore</a>
-            <a class="explore-nav-link" href="index.html#schedule"><span>◌</span> Schedule</a>
-            <a class="explore-nav-link" href="index.html#collections"><span>▣</span> Collections</a>
-            <a class="explore-nav-link active" href="profile.html"><span>☺</span> My Profile</a>
-            <a class="explore-nav-link" href="my-reviews.html"><span>◌</span> My Reviews</a>
+            <a class="explore-nav-link" href="profile.html"><span>☺</span> My Profile</a>
+            <a class="explore-nav-link active" href="my-reviews.html"><span>◌</span> My Reviews</a>
           </div>
           <div class="explore-actions-right">
-            <a class="ghost-link" href="account.html">Settings</a>
             <div class="account-menu-wrap">
               <button class="avatar-chip auth-chip account-chip" data-auth-toggle type="button" aria-label="MovieMate account">
                 <span class="account-chip-avatar hidden" data-account-avatar>MM</span>
@@ -53,7 +50,7 @@
         </nav>
       </header>
 
-      <main class="profile-page" id="profilePage"></main>
+      <main class="reviews-page" id="reviewsPage"></main>
     </div>
 
     <div class="overlay-modal hidden" id="authModal" aria-hidden="true">
