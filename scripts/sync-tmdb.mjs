@@ -7,6 +7,7 @@ const TITLES_COLLECTION = "moviemate_titles";
 const ALLOWED_LANGUAGE_CODES = new Set(["en", "hi", "ja", "ko", "ne"]);
 const WATCH_PROVIDER_REGIONS = ["IN", "US", "GB"];
 const UPCOMING_PAGE_COUNT = 6;
+const BOLLYWOOD_PAGE_COUNT = 8;
 const POPULAR_PAGE_COUNT = 10;
 const TRENDING_PAGE_COUNT = 10;
 
@@ -242,6 +243,21 @@ async function fetchPopularMovies() {
       region: "IN"
     },
     POPULAR_PAGE_COUNT
+  );
+}
+
+async function fetchBollywoodMovies() {
+  return fetchPagedResults(
+    "/discover/movie",
+    {
+      language: "en-US",
+      region: "IN",
+      with_original_language: "hi",
+      sort_by: "popularity.desc",
+      vote_count_gte: 20,
+      include_adult: "false"
+    },
+    BOLLYWOOD_PAGE_COUNT
   );
 }
 
@@ -489,6 +505,7 @@ async function run() {
     tvGenres,
     upcomingMovies,
     upcomingSeries,
+    bollywoodMovies,
     popularMovies,
     popularSeries,
     trendingMovies,
@@ -498,6 +515,7 @@ async function run() {
     fetchGenres("Series"),
     fetchUpcomingMovies(),
     fetchUpcomingSeries(),
+    fetchBollywoodMovies(),
     fetchPopularMovies(),
     fetchPopularSeries(),
     fetchTrendingMovies(),
@@ -513,6 +531,9 @@ async function run() {
   const normalizedPopularMovies = popularMovies
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "popular"));
+  const normalizedBollywoodMovies = bollywoodMovies
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "bollywood"));
   const normalizedPopularSeries = popularSeries
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "popular"));
@@ -528,6 +549,7 @@ async function run() {
   [
     ...normalizedUpcomingMovies,
     ...normalizedUpcomingSeries,
+    ...normalizedBollywoodMovies,
     ...normalizedPopularMovies,
     ...normalizedPopularSeries,
     ...normalizedTrendingMovies,
