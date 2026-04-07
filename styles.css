@@ -1131,6 +1131,10 @@ button.ghost-link {
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.38);
 }
 
+.movie-card-link {
+  display: block;
+}
+
 .movie-poster {
   width: 100%;
   aspect-ratio: 4 / 5;
@@ -1143,6 +1147,19 @@ button.ghost-link {
   flex-direction: column;
   gap: 14px;
   padding: 18px;
+}
+
+.movie-card-compact {
+  overflow: hidden;
+}
+
+.movie-card-compact .movie-poster {
+  aspect-ratio: 0.73;
+}
+
+.movie-card-summary {
+  display: grid;
+  gap: 10px;
 }
 
 .movie-header {
@@ -1181,6 +1198,15 @@ button.ghost-link {
 .movie-actions {
   margin-top: auto;
   justify-content: space-between;
+}
+
+.movie-actions-compact {
+  padding: 0 18px 18px;
+  margin-top: 0;
+}
+
+.movie-owner-controls {
+  padding: 0 18px 18px;
 }
 
 .save-title-btn.active {

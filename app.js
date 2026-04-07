@@ -813,6 +813,22 @@ async function fetchHomepageContent() {
   return homepageContentCache;
 }
 
+function getCardLabel(title) {
+  if (title.importBuckets.includes("trending")) {
+    return "Trending Now";
+  }
+
+  if (title.importBuckets.includes("popular")) {
+    return `Popular ${title.type}`;
+  }
+
+  if (title.status === "Upcoming") {
+    return title.type === "Series" ? "New Show" : "New Movie";
+  }
+
+  return `New ${title.type}`;
+}
+
 function movieCardTemplate(title) {
   const saved = isSavedTitle(title.id);
   const ownerControls = isOwnerMode()
@@ -832,40 +848,44 @@ function movieCardTemplate(title) {
     ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
     ${title.source === "tmdb" ? '<span class="status-pill status-source">TMDb</span>' : ""}
   `;
+  const stats = getReactionStats(title);
+  const cardLabel = getCardLabel(title);
 
   return `
-    <article class="movie-card">
-      <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
-      <div class="movie-content">
-        <div class="movie-header">
-          <div>
-            <h3>${escapeHtml(title.title)}</h3>
-            <p class="movie-meta">${escapeHtml(title.type)} • ${escapeHtml(title.genre)} • ${escapeHtml(title.language.join(", "))}</p>
-            <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+    <article class="movie-card movie-card-compact">
+      <a class="movie-card-link" href="details.html?id=${title.id}">
+        <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+        <div class="movie-content">
+          <div class="movie-card-summary">
+            <div class="movie-header">
+              <div>
+                <h3>${escapeHtml(title.title)}</h3>
+                <p class="movie-meta">${escapeHtml(cardLabel)}</p>
+                <p class="movie-meta subtle-line">${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+              </div>
+              <span class="rating-pill"><strong>${stats.recommendedPercent}%</strong> recommend</span>
+            </div>
             <div class="status-row">${badges}</div>
           </div>
-          <span class="rating-pill"><strong>${getReactionStats(title).recommendedPercent}%</strong> recommend</span>
         </div>
-        <p class="movie-description">${escapeHtml(title.description)}</p>
-        ${reactionButtonsTemplate(title)}
-        <div class="movie-actions">
-          <a class="details-link" href="details.html?id=${title.id}">View Details →</a>
-          <button class="owner-action-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved" : "Save"}</button>
+      </a>
+      <div class="movie-actions movie-actions-compact">
+        <a class="details-link" href="details.html?id=${title.id}">Open Details →</a>
+        <button class="owner-action-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved" : "Save"}</button>
+      </div>
+      ${ownerControls
+        ? `
+        <div class="movie-owner-controls">
           ${ownerControls}
         </div>
-      </div>
+      `
+        : ""}
     </article>
   `;
 }
 
 function featuredCardTemplate(title) {
-  const cardLabel = title.importBuckets.includes("trending")
-    ? "Trending Now"
-    : title.importBuckets.includes("popular")
-      ? `Popular ${title.type}`
-      : title.status === "Upcoming"
-        ? "Coming Soon"
-        : `New ${title.type}`;
+  const cardLabel = getCardLabel(title);
   const badges = `
     ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
     ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
