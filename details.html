@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=15" />
+    <link rel="stylesheet" href="styles.css?v=16" />
   </head>
   <body data-page="details">
     <div class="page-shell detail-shell">
@@ -113,6 +113,24 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=21"></script>
+    <div class="overlay-modal hidden" id="trailerModal" aria-hidden="true">
+      <button class="overlay-backdrop" data-close-trailer="true" type="button" aria-label="Close trailer"></button>
+      <div class="overlay-card overlay-card-wide trailer-modal-card">
+        <button class="overlay-close" id="trailerModalClose" type="button" aria-label="Close trailer">&times;</button>
+        <div class="trailer-modal-frame-shell">
+          <iframe
+            id="trailerModalFrame"
+            class="trailer-modal-frame"
+            src=""
+            title="MovieMate trailer"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="app.js?v=22"></script>
   </body>
 </html>

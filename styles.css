@@ -1883,6 +1883,24 @@ button.ghost-link {
   width: fit-content;
 }
 
+.trailer-modal-card {
+  width: min(1100px, 100%);
+  padding: 18px;
+}
+
+.trailer-modal-frame-shell {
+  overflow: hidden;
+  border-radius: 24px;
+  background: #000;
+}
+
+.trailer-modal-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  display: block;
+}
+
 .owner-toast {
   position: fixed;
   right: 20px;

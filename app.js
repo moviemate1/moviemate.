@@ -651,14 +651,20 @@ function trailerPanelTemplate(title) {
   if (embedUrl) {
     return `
       <section class="trailer-stage" id="trailerSection">
-        <iframe
-          class="trailer-frame"
-          src="${embedUrl}"
-          title="${escapeHtml(title.title)} trailer"
-          loading="lazy"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-        ></iframe>
+        <img class="trailer-poster" src="${title.image}" alt="${escapeHtml(title.title)} trailer preview" />
+        <div class="trailer-overlay">
+          <p class="eyebrow">Trailer</p>
+          <h2>Preview the story before you watch</h2>
+          <button
+            class="primary-btn trailer-btn"
+            type="button"
+            data-open-trailer="true"
+            data-embed-url="${embedUrl}"
+            data-trailer-title="${escapeHtml(title.title)} trailer"
+          >
+            Play Trailer
+          </button>
+        </div>
       </section>
     `;
   }
@@ -1728,6 +1734,33 @@ function closeOwnerEditModal() {
   syncModalVisibility();
 }
 
+function openTrailerModal(embedUrl, title) {
+  const modal = document.querySelector("#trailerModal");
+  const frame = document.querySelector("#trailerModalFrame");
+
+  if (!modal || !frame || !embedUrl) {
+    return;
+  }
+
+  frame.src = embedUrl;
+  frame.title = title || "MovieMate trailer";
+  modal.classList.remove("hidden");
+  syncModalVisibility();
+}
+
+function closeTrailerModal() {
+  const modal = document.querySelector("#trailerModal");
+  const frame = document.querySelector("#trailerModalFrame");
+
+  if (!modal || !frame) {
+    return;
+  }
+
+  frame.src = "";
+  modal.classList.add("hidden");
+  syncModalVisibility();
+}
+
 function openHomepageEditModal() {
   const modal = document.querySelector("#homepageEditModal");
   const form = document.querySelector("#homepageEditForm");
@@ -2245,6 +2278,34 @@ function setupOwnerEditForm() {
   });
 }
 
+function setupTrailerModal() {
+  const closeButton = document.querySelector("#trailerModalClose");
+
+  closeButton?.addEventListener("click", closeTrailerModal);
+
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    if (target.dataset.closeTrailer === "true") {
+      closeTrailerModal();
+      return;
+    }
+
+    const openButton = target.closest("[data-open-trailer='true']");
+
+    if (!openButton) {
+      return;
+    }
+
+    event.preventDefault();
+    openTrailerModal(openButton.dataset.embedUrl, openButton.dataset.trailerTitle);
+  });
+}
+
 function setupHomepageEditor() {
   const openButton = document.querySelector("#editHomepageCopyBtn");
   const form = document.querySelector("#homepageEditForm");
@@ -2635,6 +2696,7 @@ async function init() {
   setupOwnerMode();
   setupOwnerEditForm();
   setupHomepageEditor();
+  setupTrailerModal();
 
   if (document.body.dataset.page === "home") {
     setupFilters();
