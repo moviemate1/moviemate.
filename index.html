@@ -28,7 +28,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=12" />
+    <link rel="stylesheet" href="styles.css?v=13" />
   </head>
   <body data-page="home">
     <div class="page-shell">
@@ -44,14 +44,17 @@
           </div>
           <div class="explore-nav-center">
             <a class="explore-nav-link active" href="#trending"><span>◉</span> Explore</a>
-            <a class="explore-nav-link" href="#upcoming"><span>◌</span> Schedule</a>
-            <a class="explore-nav-link" href="#browse"><span>▣</span> Collections</a>
+            <a class="explore-nav-link" href="#schedule"><span>◌</span> Schedule</a>
+            <a class="explore-nav-link" href="#collections"><span>▣</span> Collections</a>
             <a class="explore-nav-link" href="#suggest"><span>✦</span> Suggest</a>
             <button class="explore-nav-link owner-toggle" id="ownerToggle" type="button"><span>◈</span> Owner</button>
           </div>
           <div class="explore-actions-right">
-            <button class="icon-chip" type="button" aria-label="Search">⌕</button>
-            <button class="icon-chip" type="button" aria-label="Notifications">◌</button>
+            <button class="icon-chip" id="topSearchBtn" type="button" aria-label="Search">⌕</button>
+            <button class="icon-chip notification-trigger" id="topNotificationsBtn" type="button" aria-label="Notifications">
+              ◌
+              <span class="notification-dot" id="topNotificationDot"></span>
+            </button>
             <button class="avatar-chip" type="button" aria-label="MovieMate profile">MM</button>
           </div>
         </nav>
@@ -123,7 +126,7 @@
                 <a class="browse-box" href="#suggest"><span class="browse-box-icon">☺</span><span>Community</span></a>
                 <a class="browse-box" href="#tmdb-trending"><span class="browse-box-icon">↗</span><span>Trending</span></a>
                 <a class="browse-box" href="#popular-movies"><span class="browse-box-icon">★</span><span>Popular</span></a>
-                <a class="browse-box" href="#upcoming"><span class="browse-box-icon">◷</span><span>Upcoming</span></a>
+                <a class="browse-box" href="#schedule"><span class="browse-box-icon">◷</span><span>Schedule</span></a>
                 <a class="browse-box" href="#auto-updated"><span class="browse-box-icon">⟳</span><span>Auto Updated</span></a>
               </div>
             </section>
@@ -196,20 +199,68 @@
           </p>
         </section>
 
-        <section class="section" id="upcoming">
+        <section class="section schedule-section" id="schedule">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Coming soon</p>
-              <h2 id="upcomingHeadingText">Upcoming Movies & Series</h2>
+              <p class="eyebrow">Watch calendar</p>
+              <h2 id="upcomingHeadingText">Schedule</h2>
             </div>
             <p class="section-copy" id="upcomingCopyText">
-              Watch what is releasing next with quick details on title, type, genre, language, release date, and story.
+              Track what is playing today, what is coming next, and what is only announced so far.
             </p>
           </div>
 
-          <div class="movie-grid" id="upcomingGrid"></div>
-          <p class="empty-state hidden" id="upcomingEmptyState">
-            No upcoming titles have been added yet.
+          <div class="schedule-layout">
+            <aside class="schedule-sidebar">
+              <div class="schedule-menu">
+                <button class="schedule-menu-btn active" data-schedule-window="today" type="button">Today</button>
+                <button class="schedule-menu-btn" data-schedule-window="upcoming" type="button">Upcoming</button>
+                <button class="schedule-menu-btn" data-schedule-window="announced" type="button">Announced</button>
+              </div>
+              <div class="schedule-note-card">
+                <p class="eyebrow">Quick note</p>
+                <h3>Fast release tracker</h3>
+                <p class="section-copy">
+                  Watch the near-release calendar from your public titles and TMDb updates in one place.
+                </p>
+              </div>
+            </aside>
+
+            <div class="schedule-content">
+              <div class="schedule-type-pills">
+                <button class="schedule-type-pill active" data-schedule-type="all" type="button">All</button>
+                <button class="schedule-type-pill" data-schedule-type="Movie" type="button">Movies</button>
+                <button class="schedule-type-pill" data-schedule-type="Series" type="button">Shows</button>
+              </div>
+
+              <div class="schedule-grid" id="scheduleGrid"></div>
+              <p class="empty-state hidden" id="scheduleEmptyState">
+                No titles match this schedule view right now.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section collections-section" id="collections">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Discover collections</p>
+              <h2>Collections</h2>
+            </div>
+            <p class="section-copy">
+              Browse ready-made collection cards, personal picks built from your saved titles, and quick watchlist-style shelves.
+            </p>
+          </div>
+
+          <div class="collection-tabs">
+            <button class="collection-tab active" data-collection-tab="discover" type="button">Discover</button>
+            <button class="collection-tab" data-collection-tab="mine" type="button">My Collections</button>
+            <button class="collection-tab" data-collection-tab="saved" type="button">Saved</button>
+          </div>
+
+          <div class="collection-grid" id="collectionsGrid"></div>
+          <p class="empty-state hidden" id="collectionsEmptyState">
+            No collections are ready yet. Save titles and react to build a more personal collection area.
           </p>
         </section>
 
@@ -469,10 +520,10 @@
       <a class="mobile-dock-link active" href="#trending">
         <span>Explore</span>
       </a>
-      <a class="mobile-dock-link" href="#upcoming">
+      <a class="mobile-dock-link" href="#schedule">
         <span>Schedule</span>
       </a>
-      <a class="mobile-dock-link" href="#browse">
+      <a class="mobile-dock-link" href="#collections">
         <span>Collections</span>
       </a>
       <a class="mobile-dock-link" href="#suggest">
@@ -486,6 +537,19 @@
     <div class="scroll-controls" aria-label="Quick scroll controls">
       <button class="scroll-control-btn" id="scrollUpBtn" type="button" aria-label="Scroll to top">↑</button>
       <button class="scroll-control-btn" id="scrollDownBtn" type="button" aria-label="Scroll down">↓</button>
+    </div>
+
+    <div class="overlay-modal hidden" id="notificationsModal" aria-hidden="true">
+      <button class="overlay-backdrop" data-close-notifications="true" type="button" aria-label="Close notifications"></button>
+      <div class="overlay-card notification-overlay">
+        <button class="overlay-close" id="notificationsClose" type="button" aria-label="Close notifications">&times;</button>
+        <p class="eyebrow">Your updates</p>
+        <h2 class="overlay-title">MovieMate notifications</h2>
+        <div class="notification-feed" id="userNotificationsList"></div>
+        <p class="empty-state hidden" id="userNotificationsEmpty">
+          No new updates right now.
+        </p>
+      </div>
     </div>
 
     <div class="overlay-modal hidden" id="ownerEditModal" aria-hidden="true">
@@ -670,6 +734,6 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=15"></script>
+    <script type="module" src="app.js?v=16"></script>
   </body>
 </html>

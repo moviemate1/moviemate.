@@ -19,7 +19,9 @@ const TITLES_COLLECTION = "moviemate_titles";
 const SETTINGS_COLLECTION = "moviemate_settings";
 const HOMEPAGE_DOC_ID = "homepage";
 const REACTIONS_STORAGE_KEY = "moviemate_reactions";
+const SAVED_TITLES_STORAGE_KEY = "moviemate_saved_titles";
 const OWNER_MODE_KEY = "moviemate_owner_mode";
+const USER_NOTIFICATIONS_SEEN_KEY = "moviemate_notifications_seen_at";
 const OWNER_PASSCODE = "1A2b3456@";
 const OWNER_NOTIFICATION_TOAST_MS = 3200;
 const REACTION_OPTIONS = {
@@ -375,6 +377,44 @@ function getStoredReactions() {
   }
 }
 
+function getSavedTitles() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SAVED_TITLES_STORAGE_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function isSavedTitle(titleId) {
+  return getSavedTitles().includes(titleId);
+}
+
+function toggleSavedTitle(titleId) {
+  const saved = new Set(getSavedTitles());
+
+  if (saved.has(titleId)) {
+    saved.delete(titleId);
+  } else {
+    saved.add(titleId);
+  }
+
+  localStorage.setItem(SAVED_TITLES_STORAGE_KEY, JSON.stringify([...saved]));
+}
+
+function getCreatedAtMs(value) {
+  if (!value) {
+    return 0;
+  }
+
+  if (typeof value?.toDate === "function") {
+    return value.toDate().getTime();
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
 function getReaction(titleId) {
   const reactions = getStoredReactions();
   return reactions[titleId] || "";
@@ -443,6 +483,7 @@ function formatReleaseDate(value) {
 function reactionButtonsTemplate(title) {
   const currentReaction = getReaction(title.id);
   const stats = getReactionStats(title);
+  const saved = isSavedTitle(title.id);
 
   return `
     <div class="reaction-panel">
@@ -773,6 +814,7 @@ async function fetchHomepageContent() {
 }
 
 function movieCardTemplate(title) {
+  const saved = isSavedTitle(title.id);
   const ownerControls = isOwnerMode()
     ? `
         <div class="owner-actions">
@@ -808,6 +850,7 @@ function movieCardTemplate(title) {
         ${reactionButtonsTemplate(title)}
         <div class="movie-actions">
           <a class="details-link" href="details.html?id=${title.id}">View Details →</a>
+          <button class="owner-action-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved" : "Save"}</button>
           ${ownerControls}
         </div>
       </div>
@@ -1184,6 +1227,291 @@ function renderMostInterestedList(titles) {
   list.innerHTML = items.map(mostInterestedItemTemplate).join("");
 }
 
+function scheduleCardTemplate(title) {
+  return `
+    <a class="schedule-card" href="details.html?id=${title.id}">
+      <div class="schedule-date-badge">
+        <span>${title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short" }).toUpperCase() : "TBD"}</span>
+        <strong>${title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).toLocaleDateString("en-IN", { day: "2-digit" }) : "--"}</strong>
+      </div>
+      <img class="schedule-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <div class="schedule-copy">
+        <h3>${escapeHtml(title.title)}</h3>
+        <p>${escapeHtml(title.type)} • ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+      </div>
+    </a>
+  `;
+}
+
+function getScheduleTitles(titles, windowKey, typeKey) {
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const futureThreshold = new Date(today);
+  futureThreshold.setDate(today.getDate() + 30);
+
+  let items = titles.filter((title) => title.releaseDate);
+
+  if (typeKey !== "all") {
+    items = items.filter((title) => title.type === typeKey);
+  }
+
+  if (windowKey === "today") {
+    items = items
+      .filter((title) => {
+        const release = new Date(`${title.releaseDate}T00:00:00`);
+        const diff = Math.abs(release.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+        return diff <= 7;
+      })
+      .sort((a, b) => a.releaseDate.localeCompare(b.releaseDate));
+
+    if (!items.length) {
+      items = titles
+        .filter((title) => title.releaseDate && title.releaseDate >= todayStr)
+        .sort((a, b) => a.releaseDate.localeCompare(b.releaseDate));
+    }
+  } else if (windowKey === "upcoming") {
+    items = items
+      .filter((title) => title.releaseDate >= todayStr)
+      .sort((a, b) => a.releaseDate.localeCompare(b.releaseDate));
+  } else if (windowKey === "announced") {
+    items = titles
+      .filter((title) => {
+        if (typeKey !== "all" && title.type !== typeKey) {
+          return false;
+        }
+
+        if (!title.releaseDate) {
+          return title.status === "Upcoming";
+        }
+
+        return title.status === "Upcoming" && new Date(`${title.releaseDate}T00:00:00`) > futureThreshold;
+      })
+      .sort((a, b) => (a.releaseDate || "9999-12-31").localeCompare(b.releaseDate || "9999-12-31"));
+  }
+
+  return items.slice(0, 12);
+}
+
+function renderScheduleGrid(titles) {
+  const grid = document.querySelector("#scheduleGrid");
+  const emptyState = document.querySelector("#scheduleEmptyState");
+
+  if (!grid || !emptyState) {
+    return;
+  }
+
+  const selectedWindow =
+    document.querySelector(".schedule-menu-btn.active")?.dataset.scheduleWindow || "today";
+  const selectedType =
+    document.querySelector(".schedule-type-pill.active")?.dataset.scheduleType || "all";
+  const items = getScheduleTitles(titles, selectedWindow, selectedType);
+
+  grid.innerHTML = items.map(scheduleCardTemplate).join("");
+  emptyState.classList.toggle("hidden", items.length > 0);
+}
+
+function collectionCardTemplate(collection) {
+  return `
+    <article class="collection-card">
+      <img class="collection-cover" src="${collection.image}" alt="${escapeHtml(collection.title)} cover" />
+      <div class="collection-copy">
+        <h3>${escapeHtml(collection.title)}</h3>
+        <p>${escapeHtml(collection.subtitle)}</p>
+        <span>${collection.count} items • ${collection.likes} likes</span>
+      </div>
+    </article>
+  `;
+}
+
+function buildDiscoverCollections(titles) {
+  const byGenre = [...titles].sort((a, b) => getInterestScore(b) - getInterestScore(a));
+  const groups = [
+    {
+      title: "Top Community Heat",
+      subtitle: "The boldest public reactions on MovieMate",
+      items: byGenre.slice(0, 8)
+    },
+    {
+      title: "Upcoming Spotlight",
+      subtitle: "Fresh releases landing soon",
+      items: titles.filter((title) => title.status === "Upcoming").slice(0, 8)
+    },
+    {
+      title: "Trending Now",
+      subtitle: "Titles buzzing with reactions and traction",
+      items: titles.filter((title) => title.trending || title.importBuckets.includes("trending")).slice(0, 8)
+    },
+    {
+      title: "Series Marathon",
+      subtitle: "Binge-worthy picks from the current library",
+      items: titles.filter((title) => title.type === "Series").slice(0, 8)
+    },
+    {
+      title: "Movie Night",
+      subtitle: "Strong movie picks across genres",
+      items: titles.filter((title) => title.type === "Movie").slice(0, 8)
+    },
+    {
+      title: "Multilingual Mix",
+      subtitle: "Titles across the languages visitors browse most",
+      items: titles.filter((title) => title.language.length > 1 || title.language[0] !== "English").slice(0, 8)
+    }
+  ];
+
+  return groups
+    .filter((group) => group.items.length)
+    .map((group) => ({
+      ...group,
+      image: group.items[0].image,
+      count: group.items.length,
+      likes: group.items.reduce((sum, item) => sum + getReactionStats(item).total, 0)
+    }));
+}
+
+function buildPersonalCollections(titles) {
+  const savedIds = new Set(getSavedTitles());
+  const savedTitles = titles.filter((title) => savedIds.has(title.id));
+  const reactionMap = getStoredReactions();
+  const reactedTitles = titles.filter((title) => reactionMap[title.id]);
+  const perfectTitles = titles.filter((title) => reactionMap[title.id] === "perfect");
+
+  return [
+    {
+      title: "Your Saved Watchlist",
+      subtitle: "Titles you saved for later",
+      items: savedTitles
+    },
+    {
+      title: "Your Reaction Picks",
+      subtitle: "Movies and shows you already voted on",
+      items: reactedTitles
+    },
+    {
+      title: "Perfect Vote Picks",
+      subtitle: "Titles you marked as perfect",
+      items: perfectTitles
+    }
+  ]
+    .filter((group) => group.items.length)
+    .map((group) => ({
+      ...group,
+      image: group.items[0].image,
+      count: group.items.length,
+      likes: group.items.reduce((sum, item) => sum + getReactionStats(item).recommendedPercent, 0)
+    }));
+}
+
+function buildSavedCollections(titles) {
+  const savedIds = new Set(getSavedTitles());
+  const savedTitles = titles.filter((title) => savedIds.has(title.id));
+
+  return [
+    {
+      title: "Saved Titles",
+      subtitle: "Everything you bookmarked on this browser",
+      items: savedTitles
+    },
+    {
+      title: "Saved Movies",
+      subtitle: "Only movie picks from your saved list",
+      items: savedTitles.filter((title) => title.type === "Movie")
+    },
+    {
+      title: "Saved Series",
+      subtitle: "Only series from your saved list",
+      items: savedTitles.filter((title) => title.type === "Series")
+    }
+  ]
+    .filter((group) => group.items.length)
+    .map((group) => ({
+      ...group,
+      image: group.items[0].image,
+      count: group.items.length,
+      likes: group.items.reduce((sum, item) => sum + getReactionStats(item).total, 0)
+    }));
+}
+
+function renderCollectionsGrid(titles) {
+  const grid = document.querySelector("#collectionsGrid");
+  const emptyState = document.querySelector("#collectionsEmptyState");
+
+  if (!grid || !emptyState) {
+    return;
+  }
+
+  const activeTab = document.querySelector(".collection-tab.active")?.dataset.collectionTab || "discover";
+  const collections =
+    activeTab === "mine"
+      ? buildPersonalCollections(titles)
+      : activeTab === "saved"
+        ? buildSavedCollections(titles)
+        : buildDiscoverCollections(titles);
+
+  grid.innerHTML = collections.map(collectionCardTemplate).join("");
+  emptyState.classList.toggle("hidden", collections.length > 0);
+}
+
+function userNotificationTemplate(item) {
+  return `
+    <article class="notification-feed-card">
+      <div>
+        <p class="eyebrow">${escapeHtml(item.label)}</p>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p>${escapeHtml(item.copy)}</p>
+      </div>
+      ${item.href ? `<a class="ghost-link" href="${item.href}">Open</a>` : ""}
+    </article>
+  `;
+}
+
+function buildUserNotifications(titles) {
+  const recentTitles = [...titles]
+    .filter((title) => getCreatedAtMs(title.createdAt) > 0)
+    .sort((a, b) => getCreatedAtMs(b.createdAt) - getCreatedAtMs(a.createdAt))
+    .slice(0, 5)
+    .map((title) => ({
+      label: "New title added",
+      title: title.title,
+      copy: `${title.type} • ${formatReleaseDate(title.releaseDate)} • now live on MovieMate.`,
+      href: `details.html?id=${title.id}`,
+      createdAtMs: getCreatedAtMs(title.createdAt)
+    }));
+
+  const allTimeGreats = [...titles]
+    .sort((a, b) => getInterestScore(b) - getInterestScore(a))
+    .slice(0, 3)
+    .map((title) => ({
+      label: "All-time great pick",
+      title: title.title,
+      copy: `${getReactionStats(title).recommendedPercent}% recommend • ${title.genre}`,
+      href: `details.html?id=${title.id}`,
+      createdAtMs: 0
+    }));
+
+  return [...recentTitles, ...allTimeGreats];
+}
+
+function renderUserNotifications(titles) {
+  const list = document.querySelector("#userNotificationsList");
+  const emptyState = document.querySelector("#userNotificationsEmpty");
+  const dot = document.querySelector("#topNotificationDot");
+
+  if (!list || !emptyState) {
+    return;
+  }
+
+  const items = buildUserNotifications(titles);
+  const seenAt = Number(localStorage.getItem(USER_NOTIFICATIONS_SEEN_KEY) || 0);
+  const unseenCount = items.filter((item) => item.createdAtMs && item.createdAtMs > seenAt).length;
+
+  list.innerHTML = items.map(userNotificationTemplate).join("");
+  emptyState.classList.toggle("hidden", items.length > 0);
+
+  if (dot) {
+    dot.classList.toggle("visible", unseenCount > 0);
+  }
+}
+
 function filterTitles(titles) {
   const searchValue = document.querySelector("#searchInput")?.value.trim().toLowerCase() || "";
   const typeValue = document.querySelector("#typeFilter")?.value || "all";
@@ -1262,12 +1590,14 @@ async function renderHomePage() {
   renderFeaturedTitles(visibleTitles);
   renderTrendingTitles(visibleTitles);
   renderTitleGrid(filterTitles(visibleTitles));
-  renderUpcomingGrid(visibleTitles);
+  renderScheduleGrid(visibleTitles);
   renderAutoUpdatedGrid(visibleTitles);
   renderPopularMoviesGrid(visibleTitles);
   renderPopularSeriesGrid(visibleTitles);
   renderTmdbTrendingGrid(visibleTitles);
   renderMostInterestedList(visibleTitles);
+  renderCollectionsGrid(visibleTitles);
+  renderUserNotifications(visibleTitles);
   renderOwnerPanel(titles);
   renderOwnerNotifications(titles);
   renderHeroStats(visibleTitles);
@@ -1688,6 +2018,7 @@ async function renderDetailsPage() {
         <div class="detail-actions">
           ${reactionButtonsTemplate(title)}
           <a class="secondary-btn trailer-btn" href="${getTrailerLink(title)}" target="_blank" rel="noreferrer">Open Trailer</a>
+          <button class="secondary-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collections" : "Save to Collections"}</button>
           ${ownerControls}
         </div>
       </div>
@@ -2023,6 +2354,34 @@ function setupFilters() {
   });
 }
 
+function setupScheduleControls() {
+  document.querySelectorAll(".schedule-menu-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".schedule-menu-btn").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      renderScheduleGrid(getVisibleTitles(titlesCache));
+    });
+  });
+
+  document.querySelectorAll(".schedule-type-pill").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".schedule-type-pill").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      renderScheduleGrid(getVisibleTitles(titlesCache));
+    });
+  });
+}
+
+function setupCollectionTabs() {
+  document.querySelectorAll(".collection-tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".collection-tab").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      renderCollectionsGrid(getVisibleTitles(titlesCache));
+    });
+  });
+}
+
 function setupInterestWindow() {
   const select = document.querySelector("#interestWindowSelect");
 
@@ -2032,6 +2391,63 @@ function setupInterestWindow() {
 
   select.addEventListener("change", () => {
     renderMostInterestedList(getVisibleTitles(titlesCache));
+  });
+}
+
+function openNotificationsModal() {
+  const modal = document.querySelector("#notificationsModal");
+
+  if (!modal) {
+    return;
+  }
+
+  localStorage.setItem(USER_NOTIFICATIONS_SEEN_KEY, String(Date.now()));
+  modal.classList.remove("hidden");
+  syncModalVisibility();
+  renderUserNotifications(getVisibleTitles(titlesCache));
+}
+
+function closeNotificationsModal() {
+  const modal = document.querySelector("#notificationsModal");
+
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.add("hidden");
+  syncModalVisibility();
+}
+
+function setupTopSearch() {
+  const button = document.querySelector("#topSearchBtn");
+
+  if (!button) {
+    return;
+  }
+
+  button.addEventListener("click", () => {
+    const searchInput = document.querySelector("#searchInput");
+    const browseSection = document.querySelector("#browse");
+
+    browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    window.setTimeout(() => {
+      searchInput?.focus();
+    }, 220);
+  });
+}
+
+function setupUserNotificationsModal() {
+  const openButton = document.querySelector("#topNotificationsBtn");
+  const closeButton = document.querySelector("#notificationsClose");
+
+  openButton?.addEventListener("click", openNotificationsModal);
+  closeButton?.addEventListener("click", closeNotificationsModal);
+
+  document.addEventListener("click", (event) => {
+    if (event.target.matches("[data-close-notifications='true']")) {
+      closeNotificationsModal();
+    }
   });
 }
 
@@ -2049,6 +2465,24 @@ function setupScrollControls() {
       document.querySelector("#upcoming") ||
       document.body;
     nextTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+function setupSaveButtons() {
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest(".save-title-btn");
+
+    if (!button) {
+      return;
+    }
+
+    toggleSavedTitle(button.dataset.saveId);
+
+    if (document.body.dataset.page === "home") {
+      await renderHomePage();
+    } else {
+      await renderDetailsPage();
+    }
   });
 }
 
@@ -2096,6 +2530,11 @@ function setupOwnerNotificationsRealtime() {
     const pendingCount = pendingTitles.length;
 
     if (document.body.dataset.page === "home") {
+      const visibleTitles = getVisibleTitles(liveTitles);
+      renderScheduleGrid(visibleTitles);
+      renderCollectionsGrid(visibleTitles);
+      renderUserNotifications(visibleTitles);
+      renderMostInterestedList(visibleTitles);
       renderOwnerNotifications(liveTitles);
       renderOwnerPanel(liveTitles);
     }
@@ -2113,6 +2552,7 @@ function setupOwnerNotificationsRealtime() {
 
 async function init() {
   setupLikeButtons();
+  setupSaveButtons();
   setupDeleteButtons();
   setupCommentDeleteButtons();
   setupOwnerActionButtons();
@@ -2122,7 +2562,11 @@ async function init() {
 
   if (document.body.dataset.page === "home") {
     setupFilters();
+    setupScheduleControls();
+    setupCollectionTabs();
     setupInterestWindow();
+    setupTopSearch();
+    setupUserNotificationsModal();
     setupScrollControls();
     setupSuggestForm();
     await renderHomePage();
