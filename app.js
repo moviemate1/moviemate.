@@ -52,23 +52,20 @@ const DEFAULT_HOMEPAGE_CONTENT = {
     "Quick trending picks and high-interest titles that feel right for a shared watch mood.",
   browseTitle: "Search by title, genre, language, or format",
   browseText:
-    "Explore community suggestions for movies and series across genres, languages, and platforms with easy filters and quick actions.",
+    "Use fast filters to scan the library in a cleaner, more even card layout.",
   upcomingTitle: "Upcoming Movies & Series",
   upcomingText:
     "Watch what is releasing next with quick details on title, type, genre, language, release date, and story.",
-  suggestTitle: "Share a movie or series with the community",
-  suggestText:
-    "Add the title, type, genre, language, description, and poster to help others find something great to watch.",
-  ownerTitle: "Pending suggestions and homepage control",
+  ownerTitle: "Homepage control and approvals",
   ownerText:
-    "Review public suggestions, approve what should go live, and mark standout titles as featured or trending.",
+    "Review pending titles, approve what should go live, and mark standout titles as featured or trending.",
   communityBrowseTitle: "Browse freely",
   communityBrowseText: "Anyone can explore movies and series without creating an account.",
-  communitySuggestTitle: "Suggest new titles",
-  communitySuggestText: "Help others discover hidden gems across platforms, genres, and languages.",
+  communitySuggestTitle: "Build your list",
+  communitySuggestText: "Members can save titles and track interest across devices.",
   communityReviewTitle: "Review and like",
   communityReviewText: "Read public reviews, post your own thoughts, and boost titles you enjoyed.",
-  footerText: "A simple public space to explore, review, like, and suggest movies and series."
+  footerText: "A simple public space to explore movies and series, with member reactions, collections, and interest tracking."
 };
 
 const BASE_TITLES = [
@@ -517,8 +514,6 @@ function normalizeHomepageContent(data = {}) {
     browseText: data.browseText || DEFAULT_HOMEPAGE_CONTENT.browseText,
     upcomingTitle: data.upcomingTitle || DEFAULT_HOMEPAGE_CONTENT.upcomingTitle,
     upcomingText: data.upcomingText || DEFAULT_HOMEPAGE_CONTENT.upcomingText,
-    suggestTitle: data.suggestTitle || DEFAULT_HOMEPAGE_CONTENT.suggestTitle,
-    suggestText: data.suggestText || DEFAULT_HOMEPAGE_CONTENT.suggestText,
     ownerTitle: data.ownerTitle || DEFAULT_HOMEPAGE_CONTENT.ownerTitle,
     ownerText: data.ownerText || DEFAULT_HOMEPAGE_CONTENT.ownerText,
     communityBrowseTitle:
@@ -900,8 +895,21 @@ function watchStatusActionsTemplate(title) {
   `;
 }
 
-function getInterestToggleState(status) {
-  if (status === "interested") {
+function isUpcomingTitle(title) {
+  if (title.status === "Upcoming") {
+    return true;
+  }
+
+  if (!title.releaseDate) {
+    return false;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  return title.releaseDate > today;
+}
+
+function getUpcomingInterestState(status) {
+  if (status === "interested" || status === "watching" || status === "watched") {
     return {
       label: "Interested",
       nextStatus: "clear",
@@ -914,13 +922,18 @@ function getInterestToggleState(status) {
     label: "Mark as Interested",
     nextStatus: "interested",
     className: "watch-status-btn-interested",
-    helper: "Members can mark titles as interested."
+    helper: "Members can mark unreleased titles as interested."
   };
 }
 
-function getPrimaryWatchButtonState(title, status) {
-  if (title.status === "Upcoming") {
-    return getInterestToggleState(status);
+function getReleasedWatchCycleState(status) {
+  if (status === "interested") {
+    return {
+      label: "Interested",
+      nextStatus: "watching",
+      className: "watch-status-btn-interested active",
+      helper: "Tap again to move this to Watching."
+    };
   }
 
   if (status === "watching") {
@@ -928,7 +941,7 @@ function getPrimaryWatchButtonState(title, status) {
       label: "Watching...",
       nextStatus: "watched",
       className: "watch-status-btn-watching active",
-      helper: "Tap again to mark this as watched."
+      helper: "Tap again to mark this as Watched."
     };
   }
 
@@ -937,16 +950,7 @@ function getPrimaryWatchButtonState(title, status) {
       label: "Watched",
       nextStatus: "clear",
       className: "watch-status-btn-watched active",
-      helper: "Tap again to clear your status."
-    };
-  }
-
-  if (status === "interested") {
-    return {
-      label: "Interested",
-      nextStatus: "watching",
-      className: "watch-status-btn-interested active",
-      helper: "Tap again to move this to watching."
+      helper: "Tap again to clear this watch status."
     };
   }
 
@@ -954,8 +958,14 @@ function getPrimaryWatchButtonState(title, status) {
     label: "Mark as Interested",
     nextStatus: "interested",
     className: "watch-status-btn-interested",
-    helper: "Members can track Interested, Watching, and Watched."
+    helper: "Tap again after that to move through Watching and Watched."
   };
+}
+
+function getPrimaryWatchButtonState(title, status) {
+  return isUpcomingTitle(title)
+    ? getUpcomingInterestState(status)
+    : getReleasedWatchCycleState(status);
 }
 
 function toYouTubeSearchUrl(title) {
@@ -2768,8 +2778,6 @@ function renderHomepageContent(content) {
   setTextContent("#browseCopyText", content.browseText);
   setTextContent("#upcomingHeadingText", content.upcomingTitle);
   setTextContent("#upcomingCopyText", content.upcomingText);
-  setTextContent("#suggestHeadingText", content.suggestTitle);
-  setTextContent("#suggestCopyText", content.suggestText);
   setTextContent("#ownerHeadingText", content.ownerTitle);
   setTextContent("#ownerCopyText", content.ownerText);
   setTextContent("#communityBrowseHeading", content.communityBrowseTitle);
@@ -3388,8 +3396,6 @@ async function submitHomepageEdit(form) {
     browseText: formData.get("browseText")?.toString().trim(),
     upcomingTitle: formData.get("upcomingTitle")?.toString().trim(),
     upcomingText: formData.get("upcomingText")?.toString().trim(),
-    suggestTitle: formData.get("suggestTitle")?.toString().trim(),
-    suggestText: formData.get("suggestText")?.toString().trim(),
     ownerTitle: formData.get("ownerTitle")?.toString().trim(),
     ownerText: formData.get("ownerText")?.toString().trim(),
     communityBrowseTitle: formData.get("communityBrowseTitle")?.toString().trim(),
@@ -3718,7 +3724,7 @@ async function renderDetailsPage() {
           `
           : `
             <div class="member-lock-card">
-              <p class="section-copy">Sign in to vote, post reviews, and suggest movies or series.</p>
+              <p class="section-copy">Sign in to vote, post reviews, save collections, and mark titles as interested.</p>
               <button class="primary-btn" type="button" id="detailsCommentSignInBtn">Sign In to React</button>
             </div>
           `
@@ -4397,8 +4403,7 @@ function buildInterestedTitles(titles) {
     .filter(
       (title) =>
         savedIds.has(title.id) ||
-        normalizeWatchStatusValue(watchStatus[title.id]) === "interested" ||
-        normalizeWatchStatusValue(watchStatus[title.id]) === "watching"
+        normalizeWatchStatusValue(watchStatus[title.id]) === "interested"
     )
     .sort((left, right) => getInterestScore(right) - getInterestScore(left))
     .slice(0, 6);
@@ -4506,9 +4511,7 @@ function renderProfilePage() {
     posts: submittedTitles.length,
     collections: personalCollections.length,
     saved: getSavedTitles().length,
-    watched: Object.values(watchStatus).filter((value) => value === "watched").length,
-    interested: Object.values(watchStatus).filter((value) => normalizeWatchStatusValue(value) === "interested").length,
-    watching: Object.values(watchStatus).filter((value) => normalizeWatchStatusValue(value) === "watching").length
+    interested: Object.values(watchStatus).filter((value) => normalizeWatchStatusValue(value) === "interested").length
   };
 
   target.innerHTML = `
@@ -4533,8 +4536,6 @@ function renderProfilePage() {
         <div class="profile-mini-stats">
           <span>${stats.saved} saved</span>
           <span>${stats.interested} interested</span>
-          <span>${stats.watching} watching</span>
-          <span>${stats.watched} watched</span>
         </div>
         <div class="profile-card-actions">
           <a class="secondary-btn" href="account.html">Edit Profile</a>
@@ -4573,7 +4574,7 @@ function renderProfilePage() {
             ${
               submittedTitles.length
                 ? submittedTitles.map(profilePostCardTemplate).join("")
-                : '<p class="empty-state">Titles you suggest will appear here after you post them.</p>'
+                : '<p class="empty-state">Titles you add or save will start shaping this area over time.</p>'
             }
           </div>
         </div>
@@ -4600,7 +4601,7 @@ function renderProfilePage() {
           ${
             interestedTitles.length
               ? interestedTitles.map(interestedTitleTemplate).join("")
-              : '<p class="empty-state">Use Interested, Watching, Watched, or Save to Collections to build this list.</p>'
+              : '<p class="empty-state">Use Interested or Save to Collections to build this list.</p>'
           }
         </div>
       </aside>
@@ -4760,7 +4761,7 @@ function renderAccountPage() {
           </div>
           <div class="account-health-grid">
             <div class="account-health-item"><strong>${reviewEntries.length}</strong><span>Reviews captured</span></div>
-            <div class="account-health-item"><strong>${submittedTitles.length}</strong><span>Posts suggested</span></div>
+            <div class="account-health-item"><strong>${submittedTitles.length}</strong><span>Titles added</span></div>
             <div class="account-health-item"><strong>${personalCollections.length}</strong><span>Collections built</span></div>
             <div class="account-health-item"><strong>${getSavedTitles().length}</strong><span>Titles saved</span></div>
           </div>
@@ -5053,7 +5054,6 @@ function setupScrollControls() {
     "#popular-movies",
     "#popular-series",
     "#tmdb-trending",
-    "#suggest",
     ".site-footer"
   ];
 

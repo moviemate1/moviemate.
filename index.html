@@ -6,17 +6,17 @@
     <title>MovieMate | Discover Movies and Series</title>
     <meta
       name="description"
-      content="MovieMate helps you discover movies and series through public reviews, reactions, upcoming releases, and community suggestions."
+      content="MovieMate helps you discover movies and series through public reviews, reactions, upcoming releases, and member collections."
     />
     <meta
       name="keywords"
-      content="MovieMate, movie reviews, series reviews, upcoming movies, upcoming series, movie suggestions, show recommendations"
+      content="MovieMate, movie reviews, series reviews, upcoming movies, upcoming series, show recommendations, movie collections"
     />
     <meta name="theme-color" content="#0a0a0f" />
     <meta property="og:title" content="MovieMate | Discover Movies and Series" />
     <meta
       property="og:description"
-      content="Browse community picks, upcoming releases, reactions, and suggestions for movies and series."
+      content="Browse community picks, upcoming releases, reactions, and member-curated collections for movies and series."
     />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="favicon.svg" />
@@ -28,7 +28,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=36" />
+    <link rel="stylesheet" href="styles.css?v=37" />
   </head>
   <body data-page="home">
     <div class="page-shell">
@@ -46,7 +46,6 @@
             <a class="explore-nav-link active" href="#trending"><span>◉</span> Explore</a>
             <a class="explore-nav-link" href="#schedule"><span>◌</span> Schedule</a>
             <a class="explore-nav-link" href="#collections"><span>▣</span> Collections</a>
-            <a class="explore-nav-link" href="#suggest"><span>✦</span> Suggest</a>
             <button class="explore-nav-link owner-toggle" id="ownerToggle" type="button"><span>◈</span> Owner</button>
           </div>
           <div class="explore-actions-right">
@@ -211,7 +210,7 @@
                 <a class="browse-box" href="#browse"><span class="browse-box-icon">◎</span><span>Genre</span></a>
                 <a class="browse-box" href="#browse"><span class="browse-box-icon">◍</span><span>Country</span></a>
                 <a class="browse-box" href="#browse"><span class="browse-box-icon">文</span><span>Language</span></a>
-                <a class="browse-box" href="#suggest"><span class="browse-box-icon">☺</span><span>Community</span></a>
+                <a class="browse-box" href="#collections"><span class="browse-box-icon">☺</span><span>Community</span></a>
                 <a class="browse-box" href="#trending"><span class="browse-box-icon">★</span><span>District</span></a>
                 <a class="browse-box" href="#bollywoodRowHeading"><span class="browse-box-icon">हि</span><span>Bollywood</span></a>
                 <a class="browse-box" href="#southRowHeading"><span class="browse-box-icon">ச</span><span>South</span></a>
@@ -289,7 +288,7 @@
             <button class="secondary-btn" id="loadMoreBtn" type="button">Load More Titles</button>
           </div>
           <p class="empty-state hidden" id="emptyState">
-            No titles match these filters yet. Try another genre or suggest a new one.
+            No titles match these filters yet. Try another genre or language filter.
           </p>
         </section>
 
@@ -358,151 +357,14 @@
           </p>
         </section>
 
-        <section class="section suggest-section" id="suggest">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Suggest a title</p>
-              <h2 id="suggestHeadingText">Share a movie or series with the community</h2>
-            </div>
-            <p class="section-copy" id="suggestCopyText">
-              Add the title, type, genre, language, description, and poster to help others find something great to watch.
-            </p>
-          </div>
-
-          <form class="suggest-form" id="suggestForm">
-            <div class="form-grid">
-              <label class="input-group">
-                <span>Title</span>
-                <input name="title" type="text" required />
-              </label>
-
-              <label class="input-group">
-                <span>Type</span>
-                <select name="type" required>
-                  <option value="Movie">Movie</option>
-                  <option value="Series">Series</option>
-                </select>
-              </label>
-
-              <label class="input-group">
-                <span>Status</span>
-                <select name="status" required>
-                  <option value="Released">Released</option>
-                  <option value="Upcoming">Upcoming</option>
-                </select>
-              </label>
-
-              <label class="input-group">
-                <span>Genre</span>
-                <input name="genre" type="text" placeholder="Drama, Thriller, Romance" required />
-              </label>
-
-              <label class="input-group">
-                <span>Platforms</span>
-                <input name="platforms" type="text" placeholder="Netflix, Prime Video, Theatres" />
-              </label>
-
-              <fieldset class="input-group language-group">
-                <span>Language or languages</span>
-                <div class="language-options" id="languageInput">
-                  <label class="check-option"><input type="checkbox" name="language" value="English" /> English</label>
-                  <label class="check-option"><input type="checkbox" name="language" value="Hindi" /> Hindi</label>
-                  <label class="check-option"><input type="checkbox" name="language" value="Japanese" /> Japanese</label>
-                  <label class="check-option"><input type="checkbox" name="language" value="Nepali" /> Nepali</label>
-                  <label class="check-option"><input type="checkbox" name="language" value="Korean" /> Korean</label>
-                  <label class="check-option"><input type="checkbox" name="language" value="Tamil" /> Tamil</label>
-                  <label class="check-option"><input type="checkbox" name="language" value="Telugu" /> Telugu</label>
-                  <label class="check-option"><input type="checkbox" name="language" value="Spanish" /> Spanish</label>
-                  <label class="check-option"><input type="checkbox" name="language" value="Other" /> Other</label>
-                </div>
-              </fieldset>
-
-              <label class="input-group form-span">
-                <span>Release date</span>
-                <input name="releaseDate" type="date" required />
-              </label>
-
-              <label class="input-group form-span">
-                <span>Description</span>
-                <textarea
-                  name="description"
-                  rows="5"
-                  placeholder="Why should people watch this movie or series?"
-                  required
-                ></textarea>
-              </label>
-
-              <label class="input-group form-span">
-                <span>Poster image URL</span>
-                <input
-                  name="image"
-                  type="url"
-                  placeholder="https://images.example.com/poster.jpg"
-                  required
-                />
-              </label>
-
-              <label class="input-group form-span">
-                <span>Trailer URL (optional)</span>
-                <input
-                  name="trailerUrl"
-                  type="url"
-                  placeholder="https://www.youtube.com/watch?v=..."
-                />
-              </label>
-
-              <label class="input-group">
-                <span>Director (optional)</span>
-                <input name="director" type="text" placeholder="Director name" />
-              </label>
-
-              <label class="input-group">
-                <span>Main lead (optional)</span>
-                <input name="mainLead" type="text" placeholder="Lead actor or actress" />
-              </label>
-
-              <label class="input-group">
-                <span>Heroine (optional)</span>
-                <input name="heroine" type="text" placeholder="Lead actress name" />
-              </label>
-
-              <label class="input-group form-span">
-                <span>Cast names (optional)</span>
-                <textarea
-                  name="castText"
-                  rows="3"
-                  placeholder="Separate names with commas"
-                ></textarea>
-              </label>
-
-              <label class="input-group form-span">
-                <span>Crew names and roles (optional)</span>
-                <textarea
-                  name="crewText"
-                  rows="3"
-                  placeholder="Example: Priyadarshan - Director, Ravi - Writer"
-                ></textarea>
-              </label>
-            </div>
-
-            <div class="form-actions">
-              <button class="primary-btn" type="submit">Send Suggestion</button>
-              <p class="form-message" id="formMessage" aria-live="polite"></p>
-            </div>
-            <p class="form-message">
-              Tip: Choose one language or tick multiple if the title is available in more than one.
-            </p>
-          </form>
-        </section>
-
         <section class="section owner-panel hidden" id="ownerPanel">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Owner controls</p>
-              <h2 id="ownerHeadingText">Pending suggestions and homepage control</h2>
+              <h2 id="ownerHeadingText">Homepage control and approvals</h2>
             </div>
             <p class="section-copy" id="ownerCopyText">
-              Review public suggestions, approve what should go live, and mark standout titles as featured or trending.
+              Review pending titles, approve what should go live, and mark standout titles as featured or trending.
             </p>
           </div>
           <div class="owner-panel-actions">
@@ -525,7 +387,7 @@
             </p>
           </div>
           <div class="owner-grid" id="pendingGrid"></div>
-          <p class="empty-state hidden" id="pendingEmptyState">No pending suggestions right now.</p>
+          <p class="empty-state hidden" id="pendingEmptyState">No pending titles right now.</p>
         </section>
       </main>
 
@@ -536,14 +398,14 @@
             <span class="brand-text">MovieMate</span>
           </a>
           <p class="section-copy footer-copy" id="footerCopyText">
-            A simple public space to explore, review, like, and suggest movies and series.
+            A simple public space to explore movies and series, with member reactions, collections, and interest tracking.
           </p>
         </div>
         <div class="footer-links">
           <a href="about.html">About</a>
           <a href="contact.html">Contact</a>
           <a href="privacy.html">Privacy</a>
-          <a href="#suggest">Suggest a Title</a>
+          <a href="#collections">Collections</a>
         </div>
       </footer>
     </div>
@@ -558,8 +420,8 @@
       <a class="mobile-dock-link" href="#collections">
         <span>Collections</span>
       </a>
-      <a class="mobile-dock-link" href="#suggest">
-        <span>Suggest</span>
+      <a class="mobile-dock-link" href="#browse">
+        <span>Browse</span>
       </a>
       <button class="mobile-dock-link" id="ownerDockToggle" type="button">
         <span>Owner</span>
@@ -752,14 +614,6 @@
             <textarea name="upcomingText" rows="3" required></textarea>
           </label>
           <label class="input-group">
-            <span>Suggest title</span>
-            <input name="suggestTitle" type="text" required />
-          </label>
-          <label class="input-group form-span">
-            <span>Suggest support text</span>
-            <textarea name="suggestText" rows="3" required></textarea>
-          </label>
-          <label class="input-group">
             <span>Owner panel title</span>
             <input name="ownerTitle" type="text" required />
           </label>
@@ -803,6 +657,6 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=41"></script>
+    <script type="module" src="app.js?v=43"></script>
   </body>
 </html>
