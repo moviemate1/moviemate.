@@ -4,6 +4,7 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w780";
 const TMDB_PROFILE_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
 const TITLES_COLLECTION = "moviemate_titles";
+const PEOPLE_COLLECTION = "moviemate_people";
 const ALLOWED_LANGUAGE_CODES = new Set(["en", "hi", "ja", "ko", "ne", "ta", "te", "ml", "kn"]);
 const WATCH_PROVIDER_REGIONS = ["IN", "US", "GB"];
 const UPCOMING_PAGE_COUNT = 6;
@@ -330,6 +331,7 @@ async function fetchCredits(item, type) {
   const crewList = Array.isArray(payload.crew) ? payload.crew : [];
 
   const cast = castList.slice(0, 8).map((person) => ({
+    tmdbPersonId: Number(person.id || 0),
     name: person.name || "",
     role:
       person.character ||
@@ -339,6 +341,7 @@ async function fetchCredits(item, type) {
   }));
 
   const crew = crewList.slice(0, 6).map((person) => ({
+    tmdbPersonId: Number(person.id || 0),
     name: person.name || "",
     role:
       person.job ||
@@ -362,6 +365,26 @@ async function fetchCredits(item, type) {
     heroine: heroinePerson?.name || "",
     cast,
     crew
+  };
+}
+
+async function fetchPersonDetails(personId) {
+  if (!personId) {
+    return null;
+  }
+
+  const payload = await fetchTmdb(`/person/${personId}`, {
+    language: "en-US"
+  });
+
+  return {
+    tmdbPersonId: Number(payload.id || personId),
+    name: payload.name || "",
+    image: buildProfileUrl(payload.profile_path),
+    biography: String(payload.biography || "").trim(),
+    birthday: payload.birthday || "",
+    birthplace: payload.place_of_birth || "",
+    knownForDepartment: payload.known_for_department || ""
   };
 }
 
@@ -431,6 +454,15 @@ async function safeFetchWatchProviders(item) {
   }
 }
 
+async function safeFetchPersonDetails(personId) {
+  try {
+    return await fetchPersonDetails(personId);
+  } catch (error) {
+    console.warn(`Person details fetch failed for ${personId}: ${error.message}`);
+    return null;
+  }
+}
+
 function isAllowedLanguage(item) {
   return ALLOWED_LANGUAGE_CODES.has(item.original_language);
 }
@@ -495,6 +527,40 @@ async function upsertTitles(items) {
   }
 }
 
+async function upsertPeople(people) {
+  if (!people.length) {
+    return;
+  }
+
+  let batch = db.batch();
+  let operationCount = 0;
+
+  for (const person of people) {
+    const ref = db.collection(PEOPLE_COLLECTION).doc(`tmdb-person-${person.tmdbPersonId}`);
+
+    batch.set(
+      ref,
+      {
+        ...person,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+
+    operationCount += 1;
+
+    if (operationCount === 450) {
+      await batch.commit();
+      batch = db.batch();
+      operationCount = 0;
+    }
+  }
+
+  if (operationCount > 0) {
+    await batch.commit();
+  }
+}
+
 async function cleanupImportedTitles() {
   // Keep imported TMDb titles stored on the website even after release
   // or after they fall out of the current TMDb lists. This lets the site
@@ -515,6 +581,53 @@ async function enrichWithTrailers(items) {
         ...(await safeFetchCredits(item)),
         platforms: await safeFetchWatchProviders(item)
       }))
+    );
+    enriched.push(...results);
+  }
+
+  return enriched;
+}
+
+function collectUniquePeople(items) {
+  const peopleMap = new Map();
+
+  items.forEach((item) => {
+    [...(item.cast || []), ...(item.crew || [])].forEach((person) => {
+      const personId = Number(person.tmdbPersonId || 0);
+
+      if (!personId || peopleMap.has(personId)) {
+        return;
+      }
+
+      peopleMap.set(personId, {
+        tmdbPersonId: personId,
+        name: person.name || "",
+        image: person.image || "",
+        biography: "",
+        birthday: "",
+        birthplace: "",
+        knownForDepartment: ""
+      });
+    });
+  });
+
+  return [...peopleMap.values()];
+}
+
+async function enrichPeople(people) {
+  const concurrency = 3;
+  const enriched = [];
+
+  for (let index = 0; index < people.length; index += concurrency) {
+    const chunk = people.slice(index, index + concurrency);
+    const results = await Promise.all(
+      chunk.map(async (person) => {
+        const details = await safeFetchPersonDetails(person.tmdbPersonId);
+        return {
+          ...person,
+          ...(details || {})
+        };
+      })
     );
     enriched.push(...results);
   }
@@ -606,8 +719,11 @@ async function run() {
 
   const merged = [...grouped.values()];
   const mergedWithTrailers = await enrichWithTrailers(merged);
+  const uniquePeople = collectUniquePeople(mergedWithTrailers);
+  const enrichedPeople = await enrichPeople(uniquePeople);
 
   await upsertTitles(mergedWithTrailers);
+  await upsertPeople(enrichedPeople);
   await cleanupImportedTitles();
 
   console.log(`Sync complete. Updated ${mergedWithTrailers.length} titles.`);
