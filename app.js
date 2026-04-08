@@ -477,6 +477,92 @@ function parseCrewText(value) {
     .filter(Boolean);
 }
 
+function normalizePersonName(name) {
+  return String(name || "").trim().toLowerCase();
+}
+
+function buildPersonUrl(name) {
+  return `person.html?name=${encodeURIComponent(String(name || "").trim())}`;
+}
+
+function collectPersonCredits(personName, titles = titlesCache) {
+  const normalizedName = normalizePersonName(personName);
+
+  if (!normalizedName) {
+    return {
+      name: "",
+      image: "",
+      credits: [],
+      roleHighlights: []
+    };
+  }
+
+  let profileImage = "";
+  const credits = titles
+    .map((title) => {
+      const roles = [];
+
+      if (normalizePersonName(title.director) === normalizedName) {
+        roles.push("Director");
+      }
+
+      if (normalizePersonName(title.mainLead) === normalizedName) {
+        roles.push("Main Lead");
+      }
+
+      if (normalizePersonName(title.heroine) === normalizedName) {
+        roles.push("Heroine");
+      }
+
+      (title.cast || []).forEach((person) => {
+        if (normalizePersonName(person.name) === normalizedName) {
+          roles.push(person.role || "Cast");
+          if (!profileImage && person.image) {
+            profileImage = person.image;
+          }
+        }
+      });
+
+      (title.crew || []).forEach((person) => {
+        if (normalizePersonName(person.name) === normalizedName) {
+          roles.push(person.role || "Crew");
+          if (!profileImage && person.image) {
+            profileImage = person.image;
+          }
+        }
+      });
+
+      if (!roles.length) {
+        return null;
+      }
+
+      return {
+        title,
+        roles: [...new Set(roles)]
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => {
+      const leftDate = Date.parse(left.title.releaseDate || "") || 0;
+      const rightDate = Date.parse(right.title.releaseDate || "") || 0;
+
+      if (rightDate !== leftDate) {
+        return rightDate - leftDate;
+      }
+
+      return (right.title.tmdbPopularity || 0) - (left.title.tmdbPopularity || 0);
+    });
+
+  const roleHighlights = [...new Set(credits.flatMap((entry) => entry.roles))].slice(0, 6);
+
+  return {
+    name: personName,
+    image: profileImage,
+    credits,
+    roleHighlights
+  };
+}
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -1202,11 +1288,11 @@ function personCardTemplate(person) {
     : `<div class="person-avatar person-avatar-fallback">${escapeHtml(person.name.charAt(0).toUpperCase())}</div>`;
 
   return `
-    <article class="person-card">
+    <a class="person-card" href="${buildPersonUrl(person.name)}" aria-label="Open ${escapeHtml(person.name)} details">
       ${avatar}
       <h4>${escapeHtml(person.name)}</h4>
       <p>${escapeHtml(person.role || "")}</p>
-    </article>
+    </a>
   `;
 }
 
@@ -3884,6 +3970,110 @@ async function renderDetailsPage() {
   }
 }
 
+function personHeroAvatarTemplate(person) {
+  if (person.image) {
+    return `<img class="person-hero-avatar" src="${person.image}" alt="${escapeHtml(person.name)}" />`;
+  }
+
+  return `<div class="person-hero-avatar person-avatar-fallback">${escapeHtml(person.name.charAt(0).toUpperCase())}</div>`;
+}
+
+function personFilmographyCardTemplate(entry) {
+  const releaseLabel = formatReleaseDate(entry.title.releaseDate);
+  return `
+    <a class="person-film-card" href="details.html?id=${entry.title.id}">
+      <img class="person-film-poster" src="${entry.title.image}" alt="${escapeHtml(entry.title.title)} poster" loading="lazy" decoding="async" />
+      <div class="person-film-copy">
+        <h3>${escapeHtml(entry.title.title)}</h3>
+        <p>${escapeHtml(entry.title.type)} • ${escapeHtml(releaseLabel)}</p>
+        <small>${escapeHtml(entry.roles.join(", "))}</small>
+      </div>
+    </a>
+  `;
+}
+
+async function renderPersonPage() {
+  const target = document.querySelector("#personPage");
+
+  if (!target) {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const personName = params.get("name")?.trim() || "";
+
+  if (!personName) {
+    target.innerHTML = `<section class="not-found"><h1>Person not found</h1></section>`;
+    return;
+  }
+
+  const titles = await fetchTitles();
+  const visibleTitles = getVisibleTitles(titles);
+  const person = collectPersonCredits(personName, visibleTitles);
+
+  if (!person.credits.length) {
+    target.innerHTML = `<section class="not-found"><h1>Person not found</h1></section>`;
+    return;
+  }
+
+  const recentCredits = person.credits.slice(0, 24);
+  const topTitle = recentCredits[0]?.title;
+  const firstRelease = recentCredits
+    .map((entry) => Date.parse(entry.title.releaseDate || ""))
+    .filter(Boolean)
+    .sort((left, right) => left - right)[0];
+  const biography = `${person.name} appears in ${person.credits.length} MovieMate title${person.credits.length === 1 ? "" : "s"}. Known here for ${person.roleHighlights.join(", ") || "cast and crew work"}, ${person.name} is featured across titles like ${escapeHtml(topTitle ? topTitle.title : "MovieMate")} and more. Explore the filmography below to see every title currently connected to this person on MovieMate.`;
+
+  target.innerHTML = `
+    <section class="person-hero-card">
+      <div class="person-hero">
+        ${personHeroAvatarTemplate(person)}
+        <div class="person-hero-copy">
+          <h1>${escapeHtml(person.name)}</h1>
+          <div class="person-meta-grid">
+            <div class="person-meta-item">
+              <span>Known for</span>
+              <strong>${escapeHtml(person.roleHighlights.join(", ") || "Cast & Crew")}</strong>
+            </div>
+            <div class="person-meta-item">
+              <span>Titles on MovieMate</span>
+              <strong>${person.credits.length} title${person.credits.length === 1 ? "" : "s"}</strong>
+            </div>
+            <div class="person-meta-item">
+              <span>Latest credit</span>
+              <strong>${escapeHtml(topTitle ? topTitle.title : "MovieMate")}</strong>
+            </div>
+            <div class="person-meta-item">
+              <span>First known release</span>
+              <strong>${escapeHtml(firstRelease ? formatReleaseDate(new Date(firstRelease).toISOString()) : "Not added")}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="person-biography-section">
+      <div class="section-heading">
+        <div>
+          <h2>Biography</h2>
+        </div>
+      </div>
+      <p class="person-biography">${biography}</p>
+    </section>
+
+    <section class="person-filmography-section">
+      <div class="section-heading">
+        <div>
+          <h2>Filmography</h2>
+        </div>
+      </div>
+      <div class="person-filmography-grid">
+        ${recentCredits.map(personFilmographyCardTemplate).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function setupLikeButtons() {
   document.addEventListener("click", async (event) => {
     const button = event.target.closest(".reaction-btn");
@@ -5033,6 +5223,12 @@ async function refreshCurrentPage() {
   if (document.body.dataset.page === "collection") {
     await fetchTitles();
     await renderCollectionPage();
+    return;
+  }
+
+  if (document.body.dataset.page === "person") {
+    await fetchTitles();
+    await renderPersonPage();
   }
 }
 
@@ -5253,6 +5449,11 @@ async function init() {
   if (document.body.dataset.page === "collection") {
     await fetchTitles();
     renderCollectionPage();
+  }
+
+  if (document.body.dataset.page === "person") {
+    await fetchTitles();
+    await renderPersonPage();
   }
 
   onAuthStateChanged(auth, async (user) => {
