@@ -1547,36 +1547,31 @@ function movieCardTemplate(title) {
       `
     : "";
 
-  const badges = `
-    ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
-    ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
-    ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
-    ${title.source === "tmdb" ? '<span class="status-pill status-source">TMDb</span>' : ""}
-  `;
-  const stats = getReactionStats(title);
   const cardLabel = getCardLabel(title);
+  const secondaryLine =
+    title.status === "Upcoming"
+      ? formatReleaseDate(title.releaseDate)
+      : title.type === "Series"
+        ? "Series"
+        : "Movie";
 
   return `
     <article class="movie-card movie-card-compact">
       <a class="movie-card-link" href="${buildTitleUrl(title.id)}">
         <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
         <div class="movie-content">
-          <div class="movie-card-summary">
-            <div class="movie-header">
+          <div class="movie-card-summary movie-card-summary-feed">
+            <div class="movie-header movie-header-feed">
               <div>
                 <h3>${escapeHtml(title.title)}</h3>
                 <p class="movie-meta">${escapeHtml(cardLabel)}</p>
-                <p class="movie-meta subtle-line clamp-line">${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
-                ${title.platforms?.length ? `<p class="movie-meta subtle-line clamp-line">${escapeHtml(formatPlatforms(title.platforms))}</p>` : ""}
+                <p class="movie-meta subtle-line clamp-line">${escapeHtml(secondaryLine)}</p>
               </div>
-              <span class="rating-pill"><strong>${stats.recommendedPercent}%</strong> recommend</span>
             </div>
-            <div class="status-row">${badges}</div>
           </div>
         </div>
       </a>
       <div class="movie-actions movie-actions-compact">
-        <a class="details-link" href="${buildTitleUrl(title.id)}">Open Details →</a>
         <button class="owner-action-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled"}>${saved ? "Saved" : "Save"}</button>
       </div>
       ${memberReady ? "" : '<p class="member-action-note card-member-note">Members only can save, vote, and track titles.</p>'}
