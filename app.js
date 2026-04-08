@@ -4022,6 +4022,9 @@ async function renderPersonPage() {
     .map((entry) => Date.parse(entry.title.releaseDate || ""))
     .filter(Boolean)
     .sort((left, right) => left - right)[0];
+  const earliestYear = firstRelease ? new Date(firstRelease).getFullYear() : "";
+  const bornLabel = earliestYear ? `Not added • active before ${earliestYear}` : "Not added";
+  const birthplaceLabel = "Not added";
   const biography = `${person.name} appears in ${person.credits.length} MovieMate title${person.credits.length === 1 ? "" : "s"}. Known here for ${person.roleHighlights.join(", ") || "cast and crew work"}, ${person.name} is featured across titles like ${escapeHtml(topTitle ? topTitle.title : "MovieMate")} and more. Explore the filmography below to see every title currently connected to this person on MovieMate.`;
 
   target.innerHTML = `
@@ -4030,7 +4033,15 @@ async function renderPersonPage() {
         ${personHeroAvatarTemplate(person)}
         <div class="person-hero-copy">
           <h1>${escapeHtml(person.name)}</h1>
-          <div class="person-meta-grid">
+          <div class="person-meta-grid person-meta-grid-compact">
+            <div class="person-meta-item">
+              <span>Born</span>
+              <strong>${escapeHtml(bornLabel)}</strong>
+            </div>
+            <div class="person-meta-item">
+              <span>Birthplace</span>
+              <strong>${escapeHtml(birthplaceLabel)}</strong>
+            </div>
             <div class="person-meta-item">
               <span>Known for</span>
               <strong>${escapeHtml(person.roleHighlights.join(", ") || "Cast & Crew")}</strong>
@@ -4038,14 +4049,6 @@ async function renderPersonPage() {
             <div class="person-meta-item">
               <span>Titles on MovieMate</span>
               <strong>${person.credits.length} title${person.credits.length === 1 ? "" : "s"}</strong>
-            </div>
-            <div class="person-meta-item">
-              <span>Latest credit</span>
-              <strong>${escapeHtml(topTitle ? topTitle.title : "MovieMate")}</strong>
-            </div>
-            <div class="person-meta-item">
-              <span>First known release</span>
-              <strong>${escapeHtml(firstRelease ? formatReleaseDate(new Date(firstRelease).toISOString()) : "Not added")}</strong>
             </div>
           </div>
         </div>
@@ -4058,7 +4061,9 @@ async function renderPersonPage() {
           <h2>Biography</h2>
         </div>
       </div>
-      <p class="person-biography">${biography}</p>
+      <div class="person-biography-card">
+        <p class="person-biography">${biography}</p>
+      </div>
     </section>
 
     <section class="person-filmography-section">
