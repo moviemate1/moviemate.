@@ -1044,6 +1044,19 @@ function vibeChartTemplate(title) {
 function trailerPanelTemplate(title) {
   const trailerLink = getTrailerLink(title);
   const embedUrl = getYouTubeEmbedUrl(title.trailerUrl);
+  const interestLabel = getHeroLaunchLabel(title);
+  const interestedCount = formatLargeNumber(getInterestedCount(title));
+  const overlayTitle = `
+    <p class="eyebrow">${escapeHtml(title.type)} • ${escapeHtml(String(title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now"))}</p>
+    <h2>${escapeHtml(title.title)}</h2>
+  `;
+  const interestCard = `
+    <aside class="hero-interest-card">
+      <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
+      <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
+      <p class="hero-interest-count">${escapeHtml(interestedCount)} interested</p>
+    </aside>
+  `;
 
   if (embedUrl) {
     return `
@@ -1067,9 +1080,9 @@ function trailerPanelTemplate(title) {
         >
           <span class="trailer-play-badge" aria-hidden="true">▶</span>
         </button>
+        ${interestCard}
         <div class="trailer-overlay">
-          <p class="eyebrow">Trailer</p>
-          <h2>Preview the story before you watch</h2>
+          ${overlayTitle}
           <button
             class="primary-btn trailer-btn"
             type="button"
@@ -1087,9 +1100,9 @@ function trailerPanelTemplate(title) {
   return `
     <section class="trailer-stage" id="trailerSection">
       <img class="trailer-poster" src="${title.image}" alt="${escapeHtml(title.title)} trailer preview" />
+      ${interestCard}
       <div class="trailer-overlay">
-        <p class="eyebrow">Trailer</p>
-        <h2>Preview the story before you watch</h2>
+        ${overlayTitle}
         <a class="primary-btn trailer-btn" href="${trailerLink}" target="_blank" rel="noreferrer">Watch Trailer</a>
       </div>
     </section>
@@ -1137,6 +1150,14 @@ function peopleSectionTemplate(title) {
 
   return `
     <section class="people-section">
+      <div class="detail-tag-row">
+        ${String(title.genre || "")
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean)
+          .map((tag) => `<span class="detail-tag">${escapeHtml(tag)}</span>`)
+          .join("")}
+      </div>
       ${
         mainPeople.length
           ? `
@@ -1236,18 +1257,49 @@ async function fetchHomepageContent() {
 
 function getCardLabel(title) {
   if (title.importBuckets.includes("trending")) {
-    return "Trending Now";
+    return title.type === "Series" ? "New Episode" : "Trending Now";
   }
 
   if (title.importBuckets.includes("popular")) {
-    return `Popular ${title.type}`;
+    return title.type === "Series" ? "Popular Show" : "Popular Movie";
   }
 
   if (title.status === "Upcoming") {
-    return title.type === "Series" ? "New Show" : "New Movie";
+    return title.type === "Series" ? "New Season" : "New Movie";
   }
 
   return `New ${title.type}`;
+}
+
+function getHeroLaunchLabel(title) {
+  const platformText = formatPlatforms(title.platforms || []);
+  const lower = platformText.toLowerCase();
+
+  if (title.status === "Upcoming") {
+    if (title.type === "Movie") {
+      return lower.includes("theatre") || lower.includes("cinema") || lower.includes("theater")
+        ? "Coming to Theaters"
+        : "Coming Soon";
+    }
+
+    return "New Season";
+  }
+
+  if (lower && lower !== "platform not added") {
+    return `Now on ${platformText.split(",")[0].trim()}`;
+  }
+
+  return title.type === "Series" ? "Streaming now" : "Now Showing";
+}
+
+function getInterestedCount(title) {
+  const stats = getReactionStats(title);
+  const popularity = Number(title.tmdbPopularity || 0);
+  const saves = Number(title.savesCount || 0);
+  const votes = stats.total;
+  const baseline = title.status === "Upcoming" ? 2400 : 1200;
+  const estimate = Math.round(popularity * 100 + saves * 22 + votes * 28 + baseline);
+  return Math.max(estimate, votes * 12 + 300);
 }
 
 function movieCardTemplate(title) {
@@ -1308,12 +1360,14 @@ function movieCardTemplate(title) {
 
 function featuredCardTemplate(title) {
   const cardLabel = getCardLabel(title);
-  const badges = `
-    ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
-    ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
-    ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
-    ${title.source === "tmdb" ? '<span class="status-pill status-source">TMDb</span>' : ""}
-  `;
+  const secondaryLine =
+    title.status === "Upcoming"
+      ? formatReleaseDate(title.releaseDate)
+      : title.type === "Series"
+        ? title.importBuckets.includes("trending")
+          ? "New Episode"
+          : "Series"
+        : "Movie";
 
   return `
     <a class="featured-card featured-feed-card" href="details.html?id=${title.id}">
@@ -1321,9 +1375,7 @@ function featuredCardTemplate(title) {
       <div class="featured-copy">
         <h3>${escapeHtml(title.title)}</h3>
         <p class="movie-meta">${escapeHtml(cardLabel)}</p>
-        <p class="movie-meta subtle-line">${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
-        ${title.platforms?.length ? `<p class="movie-meta subtle-line">${escapeHtml(formatPlatforms(title.platforms))}</p>` : ""}
-        <div class="status-row">${badges}</div>
+        <p class="movie-meta subtle-line">${escapeHtml(secondaryLine)}</p>
       </div>
     </a>
   `;
@@ -1419,7 +1471,8 @@ function similarSectionTemplate(baseTitle, titles, mode) {
 }
 
 function mostInterestedItemTemplate(title, index) {
-  const stats = getReactionStats(title);
+  const interestedCount = getInterestedCount(title);
+  const releaseLabel = title.status === "Upcoming" ? getHeroLaunchLabel(title) : title.status;
 
   return `
     <a class="interest-item" href="details.html?id=${title.id}">
@@ -1427,8 +1480,8 @@ function mostInterestedItemTemplate(title, index) {
       <img class="interest-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
       <div class="interest-copy">
         <h3>${escapeHtml(title.title)}</h3>
-        <p>${escapeHtml(formatReleaseDate(title.releaseDate))} • ${escapeHtml(title.status)}</p>
-        <span>${stats.recommendedPercent}% recommend</span>
+        <p>${escapeHtml(formatReleaseDate(title.releaseDate))} • ${escapeHtml(releaseLabel)}</p>
+        <span>${escapeHtml(formatLargeNumber(interestedCount))} interested</span>
       </div>
     </a>
   `;
@@ -1631,7 +1684,7 @@ function hasPlatformMatch(title, matchers) {
   return matchers.some((matcher) => platforms.some((platform) => platform.includes(matcher)));
 }
 
-function getCuratedTitles(titles, predicate, sortFn, limit = 6) {
+function getCuratedTitles(titles, predicate, sortFn, limit = 10) {
   return [...titles]
     .filter(predicate)
     .sort(sortFn)
@@ -3460,6 +3513,22 @@ async function renderDetailsPage() {
   const leadDirector = title.director || "MovieMate";
   const primaryLanguage = title.language?.[0] || "Not added";
   const primaryPlatform = formatPlatforms(title.platforms);
+  const currentWatchStatus = getTitleWatchStatus(title.id);
+  const interestedPrimaryLabel =
+    currentWatchStatus === "interested"
+      ? "Interested"
+      : currentWatchStatus === "watching"
+        ? "Watching..."
+        : currentWatchStatus === "watched"
+          ? "Watched"
+          : "Mark as Interested";
+  const watchCtaButtons = `
+    <div class="detail-primary-actions">
+      <button class="watch-status-btn watch-status-btn-interested ${currentWatchStatus === "interested" ? "active" : ""}" type="button" data-watch-status="interested" data-id="${title.id}">${escapeHtml(interestedPrimaryLabel)}</button>
+      <button class="watch-status-btn watch-status-btn-watching ${currentWatchStatus === "watching" ? "active" : ""}" type="button" data-watch-status="watching" data-id="${title.id}">Watching...</button>
+      <button class="watch-status-btn watch-status-btn-watched ${currentWatchStatus === "watched" ? "active" : ""}" type="button" data-watch-status="watched" data-id="${title.id}">${currentWatchStatus === "watched" ? "Watched" : "Mark as Watched"}</button>
+    </div>
+  `;
   const ownerControls = isOwnerMode()
     ? `
         <div class="owner-actions">
@@ -3515,13 +3584,13 @@ async function renderDetailsPage() {
             <p class="detail-hero-description">${escapeHtml(title.description)}</p>
           </div>
         </div>
+        ${watchCtaButtons}
       </div>
     </section>
 
     <section class="detail-action-strip">
       <div class="detail-actions">
         ${reactionButtonsTemplate(title)}
-        ${watchStatusActionsTemplate(title)}
         ${
           embeddedTrailerUrl
             ? `<button class="secondary-btn trailer-btn" type="button" data-open-trailer="true" data-embed-url="${embeddedTrailerUrl}" data-trailer-title="${escapeHtml(title.title)} trailer">Watch Trailer</button>`
