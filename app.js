@@ -177,6 +177,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 let titlesCache = [];
+let titlesCachePromise = null;
 let homepageContentCache = { ...DEFAULT_HOMEPAGE_CONTENT };
 let currentUser = null;
 let currentUserProfile = null;
@@ -1291,28 +1292,41 @@ function ownerActionButton(label, action, titleId, active = false) {
   return `<button class="owner-action-btn ${active ? "active" : ""}" data-action="${action}" data-id="${titleId}" type="button">${label}</button>`;
 }
 
-async function seedTitlesIfNeeded() {
-  const snapshot = await getDocs(collection(db, TITLES_COLLECTION));
-
-  if (!snapshot.empty) {
-    return;
+async function fetchTitles(force = false) {
+  if (!force && titlesCache.length) {
+    return titlesCache;
   }
 
-  await Promise.all(
-    BASE_TITLES.map((title) =>
-      setDoc(doc(db, TITLES_COLLECTION, title.id), {
-        ...title,
-        createdAt: serverTimestamp()
-      })
-    )
-  );
-}
+  if (!force && titlesCachePromise) {
+    return titlesCachePromise;
+  }
 
-async function fetchTitles() {
-  await seedTitlesIfNeeded();
-  const snapshot = await getDocs(collection(db, TITLES_COLLECTION));
-  titlesCache = snapshot.docs.map(normalizeTitle);
-  return titlesCache;
+  titlesCachePromise = (async () => {
+    const snapshot = await getDocs(collection(db, TITLES_COLLECTION));
+
+    if (snapshot.empty) {
+      await Promise.all(
+        BASE_TITLES.map((title) =>
+          setDoc(doc(db, TITLES_COLLECTION, title.id), {
+            ...title,
+            createdAt: serverTimestamp()
+          })
+        )
+      );
+
+      titlesCache = BASE_TITLES.map(normalizeTitle);
+      return titlesCache;
+    }
+
+    titlesCache = snapshot.docs.map(normalizeTitle);
+    return titlesCache;
+  })();
+
+  try {
+    return await titlesCachePromise;
+  } finally {
+    titlesCachePromise = null;
+  }
 }
 
 async function fetchHomepageContent() {
@@ -1402,7 +1416,7 @@ function movieCardTemplate(title) {
   return `
     <article class="movie-card movie-card-compact">
       <a class="movie-card-link" href="details.html?id=${title.id}">
-        <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+        <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
         <div class="movie-content">
           <div class="movie-card-summary">
             <div class="movie-header">
@@ -1447,7 +1461,7 @@ function featuredCardTemplate(title) {
 
   return `
     <a class="featured-card featured-feed-card" href="details.html?id=${title.id}">
-      <img class="featured-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <img class="featured-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <div class="featured-copy">
         <h3>${escapeHtml(title.title)}</h3>
         <p class="movie-meta">${escapeHtml(cardLabel)}</p>
@@ -1553,7 +1567,7 @@ function mostInterestedItemTemplate(title, index) {
   return `
     <a class="interest-item" href="details.html?id=${title.id}">
       <span class="interest-rank">${index + 1}</span>
-      <img class="interest-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <img class="interest-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <div class="interest-copy">
         <h3>${escapeHtml(title.title)}</h3>
         <p>${escapeHtml(formatReleaseDate(title.releaseDate))} • ${escapeHtml(releaseLabel)}</p>
@@ -1623,7 +1637,7 @@ function upcomingCardTemplate(title) {
 
   return `
     <article class="movie-card upcoming-card">
-      <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <div class="movie-content">
         <div class="movie-header">
           <div>
@@ -1986,7 +2000,7 @@ function renderSearchSuggestions(titles) {
     .map(
       (title) => `
         <a class="search-suggestion-item" href="details.html?id=${title.id}">
-          <img src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+          <img src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
           <span>
             <strong>${escapeHtml(title.title)}</strong>
             <small>${escapeHtml(title.type)} • ${escapeHtml(title.genre)}</small>
@@ -2123,7 +2137,7 @@ function scheduleCardTemplate(title) {
         <span>${title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short" }).toUpperCase() : "TBD"}</span>
         <strong>${title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).toLocaleDateString("en-IN", { day: "2-digit" }) : "--"}</strong>
       </div>
-      <img class="schedule-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <img class="schedule-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <div class="schedule-copy">
         <h3>${escapeHtml(title.title)}</h3>
         <p>${escapeHtml(title.type)} • ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
@@ -2203,7 +2217,7 @@ function renderScheduleGrid(titles) {
 function collectionCardTemplate(collection) {
   return `
     <a class="collection-card" href="collection.html?mode=${encodeURIComponent(collection.mode || "discover")}&slug=${encodeURIComponent(collection.slug || slugify(collection.title))}">
-      <img class="collection-cover" src="${collection.image}" alt="${escapeHtml(collection.title)} cover" />
+      <img class="collection-cover" src="${collection.image}" alt="${escapeHtml(collection.title)} cover" loading="lazy" decoding="async" />
       <div class="collection-copy">
         <h3>${escapeHtml(collection.title)}</h3>
         <p>${escapeHtml(collection.subtitle)}</p>
@@ -3347,7 +3361,7 @@ function renderOwnerNotifications(titles) {
 function analyticsRowTemplate(title, metric, value) {
   return `
     <a class="analytics-row" href="details.html?id=${title.id}">
-      <img src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <img src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <span>
         <strong>${escapeHtml(title.title)}</strong>
         <small>${escapeHtml(metric)} • ${escapeHtml(String(value))}</small>
@@ -4122,6 +4136,7 @@ function setupOwnerMode() {
     if (isOwnerMode()) {
       setOwnerMode(false);
       updateOwnerToggle();
+      setupOwnerNotificationsRealtime();
       closeHomepageEditModal();
 
       if (document.body.dataset.page === "home") {
@@ -4141,6 +4156,7 @@ function setupOwnerMode() {
 
     setOwnerMode(true);
     updateOwnerToggle();
+    setupOwnerNotificationsRealtime();
 
     if (document.body.dataset.page === "home") {
       await renderHomePage();
@@ -4372,7 +4388,7 @@ function profileReviewCardTemplate(entry) {
   return `
     <article class="profile-review-card">
       <a class="profile-review-poster-link" href="details.html?id=${entry.title.id}">
-        <img class="profile-review-poster" src="${entry.title.image}" alt="${escapeHtml(entry.title.title)} poster" />
+        <img class="profile-review-poster" src="${entry.title.image}" alt="${escapeHtml(entry.title.title)} poster" loading="lazy" decoding="async" />
       </a>
       <div class="profile-review-copy">
         <div class="profile-review-head">
@@ -4395,7 +4411,7 @@ function profileReviewCardTemplate(entry) {
 function profilePostCardTemplate(title) {
   return `
     <article class="profile-post-card">
-      <img class="profile-post-cover" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <img class="profile-post-cover" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <div class="profile-post-copy">
         <h3>${escapeHtml(title.title)}</h3>
         <p>${escapeHtml(title.type)} • ${escapeHtml(title.genre)}</p>
@@ -4422,7 +4438,7 @@ function buildInterestedTitles(titles) {
 function interestedTitleTemplate(title) {
   return `
     <a class="profile-interest-item" href="details.html?id=${title.id}">
-      <img src="${title.image}" alt="${escapeHtml(title.title)} poster" />
+      <img src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <span>
         <strong>${escapeHtml(title.title)}</strong>
         <small>${escapeHtml(formatReleaseDate(title.releaseDate))} • ${escapeHtml(title.type)}</small>
@@ -5151,6 +5167,12 @@ function showOwnerToast(message) {
 
 function setupOwnerNotificationsRealtime() {
   pendingNotificationState.unsubscribe?.();
+  pendingNotificationState.unsubscribe = null;
+
+  if (!isOwnerMode()) {
+    updateOwnerToggle();
+    return;
+  }
 
   pendingNotificationState.unsubscribe = onSnapshot(collection(db, TITLES_COLLECTION), (snapshot) => {
     const liveTitles = snapshot.docs.map(normalizeTitle);
@@ -5181,6 +5203,7 @@ function setupOwnerNotificationsRealtime() {
 }
 
 async function init() {
+  let hasHandledInitialAuthState = false;
   setupLikeButtons();
   setupSaveButtons();
   setupDeleteButtons();
@@ -5233,6 +5256,8 @@ async function init() {
   }
 
   onAuthStateChanged(auth, async (user) => {
+    const previousUid = currentUser?.uid || null;
+    const nextUid = user?.uid || null;
     currentUser = user;
     if (user) {
       await ensureUserProfile(user);
@@ -5241,6 +5266,18 @@ async function init() {
     }
 
     updateAuthUI();
+
+    if (!hasHandledInitialAuthState) {
+      hasHandledInitialAuthState = true;
+      if (previousUid === nextUid) {
+        return;
+      }
+    }
+
+    if (previousUid === nextUid) {
+      return;
+    }
+
     await refreshCurrentPage();
   });
 
