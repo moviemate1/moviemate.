@@ -768,7 +768,11 @@ async function syncWatchStatus(titleId, nextStatus) {
   }
 
   const watchStatus = { ...(currentUserProfile?.watchStatus || {}) };
-  watchStatus[titleId] = nextStatus;
+  if (nextStatus === "clear" || !nextStatus) {
+    delete watchStatus[titleId];
+  } else {
+    watchStatus[titleId] = nextStatus;
+  }
 
   await persistUserProfile({ watchStatus });
   return true;
@@ -841,6 +845,7 @@ async function shareTitle(title) {
 function reactionButtonsTemplate(title) {
   const currentReaction = getReaction(title.id);
   const stats = getReactionStats(title);
+  const memberReady = isSignedIn();
 
   return `
     <div class="reaction-panel">
@@ -848,7 +853,7 @@ function reactionButtonsTemplate(title) {
         ${Object.entries(REACTION_OPTIONS)
           .map(
             ([value, option]) => `
-              <button class="reaction-btn reaction-btn-${option.className} ${currentReaction === value ? `active ${option.className}` : ""}" data-id="${title.id}" data-reaction="${value}" type="button">
+              <button class="reaction-btn reaction-btn-${option.className} ${currentReaction === value ? `active ${option.className}` : ""}" data-id="${title.id}" data-reaction="${value}" type="button" ${memberReady ? "" : "disabled"}>
                 ${option.label}
               </button>
             `
@@ -856,6 +861,7 @@ function reactionButtonsTemplate(title) {
           .join("")}
       </div>
       <p class="reaction-summary">${stats.total} votes • ${stats.recommendedPercent}% recommend</p>
+      ${memberReady ? "" : '<p class="member-action-note">Members only. Sign in to vote and react.</p>'}
     </div>
   `;
 }
@@ -898,31 +904,35 @@ function getPrimaryWatchButtonState(status) {
   if (status === "watching") {
     return {
       label: "Watching...",
-      nextStatus: "watching",
-      className: "watch-status-btn-watching active"
+      nextStatus: "watched",
+      className: "watch-status-btn-watching active",
+      helper: "Tap again to mark this as watched."
     };
   }
 
   if (status === "watched") {
     return {
       label: "Watched",
-      nextStatus: "watched",
-      className: "watch-status-btn-watched active"
+      nextStatus: "clear",
+      className: "watch-status-btn-watched active",
+      helper: "Tap again to clear your status."
     };
   }
 
   if (status === "interested") {
     return {
       label: "Interested",
-      nextStatus: "interested",
-      className: "watch-status-btn-interested active"
+      nextStatus: "watching",
+      className: "watch-status-btn-interested active",
+      helper: "Tap again to move this to watching."
     };
   }
 
   return {
     label: "Mark as Interested",
     nextStatus: "interested",
-    className: "watch-status-btn-interested"
+    className: "watch-status-btn-interested",
+    helper: "Members can track Interested, Watching, and Watched."
   };
 }
 
@@ -1072,6 +1082,8 @@ function trailerPanelTemplate(title) {
   const embedUrl = getYouTubeEmbedUrl(title.trailerUrl);
   const interestLabel = getHeroLaunchLabel(title);
   const interestedCount = formatLargeNumber(getInterestedCount(title));
+  const watchState = getPrimaryWatchButtonState(getTitleWatchStatus(title.id));
+  const memberReady = isSignedIn();
   const overlayTitle = `
     <p class="eyebrow">${escapeHtml(title.type)} • ${escapeHtml(String(title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now"))}</p>
     <h2>${escapeHtml(title.title)}</h2>
@@ -1081,6 +1093,10 @@ function trailerPanelTemplate(title) {
       <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
       <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
       <p class="hero-interest-count">${escapeHtml(interestedCount)} interested</p>
+      <button class="watch-status-btn hero-interest-action ${watchState.className}" type="button" data-watch-status="${watchState.nextStatus}" data-id="${title.id}" ${memberReady ? "" : "disabled"}>
+        ${escapeHtml(watchState.label)}
+      </button>
+      <p class="hero-interest-helper">${memberReady ? escapeHtml(watchState.helper) : "Sign in to track interest and watching."}</p>
     </aside>
   `;
 
@@ -1330,6 +1346,7 @@ function getInterestedCount(title) {
 
 function movieCardTemplate(title) {
   const saved = isSavedTitle(title.id);
+  const memberReady = isSignedIn();
   const ownerControls = isOwnerMode()
     ? `
         <div class="owner-actions">
@@ -1371,8 +1388,9 @@ function movieCardTemplate(title) {
       </a>
       <div class="movie-actions movie-actions-compact">
         <a class="details-link" href="details.html?id=${title.id}">Open Details →</a>
-        <button class="owner-action-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved" : "Save"}</button>
+        <button class="owner-action-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled"}>${saved ? "Saved" : "Save"}</button>
       </div>
+      ${memberReady ? "" : '<p class="member-action-note card-member-note">Members only can save, vote, and track titles.</p>'}
       ${ownerControls
         ? `
         <div class="movie-owner-controls">
@@ -3688,7 +3706,7 @@ async function renderDetailsPage() {
   `;
 
   const detailActions = target.querySelector(".detail-actions");
-  const detailSummary = target.querySelector(".detail-summary");
+  const detailHeroCard = target.querySelector(".detail-hero-card");
 
   detailActions?.addEventListener("click", async (event) => {
     const actionTarget = event.target instanceof HTMLElement ? event.target : null;
@@ -3769,7 +3787,7 @@ async function renderDetailsPage() {
     }
   });
 
-  detailSummary?.addEventListener("click", async (event) => {
+  detailHeroCard?.addEventListener("click", async (event) => {
     const actionTarget = event.target instanceof HTMLElement ? event.target : null;
 
     if (!actionTarget) {
