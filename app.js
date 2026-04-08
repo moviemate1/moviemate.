@@ -1114,7 +1114,7 @@ function trailerPanelTemplate(title) {
   const embedUrl = getYouTubeEmbedUrl(title.trailerUrl);
   const interestLabel = getHeroLaunchLabel(title);
   const interestedCount = formatLargeNumber(getInterestedCount(title));
-  const interestState = getInterestToggleState(getTitleWatchStatus(title.id));
+  const interestState = getPrimaryWatchButtonState(title, getTitleWatchStatus(title.id));
   const memberReady = isSignedIn();
   const overlayTitle = `
     <p class="eyebrow">${escapeHtml(title.type)} • ${escapeHtml(String(title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now"))}</p>
