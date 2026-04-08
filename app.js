@@ -482,7 +482,11 @@ function normalizePersonName(name) {
 }
 
 function buildPersonUrl(name) {
-  return `person.html?name=${encodeURIComponent(String(name || "").trim())}`;
+  return `/person.html?name=${encodeURIComponent(String(name || "").trim())}`;
+}
+
+function buildTitleUrl(id) {
+  return `/details.html?id=${encodeURIComponent(id)}`;
 }
 
 function collectPersonCredits(personName, titles = titlesCache) {
@@ -1501,7 +1505,7 @@ function movieCardTemplate(title) {
 
   return `
     <article class="movie-card movie-card-compact">
-      <a class="movie-card-link" href="details.html?id=${title.id}">
+      <a class="movie-card-link" href="${buildTitleUrl(title.id)}">
         <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
         <div class="movie-content">
           <div class="movie-card-summary">
@@ -1519,7 +1523,7 @@ function movieCardTemplate(title) {
         </div>
       </a>
       <div class="movie-actions movie-actions-compact">
-        <a class="details-link" href="details.html?id=${title.id}">Open Details →</a>
+        <a class="details-link" href="${buildTitleUrl(title.id)}">Open Details →</a>
         <button class="owner-action-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled"}>${saved ? "Saved" : "Save"}</button>
       </div>
       ${memberReady ? "" : '<p class="member-action-note card-member-note">Members only can save, vote, and track titles.</p>'}
@@ -1546,7 +1550,7 @@ function featuredCardTemplate(title) {
         : "Movie";
 
   return `
-    <a class="featured-card featured-feed-card" href="details.html?id=${title.id}">
+    <a class="featured-card featured-feed-card" href="${buildTitleUrl(title.id)}">
       <img class="featured-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <div class="featured-copy">
         <h3>${escapeHtml(title.title)}</h3>
@@ -1651,7 +1655,7 @@ function mostInterestedItemTemplate(title, index) {
   const releaseLabel = title.status === "Upcoming" ? getHeroLaunchLabel(title) : title.status;
 
   return `
-    <a class="interest-item" href="details.html?id=${title.id}">
+    <a class="interest-item" href="${buildTitleUrl(title.id)}">
       <span class="interest-rank">${index + 1}</span>
       <img class="interest-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <div class="interest-copy">
@@ -1738,7 +1742,7 @@ function upcomingCardTemplate(title) {
         </div>
         <p class="movie-description">${escapeHtml(title.description)}</p>
         <div class="movie-actions">
-          <a class="details-link" href="details.html?id=${title.id}">View Details →</a>
+          <a class="details-link" href="${buildTitleUrl(title.id)}">View Details →</a>
         </div>
       </div>
     </article>
@@ -2085,7 +2089,7 @@ function renderSearchSuggestions(titles) {
   list.innerHTML = matches
     .map(
       (title) => `
-        <a class="search-suggestion-item" href="details.html?id=${title.id}">
+        <a class="search-suggestion-item" href="${buildTitleUrl(title.id)}">
           <img src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
           <span>
             <strong>${escapeHtml(title.title)}</strong>
@@ -2218,7 +2222,7 @@ function scheduleCardTemplate(title) {
   const watchStatus = getTitleWatchStatus(title.id);
 
   return `
-    <a class="schedule-card" href="details.html?id=${title.id}">
+    <a class="schedule-card" href="${buildTitleUrl(title.id)}">
       <div class="schedule-date-badge">
         <span>${title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short" }).toUpperCase() : "TBD"}</span>
         <strong>${title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).toLocaleDateString("en-IN", { day: "2-digit" }) : "--"}</strong>
@@ -2509,7 +2513,7 @@ function buildCalendarCells(monthIndex, year) {
 function reviewCalendarItemTemplate(entry) {
   const reactionLabel = entry.reaction ? REACTION_OPTIONS[entry.reaction]?.label || entry.reaction : "Comment";
   return `
-    <a class="review-calendar-item" href="details.html?id=${entry.title.id}">
+    <a class="review-calendar-item" href="${buildTitleUrl(entry.title.id)}">
       <span>${escapeHtml(entry.title.title)}</span>
       <small>${escapeHtml(reactionLabel)}</small>
     </a>
@@ -2784,7 +2788,7 @@ function buildUserNotifications(titles) {
       label: "New title added",
       title: title.title,
       copy: `${title.type} • ${formatReleaseDate(title.releaseDate)} • now live on MovieMate.`,
-      href: `details.html?id=${title.id}`,
+      href: buildTitleUrl(title.id),
       createdAtMs: getCreatedAtMs(title.createdAt)
     }));
 
@@ -2795,7 +2799,7 @@ function buildUserNotifications(titles) {
       label: "All-time great pick",
       title: title.title,
       copy: `${getReactionStats(title).recommendedPercent}% recommend • ${title.genre}`,
-      href: `details.html?id=${title.id}`,
+      href: buildTitleUrl(title.id),
       createdAtMs: 0
     }));
 
@@ -3178,13 +3182,13 @@ function updateAuthUI() {
 
   document.querySelectorAll("[data-profile-link]").forEach((link) => {
     if (link instanceof HTMLAnchorElement) {
-      link.href = "profile.html";
+      link.href = "/profile.html";
     }
   });
 
   document.querySelectorAll("[data-account-settings-link]").forEach((link) => {
     if (link instanceof HTMLAnchorElement) {
-      link.href = "account.html";
+      link.href = "/account.html";
     }
   });
 
@@ -3446,7 +3450,7 @@ function renderOwnerNotifications(titles) {
 
 function analyticsRowTemplate(title, metric, value) {
   return `
-    <a class="analytics-row" href="details.html?id=${title.id}">
+    <a class="analytics-row" href="${buildTitleUrl(title.id)}">
       <img src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <span>
         <strong>${escapeHtml(title.title)}</strong>
@@ -3981,7 +3985,7 @@ function personHeroAvatarTemplate(person) {
 function personFilmographyCardTemplate(entry) {
   const releaseLabel = formatReleaseDate(entry.title.releaseDate);
   return `
-    <a class="person-film-card" href="details.html?id=${entry.title.id}">
+    <a class="person-film-card" href="${buildTitleUrl(entry.title.id)}">
       <img class="person-film-poster" src="${entry.title.image}" alt="${escapeHtml(entry.title.title)} poster" loading="lazy" decoding="async" />
       <div class="person-film-copy">
         <h3>${escapeHtml(entry.title.title)}</h3>
@@ -4137,7 +4141,7 @@ function setupDeleteButtons() {
       return;
     }
 
-    window.location.href = "index.html";
+    window.location.href = "/explore/";
   });
 }
 
@@ -4582,7 +4586,7 @@ function profileReviewCardTemplate(entry) {
 
   return `
     <article class="profile-review-card">
-      <a class="profile-review-poster-link" href="details.html?id=${entry.title.id}">
+      <a class="profile-review-poster-link" href="${buildTitleUrl(entry.title.id)}">
         <img class="profile-review-poster" src="${entry.title.image}" alt="${escapeHtml(entry.title.title)} poster" loading="lazy" decoding="async" />
       </a>
       <div class="profile-review-copy">
@@ -4596,7 +4600,7 @@ function profileReviewCardTemplate(entry) {
         <p class="profile-review-meta">${escapeHtml(entry.title.genre)} • ${escapeHtml(entry.title.language.join(", "))}</p>
         ${firstComment ? `<p class="profile-review-text">${escapeHtml(firstComment)}</p>` : `<p class="profile-review-text">${stats.recommendedPercent}% recommend on MovieMate.</p>`}
         <div class="profile-inline-actions">
-          <a class="ghost-link" href="details.html?id=${entry.title.id}">Open title</a>
+          <a class="ghost-link" href="${buildTitleUrl(entry.title.id)}">Open title</a>
         </div>
       </div>
     </article>
@@ -4612,7 +4616,7 @@ function profilePostCardTemplate(title) {
         <p>${escapeHtml(title.type)} • ${escapeHtml(title.genre)}</p>
         <p>${escapeHtml(title.approved ? "Live on MovieMate" : "Waiting for owner approval")}</p>
       </div>
-      <a class="ghost-link" href="details.html?id=${title.id}">View</a>
+      <a class="ghost-link" href="${buildTitleUrl(title.id)}">View</a>
     </article>
   `;
 }
@@ -4632,7 +4636,7 @@ function buildInterestedTitles(titles) {
 
 function interestedTitleTemplate(title) {
   return `
-    <a class="profile-interest-item" href="details.html?id=${title.id}">
+    <a class="profile-interest-item" href="${buildTitleUrl(title.id)}">
       <img src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <span>
         <strong>${escapeHtml(title.title)}</strong>
@@ -4759,7 +4763,7 @@ function renderProfilePage() {
           <span>${stats.interested} interested</span>
         </div>
         <div class="profile-card-actions">
-          <a class="secondary-btn" href="account.html">Edit Profile</a>
+          <a class="secondary-btn" href="/account.html">Edit Profile</a>
         </div>
       </aside>
 
@@ -4779,7 +4783,7 @@ function renderProfilePage() {
               <button class="profile-filter-pill" data-profile-filter="goForIt" type="button">Go For It</button>
               <button class="profile-filter-pill" data-profile-filter="perfect" type="button">Perfect</button>
             </div>
-            <a class="secondary-btn" href="my-reviews.html">Open calendar view</a>
+            <a class="secondary-btn" href="/my-reviews.html">Open calendar view</a>
           </div>
           <div class="profile-review-list" id="profileReviewList">
             ${
