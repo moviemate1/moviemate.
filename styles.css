@@ -1730,6 +1730,7 @@ button.ghost-link {
 .explore-feed-grid {
   gap: 14px;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: start;
   margin-top: 0;
 }
 
@@ -1755,11 +1756,12 @@ button.ghost-link {
 
 .featured-feed-card {
   display: grid;
-  grid-template-rows: auto minmax(86px, auto);
+  grid-template-rows: auto minmax(104px, auto);
   background: transparent;
   border: 0;
   align-content: start;
   min-height: 100%;
+  height: 100%;
 }
 
 .featured-feed-card .featured-copy h3 {
@@ -1774,9 +1776,10 @@ button.ghost-link {
 
 .featured-feed-card .featured-poster {
   width: 100%;
-  aspect-ratio: 0.7;
+  aspect-ratio: 2 / 3;
   border-radius: 14px;
   box-shadow: 0 14px 24px rgba(0, 0, 0, 0.3);
+  object-fit: cover;
 }
 
 .featured-feed-card .featured-copy {
@@ -1784,7 +1787,7 @@ button.ghost-link {
   display: grid;
   align-content: start;
   gap: 6px;
-  min-height: 98px;
+  min-height: 110px;
 }
 
 .featured-feed-card .movie-meta {
@@ -1802,6 +1805,7 @@ button.ghost-link {
 
 .explore-row-section .trend-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: start;
 }
 
 .featured-copy h3,
@@ -2008,12 +2012,14 @@ button.ghost-link {
 .movie-card-compact {
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto minmax(148px, auto) auto auto;
   min-height: 100%;
+  height: 100%;
 }
 
 .movie-card-compact .movie-poster {
-  aspect-ratio: 0.73;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
 }
 
 .movie-card-compact .movie-header {
@@ -2026,6 +2032,7 @@ button.ghost-link {
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  min-height: 2.7em;
 }
 
 .clamp-line {
