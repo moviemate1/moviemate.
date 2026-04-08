@@ -3561,54 +3561,55 @@ async function renderDetailsPage() {
     return;
   }
 
-  const snapshot = await getDoc(doc(db, TITLES_COLLECTION, titleId));
+  try {
+    const snapshot = await getDoc(doc(db, TITLES_COLLECTION, titleId));
 
-  if (!snapshot.exists()) {
-    target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
-    return;
-  }
+    if (!snapshot.exists()) {
+      target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
+      return;
+    }
 
-  const title = normalizeTitle(snapshot);
-  titlesCache = [...titlesCache.filter((item) => item.id !== title.id), title];
+    const title = normalizeTitle(snapshot);
+    titlesCache = [...titlesCache.filter((item) => item.id !== title.id), title];
 
-  if (!title.approved && !isOwnerMode()) {
-    target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
-    return;
-  }
+    if (!title.approved && !isOwnerMode()) {
+      target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
+      return;
+    }
 
-  trackTitleView(title.id);
+    trackTitleView(title.id).catch((error) => console.error(error));
 
-  const stats = getReactionStats(title);
-  const saved = isSavedTitle(title.id);
-  const embeddedTrailerUrl = getYouTubeEmbedUrl(title.trailerUrl);
-  const releaseYear = title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now";
-  const leadDirector = title.director || "MovieMate";
-  const primaryLanguage = title.language?.[0] || "Not added";
-  const primaryPlatform = formatPlatforms(title.platforms);
-  const currentWatchStatus = getTitleWatchStatus(title.id);
-  const primaryWatchButton = getPrimaryWatchButtonState(title, currentWatchStatus);
-  const memberReady = isSignedIn();
-  const ownerControls = isOwnerMode()
-    ? `
-        <div class="owner-actions">
-          ${ownerActionButton("Edit", "edit", title.id)}
-          ${ownerActionButton(title.approved ? "Approved" : "Approve", "approve", title.id, title.approved)}
-          ${ownerActionButton(title.pinned ? "Pinned" : "Pin", "pin", title.id, title.pinned)}
-          ${ownerActionButton(title.trending ? "Trending" : "Trend", "trend", title.id, title.trending)}
-        </div>
-        <button class="danger-btn delete-title-btn" data-id="${title.id}" type="button">Delete Title</button>
-        <p class="owner-badge">Owner mode is active</p>
-      `
-    : "";
-  const badges = `
-    ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
-    ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
-    ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
-    ${title.source === "tmdb" ? '<span class="status-pill status-source">TMDb</span>' : ""}
-    ${!title.approved ? '<span class="status-pill status-pending">Pending</span>' : ""}
-  `;
+    const stats = getReactionStats(title);
+    const saved = isSavedTitle(title.id);
+    const embeddedTrailerUrl = getYouTubeEmbedUrl(title.trailerUrl);
+    const releaseYear = title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now";
+    const leadDirector = title.director || "MovieMate";
+    const primaryLanguage = title.language?.[0] || "Not added";
+    const primaryPlatform = formatPlatforms(title.platforms);
+    const currentWatchStatus = getTitleWatchStatus(title.id);
+    const primaryWatchButton = getPrimaryWatchButtonState(title, currentWatchStatus);
+    const memberReady = isSignedIn();
+    const ownerControls = isOwnerMode()
+      ? `
+          <div class="owner-actions">
+            ${ownerActionButton("Edit", "edit", title.id)}
+            ${ownerActionButton(title.approved ? "Approved" : "Approve", "approve", title.id, title.approved)}
+            ${ownerActionButton(title.pinned ? "Pinned" : "Pin", "pin", title.id, title.pinned)}
+            ${ownerActionButton(title.trending ? "Trending" : "Trend", "trend", title.id, title.trending)}
+          </div>
+          <button class="danger-btn delete-title-btn" data-id="${title.id}" type="button">Delete Title</button>
+          <p class="owner-badge">Owner mode is active</p>
+        `
+      : "";
+    const badges = `
+      ${title.status === "Upcoming" ? '<span class="status-pill status-upcoming">Upcoming</span>' : '<span class="status-pill status-released">Released</span>'}
+      ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
+      ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
+      ${title.source === "tmdb" ? '<span class="status-pill status-source">TMDb</span>' : ""}
+      ${!title.approved ? '<span class="status-pill status-pending">Pending</span>' : ""}
+    `;
 
-  target.innerHTML = `
+    target.innerHTML = `
     <section class="detail-hero-card">
       ${trailerPanelTemplate(title)}
       <div class="detail-summary">
@@ -3736,10 +3737,10 @@ async function renderDetailsPage() {
     </section>
   `;
 
-  const detailActions = target.querySelector(".detail-actions");
-  const detailHeroCard = target.querySelector(".detail-hero-card");
+    const detailActions = target.querySelector(".detail-actions");
+    const detailHeroCard = target.querySelector(".detail-hero-card");
 
-  detailActions?.addEventListener("click", async (event) => {
+    detailActions?.addEventListener("click", async (event) => {
     const actionTarget = event.target instanceof HTMLElement ? event.target : null;
 
     if (!actionTarget) {
@@ -3816,9 +3817,9 @@ async function renderDetailsPage() {
         showMessage("#detailVoteMessage", "Could not share right now.");
       }
     }
-  });
+    });
 
-  detailHeroCard?.addEventListener("click", async (event) => {
+    detailHeroCard?.addEventListener("click", async (event) => {
     const actionTarget = event.target instanceof HTMLElement ? event.target : null;
 
     if (!actionTarget) {
@@ -3851,13 +3852,22 @@ async function renderDetailsPage() {
       await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
       await renderDetailsPage();
     }
-  });
+    });
 
-  document.querySelector("#detailsCommentSignInBtn")?.addEventListener("click", () => {
-    openAuthModal("login");
-  });
+    document.querySelector("#detailsCommentSignInBtn")?.addEventListener("click", () => {
+      openAuthModal("login");
+    });
 
-  setupCommentForm(title.id);
+    setupCommentForm(title.id);
+  } catch (error) {
+    console.error(error);
+    target.innerHTML = `
+      <section class="not-found">
+        <h1>Could not open this title right now</h1>
+        <p class="section-copy">Please refresh the page once. If it still fails, re-upload the latest site files.</p>
+      </section>
+    `;
+  }
 }
 
 function setupLikeButtons() {

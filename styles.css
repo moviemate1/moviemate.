@@ -256,6 +256,14 @@ select {
 
 .notification-trigger {
   position: relative;
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+.notification-glyph {
+  display: inline-grid;
+  place-items: center;
+  filter: drop-shadow(0 0 10px rgba(255, 130, 130, 0.12));
 }
 
 .notification-dot {
