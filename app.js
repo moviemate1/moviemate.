@@ -900,7 +900,29 @@ function watchStatusActionsTemplate(title) {
   `;
 }
 
-function getPrimaryWatchButtonState(status) {
+function getInterestToggleState(status) {
+  if (status === "interested") {
+    return {
+      label: "Interested",
+      nextStatus: "clear",
+      className: "watch-status-btn-interested active",
+      helper: "Tap again to remove this from interested."
+    };
+  }
+
+  return {
+    label: "Mark as Interested",
+    nextStatus: "interested",
+    className: "watch-status-btn-interested",
+    helper: "Members can mark titles as interested."
+  };
+}
+
+function getPrimaryWatchButtonState(title, status) {
+  if (title.status === "Upcoming") {
+    return getInterestToggleState(status);
+  }
+
   if (status === "watching") {
     return {
       label: "Watching...",
@@ -1082,7 +1104,7 @@ function trailerPanelTemplate(title) {
   const embedUrl = getYouTubeEmbedUrl(title.trailerUrl);
   const interestLabel = getHeroLaunchLabel(title);
   const interestedCount = formatLargeNumber(getInterestedCount(title));
-  const watchState = getPrimaryWatchButtonState(getTitleWatchStatus(title.id));
+  const interestState = getInterestToggleState(getTitleWatchStatus(title.id));
   const memberReady = isSignedIn();
   const overlayTitle = `
     <p class="eyebrow">${escapeHtml(title.type)} • ${escapeHtml(String(title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now"))}</p>
@@ -1093,10 +1115,10 @@ function trailerPanelTemplate(title) {
       <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
       <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
       <p class="hero-interest-count">${escapeHtml(interestedCount)} interested</p>
-      <button class="watch-status-btn hero-interest-action ${watchState.className}" type="button" data-watch-status="${watchState.nextStatus}" data-id="${title.id}" ${memberReady ? "" : "disabled"}>
-        ${escapeHtml(watchState.label)}
+      <button class="watch-status-btn hero-interest-action ${interestState.className}" type="button" data-watch-status="${interestState.nextStatus}" data-id="${title.id}" ${memberReady ? "" : "disabled"}>
+        ${escapeHtml(interestState.label)}
       </button>
-      <p class="hero-interest-helper">${memberReady ? escapeHtml(watchState.helper) : "Sign in to track interest and watching."}</p>
+      <p class="hero-interest-helper">${memberReady ? escapeHtml(interestState.helper) : "Sign in to mark titles as interested."}</p>
     </aside>
   `;
 
@@ -1377,8 +1399,8 @@ function movieCardTemplate(title) {
               <div>
                 <h3>${escapeHtml(title.title)}</h3>
                 <p class="movie-meta">${escapeHtml(cardLabel)}</p>
-                <p class="movie-meta subtle-line">${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
-                ${title.platforms?.length ? `<p class="movie-meta subtle-line">${escapeHtml(formatPlatforms(title.platforms))}</p>` : ""}
+                <p class="movie-meta subtle-line clamp-line">${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+                ${title.platforms?.length ? `<p class="movie-meta subtle-line clamp-line">${escapeHtml(formatPlatforms(title.platforms))}</p>` : ""}
               </div>
               <span class="rating-pill"><strong>${stats.recommendedPercent}%</strong> recommend</span>
             </div>
@@ -3558,7 +3580,8 @@ async function renderDetailsPage() {
   const primaryLanguage = title.language?.[0] || "Not added";
   const primaryPlatform = formatPlatforms(title.platforms);
   const currentWatchStatus = getTitleWatchStatus(title.id);
-  const primaryWatchButton = getPrimaryWatchButtonState(currentWatchStatus);
+  const primaryWatchButton = getPrimaryWatchButtonState(title, currentWatchStatus);
+  const memberReady = isSignedIn();
   const ownerControls = isOwnerMode()
     ? `
         <div class="owner-actions">
@@ -3619,10 +3642,12 @@ async function renderDetailsPage() {
               type="button"
               data-watch-status="${primaryWatchButton.nextStatus}"
               data-id="${title.id}"
+              ${memberReady ? "" : "disabled"}
             >
               ${escapeHtml(primaryWatchButton.label)}
             </button>
-            <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collection" : "Add to Collection"}</button>
+            <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled"}>${saved ? "Saved to Collection" : "Add to Collection"}</button>
+            ${memberReady ? `<p class="hero-interest-helper detail-cta-helper">${escapeHtml(primaryWatchButton.helper)}</p>` : '<p class="hero-interest-helper detail-cta-helper">Members only can save, track interest, and update watch status.</p>'}
           </div>
         </div>
       </div>
