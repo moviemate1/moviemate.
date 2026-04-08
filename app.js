@@ -768,13 +768,7 @@ async function syncWatchStatus(titleId, nextStatus) {
   }
 
   const watchStatus = { ...(currentUserProfile?.watchStatus || {}) };
-  const currentStatus = normalizeWatchStatusValue(watchStatus[titleId] || "");
-
-  if (currentStatus === nextStatus) {
-    delete watchStatus[titleId];
-  } else {
-    watchStatus[titleId] = nextStatus;
-  }
+  watchStatus[titleId] = nextStatus;
 
   await persistUserProfile({ watchStatus });
   return true;
@@ -898,6 +892,38 @@ function watchStatusActionsTemplate(title) {
         .join("")}
     </div>
   `;
+}
+
+function getPrimaryWatchButtonState(status) {
+  if (status === "watching") {
+    return {
+      label: "Watching...",
+      nextStatus: "watching",
+      className: "watch-status-btn-watching active"
+    };
+  }
+
+  if (status === "watched") {
+    return {
+      label: "Watched",
+      nextStatus: "watched",
+      className: "watch-status-btn-watched active"
+    };
+  }
+
+  if (status === "interested") {
+    return {
+      label: "Interested",
+      nextStatus: "interested",
+      className: "watch-status-btn-interested active"
+    };
+  }
+
+  return {
+    label: "Mark as Interested",
+    nextStatus: "interested",
+    className: "watch-status-btn-interested"
+  };
 }
 
 function toYouTubeSearchUrl(title) {
@@ -3514,21 +3540,7 @@ async function renderDetailsPage() {
   const primaryLanguage = title.language?.[0] || "Not added";
   const primaryPlatform = formatPlatforms(title.platforms);
   const currentWatchStatus = getTitleWatchStatus(title.id);
-  const interestedPrimaryLabel =
-    currentWatchStatus === "interested"
-      ? "Interested"
-      : currentWatchStatus === "watching"
-        ? "Watching..."
-        : currentWatchStatus === "watched"
-          ? "Watched"
-          : "Mark as Interested";
-  const watchCtaButtons = `
-    <div class="detail-primary-actions">
-      <button class="watch-status-btn watch-status-btn-interested ${currentWatchStatus === "interested" ? "active" : ""}" type="button" data-watch-status="interested" data-id="${title.id}">${escapeHtml(interestedPrimaryLabel)}</button>
-      <button class="watch-status-btn watch-status-btn-watching ${currentWatchStatus === "watching" ? "active" : ""}" type="button" data-watch-status="watching" data-id="${title.id}">Watching...</button>
-      <button class="watch-status-btn watch-status-btn-watched ${currentWatchStatus === "watched" ? "active" : ""}" type="button" data-watch-status="watched" data-id="${title.id}">${currentWatchStatus === "watched" ? "Watched" : "Mark as Watched"}</button>
-    </div>
-  `;
+  const primaryWatchButton = getPrimaryWatchButtonState(currentWatchStatus);
   const ownerControls = isOwnerMode()
     ? `
         <div class="owner-actions">
@@ -3583,8 +3595,18 @@ async function renderDetailsPage() {
             </div>
             <p class="detail-hero-description">${escapeHtml(title.description)}</p>
           </div>
+          <div class="detail-cta-stack">
+            <button
+              class="watch-status-btn ${primaryWatchButton.className}"
+              type="button"
+              data-watch-status="${primaryWatchButton.nextStatus}"
+              data-id="${title.id}"
+            >
+              ${escapeHtml(primaryWatchButton.label)}
+            </button>
+            <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collection" : "Add to Collection"}</button>
+          </div>
         </div>
-        ${watchCtaButtons}
       </div>
     </section>
 
@@ -3596,7 +3618,6 @@ async function renderDetailsPage() {
             ? `<button class="secondary-btn trailer-btn" type="button" data-open-trailer="true" data-embed-url="${embeddedTrailerUrl}" data-trailer-title="${escapeHtml(title.title)} trailer">Watch Trailer</button>`
             : `<a class="secondary-btn trailer-btn" href="${getTrailerLink(title)}" target="_blank" rel="noreferrer">Open Trailer</a>`
         }
-        <button class="secondary-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collections" : "Save to Collections"}</button>
         <button class="secondary-btn share-title-btn" data-share-id="${title.id}" type="button">Share Title</button>
         ${ownerControls}
         <p class="form-message" id="detailVoteMessage" aria-live="polite"></p>
@@ -3667,6 +3688,7 @@ async function renderDetailsPage() {
   `;
 
   const detailActions = target.querySelector(".detail-actions");
+  const detailSummary = target.querySelector(".detail-summary");
 
   detailActions?.addEventListener("click", async (event) => {
     const actionTarget = event.target instanceof HTMLElement ? event.target : null;
@@ -3744,6 +3766,41 @@ async function renderDetailsPage() {
         console.error(error);
         showMessage("#detailVoteMessage", "Could not share right now.");
       }
+    }
+  });
+
+  detailSummary?.addEventListener("click", async (event) => {
+    const actionTarget = event.target instanceof HTMLElement ? event.target : null;
+
+    if (!actionTarget) {
+      return;
+    }
+
+    const saveButton = actionTarget.closest(".save-title-btn");
+
+    if (saveButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!requireAccount("save titles to your collections")) {
+        return;
+      }
+      await syncSavedTitle(saveButton.dataset.saveId);
+      await renderDetailsPage();
+      return;
+    }
+
+    const watchButton = actionTarget.closest(".watch-status-btn");
+
+    if (watchButton) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!requireAccount("track interested, watching, and watched titles")) {
+        return;
+      }
+
+      await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
+      await renderDetailsPage();
     }
   });
 

@@ -458,18 +458,32 @@ button.ghost-link {
   box-shadow: var(--shadow);
 }
 
-.showcase-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
-  gap: 20px;
-  align-items: start;
+.explore-showcase {
+  padding: 18px 20px 22px;
+}
+
+.showcase-row-heading {
   margin-bottom: 18px;
 }
 
-.showcase-header h1 {
+.showcase-row-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.showcase-row-title h2 {
   margin: 0;
-  font-size: clamp(2.1rem, 3vw, 3rem);
-  line-height: 0.96;
+  font-size: clamp(1.9rem, 2.2vw, 2.5rem);
+  line-height: 1;
+}
+
+.showcase-row-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  font-size: 1.05rem;
 }
 
 .explore-sidebar {
@@ -1732,7 +1746,7 @@ button.ghost-link {
 
 .featured-feed-card {
   display: grid;
-  grid-template-rows: auto minmax(64px, auto);
+  grid-template-rows: auto minmax(86px, auto);
   background: transparent;
   border: 0;
   align-content: start;
@@ -2600,22 +2614,33 @@ button.ghost-link {
 
 .detail-summary-header {
   display: grid;
-  grid-template-columns: 170px minmax(0, 1fr);
+  grid-template-columns: 170px minmax(0, 1fr) minmax(240px, 280px);
   gap: 24px;
   align-items: end;
 }
 
-.detail-primary-actions {
-  display: flex;
+.detail-cta-stack {
+  display: grid;
   gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 22px;
+  align-self: end;
 }
 
-.detail-primary-actions .watch-status-btn {
-  min-width: 180px;
-  min-height: 52px;
-  padding-inline: 20px;
+.detail-cta-stack .watch-status-btn,
+.detail-cta-stack .detail-save-btn {
+  width: 100%;
+  min-height: 54px;
+  border-radius: 999px;
+}
+
+.detail-save-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f3f0f3;
+}
+
+.detail-save-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .detail-poster {
@@ -3338,10 +3363,6 @@ button.ghost-link {
     position: static;
   }
 
-  .showcase-header {
-    grid-template-columns: 1fr;
-  }
-
   .explore-panel-header {
     flex-direction: column;
     align-items: stretch;
@@ -3398,11 +3419,6 @@ button.ghost-link {
 
   .explore-row-section .trend-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .detail-primary-actions .watch-status-btn {
-    min-width: 0;
-    flex: 1 1 180px;
   }
 
   .hero-interest-card {
@@ -3475,12 +3491,8 @@ button.ghost-link {
     align-items: stretch;
   }
 
-  .detail-primary-actions {
-    flex-direction: column;
-  }
-
-  .detail-primary-actions .watch-status-btn {
-    width: 100%;
+  .detail-cta-stack {
+    margin-top: 10px;
   }
 
   .site-footer {
