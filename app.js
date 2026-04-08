@@ -335,6 +335,16 @@ function getUserDocRef(uid = currentUser?.uid) {
 }
 
 function normalizeUserProfile(data = {}) {
+  const normalizedWatchStatus =
+    data.watchStatus && typeof data.watchStatus === "object"
+      ? Object.fromEntries(
+          Object.entries(data.watchStatus).map(([titleId, value]) => [
+            titleId,
+            value === "want" ? "interested" : value === "favorite" ? "watching" : value
+          ])
+        )
+      : {};
+
   return {
     ...DEFAULT_USER_PROFILE,
     ...data,
@@ -348,7 +358,7 @@ function normalizeUserProfile(data = {}) {
     whatsapp: String(data.whatsapp || "").trim(),
     savedTitles: Array.isArray(data.savedTitles) ? data.savedTitles : [],
     reactions: data.reactions && typeof data.reactions === "object" ? data.reactions : {},
-    watchStatus: data.watchStatus && typeof data.watchStatus === "object" ? data.watchStatus : {},
+    watchStatus: normalizedWatchStatus,
     collections: Array.isArray(data.collections) ? data.collections : []
   };
 }
@@ -604,11 +614,7 @@ function getStoredReactions() {
     return currentUserProfile?.reactions || {};
   }
 
-  try {
-    return JSON.parse(localStorage.getItem(REACTIONS_STORAGE_KEY) || "{}");
-  } catch {
-    return {};
-  }
+  return {};
 }
 
 function getSavedTitles() {
@@ -616,12 +622,7 @@ function getSavedTitles() {
     return currentUserProfile?.savedTitles || [];
   }
 
-  try {
-    const parsed = JSON.parse(localStorage.getItem(SAVED_TITLES_STORAGE_KEY) || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  return [];
 }
 
 function isSavedTitle(titleId) {
@@ -644,8 +645,38 @@ function getWatchStatusMap() {
   return currentUserProfile?.watchStatus || {};
 }
 
+function normalizeWatchStatusValue(value) {
+  if (value === "want") {
+    return "interested";
+  }
+
+  if (value === "favorite") {
+    return "watching";
+  }
+
+  return value || "";
+}
+
+function formatWatchStatusLabel(value) {
+  const normalized = normalizeWatchStatusValue(value);
+
+  if (normalized === "interested") {
+    return "Interested";
+  }
+
+  if (normalized === "watching") {
+    return "Watching";
+  }
+
+  if (normalized === "watched") {
+    return "Watched";
+  }
+
+  return "";
+}
+
 function getTitleWatchStatus(titleId) {
-  return getWatchStatusMap()[titleId] || "";
+  return normalizeWatchStatusValue(getWatchStatusMap()[titleId] || "");
 }
 
 function getCreatedAtMs(value) {
@@ -712,8 +743,7 @@ function clearReaction(titleId) {
 
 async function syncSavedTitle(titleId) {
   if (!isSignedIn()) {
-    toggleSavedTitle(titleId);
-    return;
+    return false;
   }
 
   const saved = new Set(getSavedTitles());
@@ -729,6 +759,7 @@ async function syncSavedTitle(titleId) {
   await updateDoc(doc(db, TITLES_COLLECTION, titleId), {
     savesCount: increment(wasSaved ? -1 : 1)
   });
+  return true;
 }
 
 async function syncWatchStatus(titleId, nextStatus) {
@@ -737,7 +768,7 @@ async function syncWatchStatus(titleId, nextStatus) {
   }
 
   const watchStatus = { ...(currentUserProfile?.watchStatus || {}) };
-  const currentStatus = watchStatus[titleId] || "";
+  const currentStatus = normalizeWatchStatusValue(watchStatus[titleId] || "");
 
   if (currentStatus === nextStatus) {
     delete watchStatus[titleId];
@@ -838,9 +869,9 @@ function reactionButtonsTemplate(title) {
 function watchStatusActionsTemplate(title) {
   const currentStatus = getTitleWatchStatus(title.id);
   const actions = [
-    ["watched", "Watched"],
-    ["want", "Want to watch"],
-    ["favorite", "Favorite"]
+    ["interested", "Mark as Interested"],
+    ["watching", "Watching..."],
+    ["watched", "Mark as Watched"]
   ];
 
   return `
@@ -849,12 +880,18 @@ function watchStatusActionsTemplate(title) {
         .map(
           ([value, label]) => `
             <button
-              class="watch-status-btn ${currentStatus === value ? "active" : ""}"
+              class="watch-status-btn watch-status-btn-${value} ${currentStatus === value ? "active" : ""}"
               type="button"
               data-watch-status="${value}"
               data-id="${title.id}"
             >
-              ${label}
+              ${
+                currentStatus === value && value === "interested"
+                  ? "Interested"
+                  : currentStatus === value && value === "watched"
+                    ? "Watched"
+                    : label
+              }
             </button>
           `
         )
@@ -1961,7 +1998,7 @@ function scheduleCardTemplate(title) {
       <div class="schedule-copy">
         <h3>${escapeHtml(title.title)}</h3>
         <p>${escapeHtml(title.type)} • ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
-        ${watchStatus ? `<span class="schedule-status-tag">${escapeHtml(watchStatus)}</span>` : ""}
+        ${watchStatus ? `<span class="schedule-status-tag">${escapeHtml(formatWatchStatusLabel(watchStatus))}</span>` : ""}
       </div>
     </a>
   `;
@@ -2102,8 +2139,8 @@ function buildPersonalCollections(titles) {
   const reactedTitles = titles.filter((title) => reactionMap[title.id]);
   const perfectTitles = titles.filter((title) => reactionMap[title.id] === "perfect");
   const watchedTitles = titles.filter((title) => watchStatus[title.id] === "watched");
-  const wantTitles = titles.filter((title) => watchStatus[title.id] === "want");
-  const favoriteTitles = titles.filter((title) => watchStatus[title.id] === "favorite");
+  const interestedTitles = titles.filter((title) => getTitleWatchStatus(title.id) === "interested");
+  const watchingTitles = titles.filter((title) => getTitleWatchStatus(title.id) === "watching");
 
   return [
     {
@@ -2127,14 +2164,14 @@ function buildPersonalCollections(titles) {
       items: watchedTitles
     },
     {
-      title: "Want to Watch",
-      subtitle: "Your cross-device schedule picks",
-      items: wantTitles
+      title: "Interested",
+      subtitle: "Titles you want to start soon",
+      items: interestedTitles
     },
     {
-      title: "Favorites",
-      subtitle: "Your most-loved titles",
-      items: favoriteTitles
+      title: "Watching",
+      subtitle: "Titles you are currently watching",
+      items: watchingTitles
     }
   ]
     .filter((group) => group.items.length)
@@ -2446,7 +2483,7 @@ function renderCollectionPage() {
       <section class="account-empty-state">
         <p class="eyebrow">Collections</p>
         <h1>Sign in to open your personal collections.</h1>
-        <p class="section-copy">Saved titles, watch states, and favorites will open here as full collection pages after sign in.</p>
+        <p class="section-copy">Saved titles, interested picks, watching progress, and watched titles will appear here after you sign in.</p>
         <button class="primary-btn" type="button" id="collectionSignInBtn">Sign In</button>
       </section>
     `;
@@ -2929,7 +2966,7 @@ function updateAuthUI() {
   if (authHint) {
     authHint.textContent = isSignedIn()
       ? `Signed in as ${currentUser?.email || "MovieMate member"}`
-      : "Sign in to keep collections, schedule, and favorites across devices.";
+      : "Sign in to keep collections, member reactions, and your watch progress across devices.";
   }
 }
 
@@ -3114,18 +3151,15 @@ function closeHomepageEditModal() {
 function renderHeroStats(titles) {
   const titlesStat = document.querySelector("#titlesStat");
   const upcomingStat = document.querySelector("#upcomingStat");
-  const reviewsStat = document.querySelector("#reviewsStat");
 
-  if (!titlesStat || !upcomingStat || !reviewsStat) {
+  if (!titlesStat || !upcomingStat) {
     return;
   }
 
-  const totalReviews = titles.reduce((sum, title) => sum + title.comments.length, 0);
   const totalUpcoming = titles.filter((title) => title.status === "Upcoming").length;
 
   titlesStat.textContent = String(titles.length);
   upcomingStat.textContent = String(totalUpcoming);
-  reviewsStat.textContent = String(totalReviews);
 }
 
 async function submitOwnerEdit(form) {
@@ -3254,6 +3288,10 @@ async function submitHomepageEdit(form) {
 }
 
 async function reactToTitle(titleId, nextReaction) {
+  if (!isSignedIn()) {
+    return false;
+  }
+
   const currentReaction = getReaction(titleId);
 
   if (!(nextReaction in REACTION_OPTIONS) || currentReaction === nextReaction) {
@@ -3323,9 +3361,13 @@ async function deleteTitle(titleId) {
 }
 
 async function addComment(titleId, form) {
+  if (!isSignedIn()) {
+    requireAccount("post reviews and comments");
+    return false;
+  }
+
   const formData = new FormData(form);
-  const typedName = formData.get("name")?.toString().trim() || "";
-  const name = isSignedIn() ? getProfileDisplayName() : typedName || "Anonymous";
+  const name = getProfileDisplayName();
   const text = formData.get("comment")?.toString().trim() || "";
   const spoiler = formData.get("spoiler") === "on";
 
@@ -3518,29 +3560,36 @@ async function renderDetailsPage() {
           <p class="eyebrow">Reviews and comments</p>
           <h2>What viewers are saying</h2>
         </div>
-        <p class="section-copy">Reviews and comments are open for everyone.</p>
+        <p class="section-copy">Only MovieMate members can post reviews and comments. Everyone can still read them.</p>
       </div>
 
-      <form class="suggest-form comment-form" id="commentForm">
-        <div class="form-grid">
-          <label class="input-group">
-            <span>Your name</span>
-            <input name="name" type="text" placeholder="Your name" />
-          </label>
-          <label class="check-option spoiler-check form-span">
-            <input name="spoiler" type="checkbox" />
-            <span>Mark this comment as spoiler</span>
-          </label>
-          <label class="input-group form-span">
-            <span>Your review or comment</span>
-            <textarea name="comment" rows="4" placeholder="Share your thoughts on this title"></textarea>
-          </label>
-        </div>
-        <div class="form-actions">
-          <button class="primary-btn" type="submit">Post Review</button>
-          <p class="form-message" id="commentMessage" aria-live="polite"></p>
-        </div>
-      </form>
+      ${
+        isSignedIn()
+          ? `
+            <form class="suggest-form comment-form" id="commentForm">
+              <div class="form-grid">
+                <label class="check-option spoiler-check form-span">
+                  <input name="spoiler" type="checkbox" />
+                  <span>Mark this comment as spoiler</span>
+                </label>
+                <label class="input-group form-span">
+                  <span>Your review or comment</span>
+                  <textarea name="comment" rows="4" placeholder="Share your thoughts on this title"></textarea>
+                </label>
+              </div>
+              <div class="form-actions">
+                <button class="primary-btn" type="submit">Post Review</button>
+                <p class="form-message" id="commentMessage" aria-live="polite"></p>
+              </div>
+            </form>
+          `
+          : `
+            <div class="member-lock-card">
+              <p class="section-copy">Sign in to vote, post reviews, and suggest movies or series.</p>
+              <button class="primary-btn" type="button" id="detailsCommentSignInBtn">Sign In to React</button>
+            </div>
+          `
+      }
 
       <div class="comment-list">
         ${title.comments.length ? title.comments.map(commentTemplate).join("") : '<p class="empty-state">No reviews yet. Be the first to write one.</p>'}
@@ -3562,6 +3611,9 @@ async function renderDetailsPage() {
     if (reactionButton) {
       event.preventDefault();
       event.stopPropagation();
+      if (!requireAccount("vote on movies and series")) {
+        return;
+      }
       showMessage("#detailVoteMessage", "Saving your vote...");
 
       try {
@@ -3601,7 +3653,7 @@ async function renderDetailsPage() {
       event.preventDefault();
       event.stopPropagation();
 
-      if (!requireAccount("save watched, want to watch, and favorite actions")) {
+      if (!requireAccount("track interested, watching, and watched titles")) {
         return;
       }
 
@@ -3626,6 +3678,10 @@ async function renderDetailsPage() {
     }
   });
 
+  document.querySelector("#detailsCommentSignInBtn")?.addEventListener("click", () => {
+    openAuthModal("login");
+  });
+
   setupCommentForm(title.id);
 }
 
@@ -3634,6 +3690,10 @@ function setupLikeButtons() {
     const button = event.target.closest(".reaction-btn");
 
     if (!button || document.body.dataset.page === "details") {
+      return;
+    }
+
+    if (!requireAccount("vote on movies and series")) {
       return;
     }
 
@@ -4165,7 +4225,12 @@ function buildInterestedTitles(titles) {
   const watchStatus = getWatchStatusMap();
   const savedIds = new Set(getSavedTitles());
   return titles
-    .filter((title) => savedIds.has(title.id) || watchStatus[title.id] === "want" || watchStatus[title.id] === "favorite")
+    .filter(
+      (title) =>
+        savedIds.has(title.id) ||
+        normalizeWatchStatusValue(watchStatus[title.id]) === "interested" ||
+        normalizeWatchStatusValue(watchStatus[title.id]) === "watching"
+    )
     .sort((left, right) => getInterestScore(right) - getInterestScore(left))
     .slice(0, 6);
 }
@@ -4273,7 +4338,8 @@ function renderProfilePage() {
     collections: personalCollections.length,
     saved: getSavedTitles().length,
     watched: Object.values(watchStatus).filter((value) => value === "watched").length,
-    favorites: Object.values(watchStatus).filter((value) => value === "favorite").length
+    interested: Object.values(watchStatus).filter((value) => normalizeWatchStatusValue(value) === "interested").length,
+    watching: Object.values(watchStatus).filter((value) => normalizeWatchStatusValue(value) === "watching").length
   };
 
   target.innerHTML = `
@@ -4297,8 +4363,9 @@ function renderProfilePage() {
         <p class="profile-bio">${escapeHtml(currentUserProfile.bio || "Add a short bio in settings to personalize your MovieMate profile.")}</p>
         <div class="profile-mini-stats">
           <span>${stats.saved} saved</span>
+          <span>${stats.interested} interested</span>
+          <span>${stats.watching} watching</span>
           <span>${stats.watched} watched</span>
-          <span>${stats.favorites} favorites</span>
         </div>
         <div class="profile-card-actions">
           <a class="secondary-btn" href="account.html">Edit Profile</a>
@@ -4364,7 +4431,7 @@ function renderProfilePage() {
           ${
             interestedTitles.length
               ? interestedTitles.map(interestedTitleTemplate).join("")
-              : '<p class="empty-state">Use “Want to watch”, “Favorite”, or “Save to Collections” to build this list.</p>'
+              : '<p class="empty-state">Use Interested, Watching, Watched, or Save to Collections to build this list.</p>'
           }
         </div>
       </aside>
@@ -4875,6 +4942,9 @@ function setupSuggestForm() {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (!requireAccount("suggest movies and series")) {
+      return;
+    }
     await addTitle(form);
     form.reset();
     showMessage("#formMessage", "Your suggestion has been sent for owner review.");

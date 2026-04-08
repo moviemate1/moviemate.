@@ -2247,11 +2247,33 @@ button.ghost-link {
   background: rgba(255, 255, 255, 0.03);
   color: #fff;
   cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.watch-status-btn:hover {
+  transform: translateY(-2px);
+}
+
+.watch-status-btn-interested.active {
+  background: linear-gradient(135deg, rgba(255, 185, 99, 0.26) 0%, rgba(207, 124, 57, 0.44) 100%);
+  border-color: rgba(255, 188, 122, 0.66);
+  box-shadow: 0 10px 24px rgba(207, 124, 57, 0.2);
+}
+
+.watch-status-btn-watching.active {
+  background: linear-gradient(135deg, rgba(72, 206, 130, 0.24) 0%, rgba(40, 148, 82, 0.44) 100%);
+  border-color: rgba(84, 223, 145, 0.62);
+  box-shadow: 0 10px 24px rgba(42, 163, 92, 0.22);
+}
+
+.watch-status-btn-watched.active {
+  background: linear-gradient(135deg, rgba(92, 165, 255, 0.24) 0%, rgba(70, 111, 255, 0.4) 100%);
+  border-color: rgba(119, 179, 255, 0.62);
+  box-shadow: 0 10px 24px rgba(70, 111, 255, 0.2);
 }
 
 .watch-status-btn.active {
-  background: linear-gradient(135deg, #b45dff 0%, #7e46ff 55%, #e50914 100%);
-  border-color: transparent;
+  font-weight: 700;
 }
 
 .reaction-buttons {
@@ -2883,6 +2905,25 @@ button.ghost-link {
 
 .comment-form {
   margin-bottom: 20px;
+}
+
+.member-lock-card {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow);
+}
+
+.member-lock-card .section-copy {
+  margin: 0;
+}
+
+.member-lock-card .primary-btn {
+  width: fit-content;
 }
 
 .comment-list {
