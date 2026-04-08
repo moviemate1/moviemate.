@@ -22,7 +22,7 @@ import {
   signInWithEmailAndPassword,
   signOut
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
+import { firebaseConfig } from "/firebase-config.js";
 
 const TITLES_COLLECTION = "moviemate_titles";
 const SETTINGS_COLLECTION = "moviemate_settings";
