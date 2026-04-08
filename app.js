@@ -435,7 +435,12 @@ function normalizePersonEntry(person, fallbackRole) {
   return {
     name,
     role: String(person.role || fallbackRole || "").trim(),
-    image: String(person.image || "").trim()
+    image: String(person.image || "").trim(),
+    tmdbPersonId: Number(person.tmdbPersonId || 0),
+    biography: String(person.biography || "").trim(),
+    birthday: String(person.birthday || "").trim(),
+    birthplace: String(person.birthplace || "").trim(),
+    knownForDepartment: String(person.knownForDepartment || "").trim()
   };
 }
 
@@ -481,8 +486,16 @@ function normalizePersonName(name) {
   return String(name || "").trim().toLowerCase();
 }
 
-function buildPersonUrl(name) {
-  return `/person.html?name=${encodeURIComponent(String(name || "").trim())}`;
+function buildPersonUrl(name, tmdbPersonId = "") {
+  const personName = String(name || "").trim();
+  const search = new URLSearchParams();
+  search.set("name", personName);
+
+  if (tmdbPersonId) {
+    search.set("tmdb", String(tmdbPersonId));
+  }
+
+  return `/person.html?${search.toString()}`;
 }
 
 function buildTitleUrl(id) {
@@ -502,6 +515,11 @@ function collectPersonCredits(personName, titles = titlesCache) {
   }
 
   let profileImage = "";
+  let biography = "";
+  let birthday = "";
+  let birthplace = "";
+  let knownForDepartment = "";
+  let tmdbPersonId = 0;
   const credits = titles
     .map((title) => {
       const roles = [];
@@ -524,6 +542,21 @@ function collectPersonCredits(personName, titles = titlesCache) {
           if (!profileImage && person.image) {
             profileImage = person.image;
           }
+          if (!biography && person.biography) {
+            biography = person.biography;
+          }
+          if (!birthday && person.birthday) {
+            birthday = person.birthday;
+          }
+          if (!birthplace && person.birthplace) {
+            birthplace = person.birthplace;
+          }
+          if (!knownForDepartment && person.knownForDepartment) {
+            knownForDepartment = person.knownForDepartment;
+          }
+          if (!tmdbPersonId && person.tmdbPersonId) {
+            tmdbPersonId = Number(person.tmdbPersonId);
+          }
         }
       });
 
@@ -532,6 +565,21 @@ function collectPersonCredits(personName, titles = titlesCache) {
           roles.push(person.role || "Crew");
           if (!profileImage && person.image) {
             profileImage = person.image;
+          }
+          if (!biography && person.biography) {
+            biography = person.biography;
+          }
+          if (!birthday && person.birthday) {
+            birthday = person.birthday;
+          }
+          if (!birthplace && person.birthplace) {
+            birthplace = person.birthplace;
+          }
+          if (!knownForDepartment && person.knownForDepartment) {
+            knownForDepartment = person.knownForDepartment;
+          }
+          if (!tmdbPersonId && person.tmdbPersonId) {
+            tmdbPersonId = Number(person.tmdbPersonId);
           }
         }
       });
@@ -563,7 +611,12 @@ function collectPersonCredits(personName, titles = titlesCache) {
     name: personName,
     image: profileImage,
     credits,
-    roleHighlights
+    roleHighlights,
+    biography,
+    birthday,
+    birthplace,
+    knownForDepartment,
+    tmdbPersonId
   };
 }
 
@@ -1292,7 +1345,7 @@ function personCardTemplate(person) {
     : `<div class="person-avatar person-avatar-fallback">${escapeHtml(person.name.charAt(0).toUpperCase())}</div>`;
 
   return `
-    <a class="person-card" href="${buildPersonUrl(person.name)}" aria-label="Open ${escapeHtml(person.name)} details">
+    <a class="person-card" href="${buildPersonUrl(person.name, person.tmdbPersonId)}" aria-label="Open ${escapeHtml(person.name)} details">
       ${avatar}
       <h4>${escapeHtml(person.name)}</h4>
       <p>${escapeHtml(person.role || "")}</p>
@@ -4005,6 +4058,7 @@ async function renderPersonPage() {
 
   const params = new URLSearchParams(window.location.search);
   const personName = params.get("name")?.trim() || "";
+  const personTmdbId = Number(params.get("tmdb") || 0);
 
   if (!personName) {
     target.innerHTML = `<section class="not-found"><h1>Person not found</h1></section>`;
@@ -4027,9 +4081,31 @@ async function renderPersonPage() {
     .filter(Boolean)
     .sort((left, right) => left - right)[0];
   const earliestYear = firstRelease ? new Date(firstRelease).getFullYear() : "";
-  const bornLabel = earliestYear ? `Not added • active before ${earliestYear}` : "Not added";
-  const birthplaceLabel = "Not added";
-  const biography = `${person.name} appears in ${person.credits.length} MovieMate title${person.credits.length === 1 ? "" : "s"}. Known here for ${person.roleHighlights.join(", ") || "cast and crew work"}, ${person.name} is featured across titles like ${escapeHtml(topTitle ? topTitle.title : "MovieMate")} and more. Explore the filmography below to see every title currently connected to this person on MovieMate.`;
+  let personDocData = null;
+
+  if (personTmdbId) {
+    try {
+      const personDoc = await getDoc(doc(db, "moviemate_people", `tmdb-person-${personTmdbId}`));
+      personDocData = personDoc.exists() ? personDoc.data() : null;
+    } catch (error) {
+      console.warn("Could not load person details", error);
+    }
+  }
+
+  const bornLabel =
+    personDocData?.birthday ||
+    person.birthday ||
+    (earliestYear ? `Not added • active before ${earliestYear}` : "Not added");
+  const birthplaceLabel = personDocData?.birthplace || person.birthplace || "Not added";
+  const biography =
+    personDocData?.biography ||
+    person.biography ||
+    `${person.name} appears in ${person.credits.length} MovieMate title${person.credits.length === 1 ? "" : "s"}. Known here for ${person.roleHighlights.join(", ") || "cast and crew work"}, ${person.name} is featured across titles like ${escapeHtml(topTitle ? topTitle.title : "MovieMate")} and more. Explore the filmography below to see every title currently connected to this person on MovieMate.`;
+  const knownForLabel =
+    personDocData?.knownForDepartment ||
+    person.knownForDepartment ||
+    person.roleHighlights.join(", ") ||
+    "Cast & Crew";
 
   target.innerHTML = `
     <section class="person-hero-card">
@@ -4048,7 +4124,7 @@ async function renderPersonPage() {
             </div>
             <div class="person-meta-item">
               <span>Known for</span>
-              <strong>${escapeHtml(person.roleHighlights.join(", ") || "Cast & Crew")}</strong>
+              <strong>${escapeHtml(knownForLabel)}</strong>
             </div>
             <div class="person-meta-item">
               <span>Titles on MovieMate</span>
