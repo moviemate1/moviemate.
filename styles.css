@@ -1731,6 +1731,7 @@ button.ghost-link {
   gap: 14px;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: start;
+  grid-auto-rows: 1fr;
   margin-top: 0;
 }
 
@@ -1756,7 +1757,7 @@ button.ghost-link {
 
 .featured-feed-card {
   display: grid;
-  grid-template-rows: auto minmax(104px, auto);
+  grid-template-rows: auto minmax(116px, auto);
   background: transparent;
   border: 0;
   align-content: start;
@@ -1772,6 +1773,7 @@ button.ghost-link {
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  min-height: 2.3em;
 }
 
 .featured-feed-card .featured-poster {
@@ -1785,13 +1787,15 @@ button.ghost-link {
 .featured-feed-card .featured-copy {
   padding: 10px 2px 0;
   display: grid;
+  grid-template-rows: minmax(2.3em, auto) minmax(1.2em, auto) minmax(1.2em, auto);
   align-content: start;
   gap: 6px;
-  min-height: 110px;
+  min-height: 116px;
 }
 
 .featured-feed-card .movie-meta {
   font-size: 0.83rem;
+  min-height: 1.2em;
 }
 
 .featured-feed-card .status-pill {
@@ -1806,6 +1810,7 @@ button.ghost-link {
 .explore-row-section .trend-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: start;
+  grid-auto-rows: 1fr;
 }
 
 .featured-copy h3,
