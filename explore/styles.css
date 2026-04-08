@@ -1979,7 +1979,8 @@ button.ghost-link {
 }
 
 .movie-grid {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .movie-card {
@@ -1987,6 +1988,9 @@ button.ghost-link {
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
@@ -2011,13 +2015,13 @@ button.ghost-link {
   flex: 1;
   flex-direction: column;
   gap: 14px;
-  padding: 18px;
+  padding: 10px 2px 0;
 }
 
 .movie-card-compact {
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto minmax(148px, auto) auto auto;
+  grid-template-rows: auto minmax(110px, auto) auto auto;
   min-height: 100%;
   height: 100%;
 }
@@ -2029,7 +2033,7 @@ button.ghost-link {
 
 .movie-card-compact .movie-header {
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .movie-card-compact .movie-header h3 {
@@ -2037,7 +2041,9 @@ button.ghost-link {
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  min-height: 2.7em;
+  min-height: 2.5em;
+  font-size: 0.98rem;
+  line-height: 1.2;
 }
 
 .clamp-line {
@@ -2052,6 +2058,14 @@ button.ghost-link {
   gap: 10px;
 }
 
+.movie-card-summary-feed {
+  gap: 6px;
+}
+
+.movie-header-feed {
+  display: block;
+}
+
 .movie-header {
   display: flex;
   justify-content: space-between;
@@ -2064,7 +2078,8 @@ button.ghost-link {
 }
 
 .movie-meta {
-  font-size: 0.95rem;
+  font-size: 0.83rem;
+  min-height: 1.2em;
 }
 
 .movie-description {
@@ -2091,8 +2106,9 @@ button.ghost-link {
 }
 
 .movie-actions-compact {
-  padding: 0 18px 18px;
+  padding: 4px 2px 0;
   margin-top: 0;
+  justify-content: flex-start;
 }
 
 .movie-owner-controls {
@@ -2383,7 +2399,7 @@ button.ghost-link {
 }
 
 .card-member-note {
-  padding: 0 14px 14px;
+  padding: 4px 2px 0;
 }
 
 .hero-interest-action {
@@ -3665,6 +3681,10 @@ button.ghost-link {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .movie-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .schedule-grid,
   .collection-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3762,7 +3782,7 @@ button.ghost-link {
   }
 
   .movie-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .detail-similar-grid {
@@ -3926,9 +3946,15 @@ button.ghost-link {
     bottom: 94px;
   }
 
-  .scroll-control-btn {
+.scroll-control-btn {
     width: 44px;
     height: 44px;
     border-radius: 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .movie-grid {
+    grid-template-columns: 1fr;
   }
 }
