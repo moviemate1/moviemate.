@@ -7,14 +7,15 @@ const TITLES_COLLECTION = "moviemate_titles";
 const PEOPLE_COLLECTION = "moviemate_people";
 const ALLOWED_LANGUAGE_CODES = new Set(["en", "hi", "ja", "ko", "ne", "ta", "te", "ml", "kn"]);
 const WATCH_PROVIDER_REGIONS = ["IN", "US", "GB"];
-const UPCOMING_PAGE_COUNT = 6;
-const BOLLYWOOD_PAGE_COUNT = 8;
-const SOUTH_PAGE_COUNT = 8;
-const POPULAR_PAGE_COUNT = 10;
-const TRENDING_PAGE_COUNT = 10;
-const TITLE_BATCH_SIZE = 250;
-const PEOPLE_BATCH_SIZE = 60;
-const MAX_PEOPLE_TO_SYNC = 180;
+const UPCOMING_PAGE_COUNT = 3;
+const BOLLYWOOD_PAGE_COUNT = 3;
+const SOUTH_PAGE_COUNT = 3;
+const POPULAR_PAGE_COUNT = 4;
+const TRENDING_PAGE_COUNT = 4;
+const TITLE_BATCH_SIZE = 80;
+const PEOPLE_BATCH_SIZE = 20;
+const MAX_TITLES_TO_SYNC = 220;
+const MAX_PEOPLE_TO_SYNC = 60;
 
 const requiredEnv = ["TMDB_TOKEN", "FIREBASE_SERVICE_ACCOUNT"];
 
@@ -83,6 +84,40 @@ function buildTrailerSearchUrl(item, type) {
 
 function buildYouTubeWatchUrl(key) {
   return key ? `https://www.youtube.com/watch?v=${key}` : "";
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTransientFirestoreError(error) {
+  const code = String(error?.code || "");
+  const details = String(error?.details || error?.message || "").toLowerCase();
+  return (
+    code === "4" ||
+    code === "8" ||
+    details.includes("deadline exceeded") ||
+    details.includes("quota exceeded") ||
+    details.includes("resource_exhausted")
+  );
+}
+
+async function commitBatchWithRetry(batch, label) {
+  const delays = [1500, 4000, 8000];
+
+  for (let attempt = 0; attempt <= delays.length; attempt += 1) {
+    try {
+      await batch.commit();
+      return;
+    } catch (error) {
+      if (attempt === delays.length || !isTransientFirestoreError(error)) {
+        throw error;
+      }
+
+      console.warn(`${label} commit failed, retrying in ${delays[attempt]}ms: ${error.message}`);
+      await wait(delays[attempt]);
+    }
+  }
 }
 
 function normalizePlatformName(name) {
@@ -565,14 +600,15 @@ async function upsertTitles(items) {
     operationCount += 1;
 
     if (operationCount === TITLE_BATCH_SIZE) {
-      await batch.commit();
+      await commitBatchWithRetry(batch, "titles");
+      await wait(250);
       batch = db.batch();
       operationCount = 0;
     }
   }
 
   if (operationCount > 0) {
-    await batch.commit();
+    await commitBatchWithRetry(batch, "titles");
   }
 }
 
@@ -607,14 +643,15 @@ async function upsertPeople(people) {
     operationCount += 1;
 
     if (operationCount === PEOPLE_BATCH_SIZE) {
-      await batch.commit();
+      await commitBatchWithRetry(batch, "people");
+      await wait(250);
       batch = db.batch();
       operationCount = 0;
     }
   }
 
   if (operationCount > 0) {
-    await batch.commit();
+    await commitBatchWithRetry(batch, "people");
   }
 }
 
@@ -775,7 +812,7 @@ async function run() {
     });
   });
 
-  const merged = [...grouped.values()];
+  const merged = [...grouped.values()].slice(0, MAX_TITLES_TO_SYNC);
   const mergedWithTrailers = await enrichWithTrailers(merged);
   const uniquePeople = collectUniquePeople(mergedWithTrailers);
   const enrichedPeople = await enrichPeople(uniquePeople);
