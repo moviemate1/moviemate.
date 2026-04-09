@@ -3189,9 +3189,18 @@ button.ghost-link {
 
 .seasons-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(320px, 320px);
   gap: 18px;
   align-items: stretch;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+}
+
+.seasons-grid::-webkit-scrollbar {
+  display: none;
 }
 
 .season-card {
@@ -3205,6 +3214,7 @@ button.ghost-link {
   box-shadow: var(--shadow);
   min-height: 168px;
   position: relative;
+  scroll-snap-align: start;
 }
 
 .season-poster {
@@ -3266,6 +3276,12 @@ button.ghost-link {
   font-size: 0.85rem;
   flex: 0 0 auto;
   margin-top: 4px;
+}
+
+.season-view-btn.active {
+  background: rgba(82, 232, 130, 0.18);
+  border-color: rgba(82, 232, 130, 0.55);
+  color: #b2ffbf;
 }
 
 .season-score-strip {

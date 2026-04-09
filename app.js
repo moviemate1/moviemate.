@@ -933,6 +933,10 @@ function seasonScoreStripTemplate(breakdown) {
   `;
 }
 
+function getSeasonWatchKey(titleId, seasonNumber) {
+  return `${titleId}::season-${seasonNumber}`;
+}
+
 function seasonsSectionTemplate(title) {
   const seasons = buildSeasonCards(title);
 
@@ -974,7 +978,16 @@ function seasonsSectionTemplate(title) {
                       <p>${escapeHtml([season.year, season.episodes ? `${season.episodes} Episodes` : ""].filter(Boolean).join(" • ") || "Episodes not added")}</p>
                       <small>${escapeHtml(`${reviewsCount} Reviews`)}</small>
                     </div>
-                    <button class="season-view-btn" type="button" aria-label="View season details">&#9711;</button>
+                    <button
+                      class="season-view-btn ${getTitleWatchStatus(getSeasonWatchKey(title.id, season.number)) === "watched" ? "active" : ""}"
+                      type="button"
+                      aria-label="Mark season as watched"
+                      data-season-watch="true"
+                      data-id="${title.id}"
+                      data-season-number="${season.number}"
+                    >
+                      &#128065;
+                    </button>
                   </div>
                   ${seasonScoreStripTemplate(breakdown)}
                 </div>
@@ -4271,6 +4284,24 @@ async function renderDetailsPage() {
       return;
     }
 
+    const seasonWatchButton = actionTarget.closest("[data-season-watch='true']");
+
+    if (seasonWatchButton) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!requireAccount("mark seasons as watched")) {
+        return;
+      }
+
+      const seasonKey = getSeasonWatchKey(seasonWatchButton.dataset.id, seasonWatchButton.dataset.seasonNumber);
+      const currentStatus = getTitleWatchStatus(seasonKey);
+      await syncWatchStatus(seasonKey, currentStatus === "watched" ? "clear" : "watched");
+      await renderDetailsPage();
+      showMessage("#detailVoteMessage", currentStatus === "watched" ? "Season marked as unwatched." : "Season marked as watched.");
+      return;
+    }
+
     const shareButton = actionTarget.closest(".share-title-btn");
 
     if (shareButton) {
@@ -4327,6 +4358,7 @@ async function renderDetailsPage() {
     });
 
     setupCommentForm(title.id);
+    setupSeasonControls();
   } catch (error) {
     console.error(error);
     target.innerHTML = `
@@ -4835,6 +4867,29 @@ function setupLoadMore() {
   button?.addEventListener("click", () => {
     browseVisibleCount += SEARCH_PAGE_SIZE;
     refreshBrowseResults();
+  });
+}
+
+function setupSeasonControls() {
+  const seasonsSection = document.querySelector(".seasons-section");
+
+  if (!seasonsSection) {
+    return;
+  }
+
+  const grid = seasonsSection.querySelector(".seasons-grid");
+  const buttons = seasonsSection.querySelectorAll(".season-nav-btn");
+
+  if (!grid || buttons.length < 2) {
+    return;
+  }
+
+  buttons[0].addEventListener("click", () => {
+    grid.scrollBy({ left: -360, behavior: "smooth" });
+  });
+
+  buttons[1].addEventListener("click", () => {
+    grid.scrollBy({ left: 360, behavior: "smooth" });
   });
 }
 
