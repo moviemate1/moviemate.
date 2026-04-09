@@ -1184,12 +1184,14 @@ async function syncSavedTitle(titleId) {
     console.warn("Saved titles synced locally, but profile sync failed.", error);
   });
 
-  await withActionTimeout(
+  withActionTimeout(
     updateDoc(doc(db, TITLES_COLLECTION, titleId), {
       savesCount: increment(wasSaved ? -1 : 1)
     }),
     "collection update"
-  );
+  ).catch((error) => {
+    console.warn("Collection aggregate sync failed.", error);
+  });
   return true;
 }
 
@@ -1210,10 +1212,9 @@ async function syncWatchStatus(titleId, nextStatus) {
     watchStatus
   });
 
-  await withActionTimeout(
-    persistUserProfile({ watchStatus }),
-    "watch status update"
-  );
+  persistUserProfile({ watchStatus }).catch((error) => {
+    console.warn("Watch status synced locally, but profile sync failed.", error);
+  });
 
   return true;
 }
@@ -3969,17 +3970,16 @@ async function reactToTitle(titleId, nextReaction) {
     updates.dislikes = increment(dislikesDelta);
   }
 
-  await withActionTimeout(updateDoc(doc(db, TITLES_COLLECTION, titleId), updates), "vote save");
-
   setReaction(titleId, isClearing ? "" : nextReaction);
+  persistUserProfile({
+    reactions: { ...(currentUserProfile?.reactions || {}) }
+  }).catch((error) => {
+    console.warn("Reaction saved locally, but profile sync failed.", error);
+  });
 
-  if (isSignedIn()) {
-    persistUserProfile({
-      reactions: { ...(currentUserProfile?.reactions || {}) }
-    }).catch((error) => {
-      console.warn("Reaction saved, but profile sync failed.", error);
-    });
-  }
+  withActionTimeout(updateDoc(doc(db, TITLES_COLLECTION, titleId), updates), "vote save").catch((error) => {
+    console.warn("Vote aggregate sync failed.", error);
+  });
 
   return {
     ok: true,
