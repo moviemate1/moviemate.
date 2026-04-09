@@ -922,6 +922,17 @@ function getSeasonReviewsCount(title, season, index) {
   return popularityBase + totalComments * 14 + index * 97;
 }
 
+function seasonScoreStripTemplate(breakdown) {
+  return `
+    <div class="season-score-strip" aria-hidden="true">
+      <span class="season-score-skip" style="width:${breakdown.skip}%"></span>
+      <span class="season-score-timepass" style="width:${breakdown.timepass}%"></span>
+      <span class="season-score-go" style="width:${breakdown.goForIt}%"></span>
+      <span class="season-score-perfect" style="width:${breakdown.perfection}%"></span>
+    </div>
+  `;
+}
+
 function seasonsSectionTemplate(title) {
   const seasons = buildSeasonCards(title);
 
@@ -957,15 +968,15 @@ function seasonsSectionTemplate(title) {
               <article class="season-card">
                 <img class="season-poster" src="${season.image || title.image}" alt="${escapeHtml(season.title)} poster" loading="lazy" decoding="async" />
                 <div class="season-copy">
-                  <h3>${escapeHtml(season.title)}</h3>
-                  <p>${escapeHtml([season.year, season.episodes ? `${season.episodes} Episodes` : ""].filter(Boolean).join(" • ") || "Episodes not added")}</p>
-                  <small>${escapeHtml(`${reviewsCount} Reviews`)}</small>
-                  <ul class="season-vote-breakdown">
-                    <li><span>Skip</span><strong>${breakdown.skip}%</strong></li>
-                    <li><span>Timepass</span><strong>${breakdown.timepass}%</strong></li>
-                    <li><span>Go For It</span><strong>${breakdown.goForIt}%</strong></li>
-                    <li><span>Perfection</span><strong>${breakdown.perfection}%</strong></li>
-                  </ul>
+                  <div class="season-card-head">
+                    <div class="season-card-meta">
+                      <h3>${escapeHtml(season.title)}</h3>
+                      <p>${escapeHtml([season.year, season.episodes ? `${season.episodes} Episodes` : ""].filter(Boolean).join(" • ") || "Episodes not added")}</p>
+                      <small>${escapeHtml(`${reviewsCount} Reviews`)}</small>
+                    </div>
+                    <button class="season-view-btn" type="button" aria-label="View season details">&#9711;</button>
+                  </div>
+                  ${seasonScoreStripTemplate(breakdown)}
                 </div>
               </article>
             `
@@ -3907,9 +3918,13 @@ async function reactToTitle(titleId, nextReaction) {
   setReaction(titleId, isClearing ? "" : nextReaction);
 
   if (isSignedIn()) {
-    await persistUserProfile({
-      reactions: { ...(currentUserProfile?.reactions || {}) }
-    });
+    try {
+      await persistUserProfile({
+        reactions: { ...(currentUserProfile?.reactions || {}) }
+      });
+    } catch (error) {
+      console.warn("Reaction saved, but profile sync failed.", error);
+    }
   }
 
   return {

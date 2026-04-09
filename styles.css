@@ -3199,7 +3199,7 @@ button.ghost-link {
   background: var(--bg-elevated);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
-  min-height: 254px;
+  min-height: 168px;
 }
 
 .season-poster {
@@ -3211,8 +3211,8 @@ button.ghost-link {
 
 .season-copy {
   display: grid;
-  align-content: start;
-  gap: 8px;
+  align-content: space-between;
+  gap: 12px;
 }
 
 .season-copy h3,
@@ -3227,34 +3227,64 @@ button.ghost-link {
 }
 
 .season-copy h3 {
-  font-size: 1.4rem;
-  line-height: 1.1;
+  font-size: 1.18rem;
+  line-height: 1.15;
 }
 
-.season-vote-breakdown {
-  list-style: none;
-  margin: 2px 0 0;
-  padding: 0;
+.season-card-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.season-card-meta {
   display: grid;
   gap: 6px;
 }
 
-.season-vote-breakdown li {
-  display: flex;
+.season-view-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(130, 255, 170, 0.35);
+  background: rgba(36, 171, 84, 0.15);
+  color: #93ffa9;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: #ddd8e8;
-  font-size: 0.92rem;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex: 0 0 auto;
 }
 
-.season-vote-breakdown span {
-  color: #c5bfd4;
+.season-score-strip {
+  display: flex;
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.season-vote-breakdown strong {
-  color: #fff;
-  font-weight: 700;
+.season-score-strip span {
+  height: 100%;
+  min-width: 6px;
+}
+
+.season-score-skip {
+  background: #ffb14a;
+}
+
+.season-score-timepass {
+  background: #4fd0a8;
+}
+
+.season-score-go {
+  background: #7e46ff;
+}
+
+.season-score-perfect {
+  background: #b65cff;
 }
 
 .detail-tag-row {
