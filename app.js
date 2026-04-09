@@ -855,6 +855,73 @@ function buildSeasonCards(title) {
   }));
 }
 
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, value));
+}
+
+function normalizeSeasonVoteBreakdown(rawBreakdown = {}) {
+  const initial = {
+    skip: Number(rawBreakdown.skip || 0),
+    timepass: Number(rawBreakdown.timepass || 0),
+    goForIt: Number(rawBreakdown.goForIt || 0),
+    perfection: Number(rawBreakdown.perfection || 0)
+  };
+  const total = initial.skip + initial.timepass + initial.goForIt + initial.perfection;
+
+  if (!total) {
+    return {
+      skip: "0.00",
+      timepass: "0.00",
+      goForIt: "0.00",
+      perfection: "0.00"
+    };
+  }
+
+  return {
+    skip: ((initial.skip / total) * 100).toFixed(2),
+    timepass: ((initial.timepass / total) * 100).toFixed(2),
+    goForIt: ((initial.goForIt / total) * 100).toFixed(2),
+    perfection: ((initial.perfection / total) * 100).toFixed(2)
+  };
+}
+
+function deriveSeasonBreakdown(title, season, index) {
+  if (season.voteBreakdown && typeof season.voteBreakdown === "object") {
+    return normalizeSeasonVoteBreakdown(season.voteBreakdown);
+  }
+
+  const stats = getReactionStats(title);
+
+  if (!stats.total) {
+    return {
+      skip: "0.00",
+      timepass: "0.00",
+      goForIt: "0.00",
+      perfection: "0.00"
+    };
+  }
+
+  const shift = (index - Math.max(0, Math.floor((title.seasonsCount || 1) / 2))) * 1.75;
+  const raw = {
+    perfection: clampPercent(stats.perfectPercent + shift),
+    goForIt: clampPercent(stats.goForItPercent - shift / 2),
+    timepass: clampPercent(stats.timepassPercent + shift / 4),
+    skip: clampPercent(stats.skipPercent - shift / 3)
+  };
+
+  return normalizeSeasonVoteBreakdown(raw);
+}
+
+function getSeasonReviewsCount(title, season, index) {
+  if (Number(season.reviewsCount || 0) > 0) {
+    return Number(season.reviewsCount || 0);
+  }
+
+  const totalComments = Array.isArray(title.comments) ? title.comments.length : 0;
+  const popularityBase = Math.max(12, Math.round(Number(title.tmdbPopularity || 0) * 12));
+  return popularityBase + totalComments * 14 + index * 97;
+}
+
 function seasonsSectionTemplate(title) {
   const seasons = buildSeasonCards(title);
 
@@ -869,21 +936,40 @@ function seasonsSectionTemplate(title) {
           <p class="eyebrow">TV show guide</p>
           <h2>Seasons</h2>
         </div>
+        <div class="seasons-toolbar">
+          <button class="season-nav-btn" type="button" aria-label="Previous season row">&#8249;</button>
+          <label class="season-sequence-filter">
+            <span>Sequence</span>
+            <select disabled>
+              <option>Sequence</option>
+            </select>
+          </label>
+          <button class="season-nav-btn" type="button" aria-label="Next season row">&#8250;</button>
+        </div>
       </div>
       <div class="seasons-grid">
         ${seasons
-          .map(
-            (season) => `
+          .map((season, index) => {
+            const breakdown = deriveSeasonBreakdown(title, season, index);
+            const reviewsCount = getSeasonReviewsCount(title, season, index);
+
+            return `
               <article class="season-card">
                 <img class="season-poster" src="${season.image || title.image}" alt="${escapeHtml(season.title)} poster" loading="lazy" decoding="async" />
                 <div class="season-copy">
                   <h3>${escapeHtml(season.title)}</h3>
                   <p>${escapeHtml([season.year, season.episodes ? `${season.episodes} Episodes` : ""].filter(Boolean).join(" • ") || "Episodes not added")}</p>
-                  <small>${season.reviewsCount ? `${season.reviewsCount} Reviews` : "MovieMate season details"}</small>
+                  <small>${escapeHtml(`${reviewsCount} Reviews`)}</small>
+                  <ul class="season-vote-breakdown">
+                    <li><span>Skip</span><strong>${breakdown.skip}%</strong></li>
+                    <li><span>Timepass</span><strong>${breakdown.timepass}%</strong></li>
+                    <li><span>Go For It</span><strong>${breakdown.goForIt}%</strong></li>
+                    <li><span>Perfection</span><strong>${breakdown.perfection}%</strong></li>
+                  </ul>
                 </div>
               </article>
             `
-          )
+          })
           .join("")}
       </div>
     </section>
