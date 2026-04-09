@@ -2768,7 +2768,11 @@ button.ghost-link {
   overflow: hidden;
   min-height: 0;
   aspect-ratio: 16 / 9;
+  min-height: clamp(360px, 48vw, 640px);
   border-radius: 28px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.06), transparent 38%),
+    linear-gradient(180deg, rgba(10, 10, 16, 0.25), rgba(10, 10, 16, 0.92));
 }
 
 .trailer-stage-button {
@@ -2816,6 +2820,9 @@ button.ghost-link {
   min-height: 0;
   border: 0;
   object-fit: cover;
+  object-position: center 24%;
+  transform: scale(1.02);
+  filter: saturate(0.96) contrast(1.02);
 }
 
 .trailer-overlay {
@@ -2827,23 +2834,27 @@ button.ghost-link {
   flex-direction: column;
   justify-content: end;
   gap: 14px;
-  padding: 28px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.82));
+  padding: 34px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.28) 42%, rgba(0, 0, 0, 0.88) 100%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.18) 42%, rgba(0, 0, 0, 0.05) 100%);
 }
 
 .hero-interest-card {
   position: absolute;
-  top: 22px;
-  right: 22px;
+  top: 28px;
+  right: 28px;
   z-index: 4;
   display: grid;
-  gap: 6px;
-  width: min(270px, calc(100% - 40px));
-  padding: 16px 18px;
-  border-radius: 20px;
-  background: linear-gradient(180deg, rgba(81, 39, 23, 0.78), rgba(37, 18, 15, 0.92));
+  gap: 8px;
+  width: min(250px, calc(100% - 56px));
+  padding: 18px 20px;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(101, 58, 39, 0.84), rgba(49, 28, 23, 0.94)),
+    rgba(24, 18, 18, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+  box-shadow: 0 22px 52px rgba(0, 0, 0, 0.36);
 }
 
 .hero-interest-eyebrow {
@@ -2869,6 +2880,7 @@ button.ghost-link {
   max-width: 12ch;
   font-size: clamp(2.4rem, 4.2vw, 4rem);
   line-height: 0.95;
+  text-wrap: balance;
 }
 
 .detail-summary {
