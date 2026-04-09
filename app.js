@@ -32,6 +32,8 @@ const REACTIONS_STORAGE_KEY = "moviemate_reactions";
 const SAVED_TITLES_STORAGE_KEY = "moviemate_saved_titles";
 const OWNER_MODE_KEY = "moviemate_owner_mode";
 const USER_NOTIFICATIONS_SEEN_KEY = "moviemate_notifications_seen_at";
+const TITLES_CACHE_KEY = "moviemate_titles_cache_v1";
+const HOMEPAGE_CONTENT_CACHE_KEY = "moviemate_homepage_content_cache_v1";
 const SEARCH_PAGE_SIZE = 24;
 const OWNER_PASSCODE = "1A2b3456@";
 const OWNER_NOTIFICATION_TOAST_MS = 3200;
@@ -208,6 +210,44 @@ const DEFAULT_USER_PROFILE = {
 
 function isOwnerMode() {
   return localStorage.getItem(OWNER_MODE_KEY) === "true";
+}
+
+function saveTitlesCacheToStorage(titles) {
+  try {
+    localStorage.setItem(TITLES_CACHE_KEY, JSON.stringify(titles));
+  } catch (error) {
+    console.warn("Could not store titles cache", error);
+  }
+}
+
+function saveHomepageContentCacheToStorage(content) {
+  try {
+    localStorage.setItem(HOMEPAGE_CONTENT_CACHE_KEY, JSON.stringify(content));
+  } catch (error) {
+    console.warn("Could not store homepage cache", error);
+  }
+}
+
+function hydrateStartupCaches() {
+  try {
+    const cachedTitles = JSON.parse(localStorage.getItem(TITLES_CACHE_KEY) || "[]");
+
+    if (Array.isArray(cachedTitles) && cachedTitles.length) {
+      titlesCache = cachedTitles.map(normalizeTitle);
+    }
+  } catch (error) {
+    console.warn("Could not hydrate titles cache", error);
+  }
+
+  try {
+    const cachedHomepage = JSON.parse(localStorage.getItem(HOMEPAGE_CONTENT_CACHE_KEY) || "null");
+
+    if (cachedHomepage && typeof cachedHomepage === "object") {
+      homepageContentCache = normalizeHomepageContent(cachedHomepage);
+    }
+  } catch (error) {
+    console.warn("Could not hydrate homepage cache", error);
+  }
 }
 
 function setOwnerMode(enabled) {
@@ -1459,10 +1499,12 @@ async function fetchTitles(force = false) {
       );
 
       titlesCache = BASE_TITLES.map(normalizeTitle);
+      saveTitlesCacheToStorage(titlesCache);
       return titlesCache;
     }
 
     titlesCache = snapshot.docs.map(normalizeTitle);
+    saveTitlesCacheToStorage(titlesCache);
     return titlesCache;
   })();
 
@@ -1473,12 +1515,16 @@ async function fetchTitles(force = false) {
   }
 }
 
-async function fetchHomepageContent() {
-  if (homepageContentCache && homepageContentCache.heroTitle !== DEFAULT_HOMEPAGE_CONTENT.heroTitle) {
+async function fetchHomepageContent(force = false) {
+  if (
+    !force &&
+    homepageContentCache &&
+    homepageContentCache.heroTitle !== DEFAULT_HOMEPAGE_CONTENT.heroTitle
+  ) {
     return homepageContentCache;
   }
 
-  if (homepageContentPromise) {
+  if (!force && homepageContentPromise) {
     return homepageContentPromise;
   }
 
@@ -1489,10 +1535,12 @@ async function fetchHomepageContent() {
     if (!snapshot.exists()) {
       homepageContentCache = { ...DEFAULT_HOMEPAGE_CONTENT };
       await setDoc(homepageRef, homepageContentCache);
+      saveHomepageContentCacheToStorage(homepageContentCache);
       return homepageContentCache;
     }
 
     homepageContentCache = normalizeHomepageContent(snapshot.data());
+    saveHomepageContentCacheToStorage(homepageContentCache);
     return homepageContentCache;
   })();
 
@@ -2992,6 +3040,24 @@ async function renderHomePage() {
     renderOwnerNotifications(titles);
     renderOwnerAnalytics(visibleTitles);
   });
+}
+
+function refreshHomePageInBackground() {
+  if (document.body.dataset.page !== "home") {
+    return;
+  }
+
+  window.setTimeout(async () => {
+    try {
+      await Promise.all([fetchHomepageContent(true), fetchTitles(true)]);
+
+      if (document.body.dataset.page === "home") {
+        await renderHomePage();
+      }
+    } catch (error) {
+      console.warn("Background homepage refresh failed", error);
+    }
+  }, 80);
 }
 
 async function addTitle(form) {
@@ -5500,6 +5566,7 @@ function setupOwnerNotificationsRealtime() {
 
 async function init() {
   let hasHandledInitialAuthState = false;
+  hydrateStartupCaches();
   setupLikeButtons();
   setupSaveButtons();
   setupDeleteButtons();
@@ -5523,6 +5590,7 @@ async function init() {
     setupScrollControls();
     setupSuggestForm();
     await renderHomePage();
+    refreshHomePageInBackground();
   }
 
   if (document.body.dataset.page === "details") {
