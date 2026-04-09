@@ -421,6 +421,39 @@ async function fetchWatchProviders(item, type) {
   return [...new Set(collected)];
 }
 
+async function fetchSeriesDetails(item) {
+  if (item.type !== "Series" || !item.tmdbId) {
+    return {
+      seasonsCount: 0,
+      episodesCount: 0,
+      seasons: []
+    };
+  }
+
+  const payload = await fetchTmdb(`/tv/${item.tmdbId}`, {
+    language: "en-US"
+  });
+
+  const seasons = Array.isArray(payload.seasons)
+    ? payload.seasons
+        .filter((season) => Number(season.season_number || 0) > 0)
+        .map((season) => ({
+          number: Number(season.season_number || 0),
+          title: season.name || `Season ${season.season_number || ""}`.trim(),
+          year: season.air_date ? new Date(`${season.air_date}T00:00:00`).getFullYear() : "",
+          episodes: Number(season.episode_count || 0),
+          image: buildPosterUrl(season),
+          reviewsCount: 0
+        }))
+    : [];
+
+  return {
+    seasonsCount: Number(payload.number_of_seasons || seasons.length || 0),
+    episodesCount: Number(payload.number_of_episodes || 0),
+    seasons
+  };
+}
+
 async function safeFetchTrailerUrl(item) {
   try {
     return await fetchTrailerUrl(item, item.type);
@@ -460,6 +493,19 @@ async function safeFetchPersonDetails(personId) {
   } catch (error) {
     console.warn(`Person details fetch failed for ${personId}: ${error.message}`);
     return null;
+  }
+}
+
+async function safeFetchSeriesDetails(item) {
+  try {
+    return await fetchSeriesDetails(item);
+  } catch (error) {
+    console.warn(`Series details fetch failed for ${item.id}: ${error.message}`);
+    return {
+      seasonsCount: 0,
+      episodesCount: 0,
+      seasons: []
+    };
   }
 }
 
@@ -579,7 +625,8 @@ async function enrichWithTrailers(items) {
         ...item,
         trailerUrl: await safeFetchTrailerUrl(item),
         ...(await safeFetchCredits(item)),
-        platforms: await safeFetchWatchProviders(item)
+        platforms: await safeFetchWatchProviders(item),
+        ...(await safeFetchSeriesDetails(item))
       }))
     );
     enriched.push(...results);
