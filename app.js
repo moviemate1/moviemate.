@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import {
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -3764,7 +3765,7 @@ async function reactToTitle(titleId, nextReaction) {
 
   const currentReaction = getReaction(titleId);
 
-  if (!(nextReaction in REACTION_OPTIONS) || currentReaction === nextReaction) {
+  if (!(nextReaction in REACTION_OPTIONS)) {
     return false;
   }
 
@@ -3777,9 +3778,12 @@ async function reactToTitle(titleId, nextReaction) {
 
   const positiveReactions = new Set(["perfect", "goForIt"]);
   const negativeReactions = new Set(["skip"]);
-  const updates = {
-    [fieldMap[nextReaction]]: increment(1)
-  };
+  const updates = {};
+  const isClearing = currentReaction === nextReaction;
+
+  if (!isClearing) {
+    updates[fieldMap[nextReaction]] = increment(1);
+  }
 
   if (currentReaction && fieldMap[currentReaction]) {
     updates[fieldMap[currentReaction]] = increment(-1);
@@ -3792,7 +3796,7 @@ async function reactToTitle(titleId, nextReaction) {
     likesDelta -= 1;
   }
 
-  if (positiveReactions.has(nextReaction)) {
+  if (!isClearing && positiveReactions.has(nextReaction)) {
     likesDelta += 1;
   }
 
@@ -3800,7 +3804,7 @@ async function reactToTitle(titleId, nextReaction) {
     dislikesDelta -= 1;
   }
 
-  if (negativeReactions.has(nextReaction)) {
+  if (!isClearing && negativeReactions.has(nextReaction)) {
     dislikesDelta += 1;
   }
 
@@ -3814,7 +3818,7 @@ async function reactToTitle(titleId, nextReaction) {
 
   await updateDoc(doc(db, TITLES_COLLECTION, titleId), updates);
 
-  setReaction(titleId, nextReaction);
+  setReaction(titleId, isClearing ? "" : nextReaction);
 
   if (isSignedIn()) {
     await persistUserProfile({
@@ -3822,7 +3826,10 @@ async function reactToTitle(titleId, nextReaction) {
     });
   }
 
-  return true;
+  return {
+    ok: true,
+    cleared: isClearing
+  };
 }
 
 async function deleteTitle(titleId) {
@@ -3847,28 +3854,15 @@ async function addComment(titleId, form) {
   }
 
   const titleRef = doc(db, TITLES_COLLECTION, titleId);
-
-  await runTransaction(db, async (transaction) => {
-    const snapshot = await transaction.get(titleRef);
-
-    if (!snapshot.exists()) {
-      throw new Error("Title not found.");
-    }
-
-    const data = normalizeTitle(snapshot);
-    transaction.update(titleRef, {
-      comments: [
-        {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          userId: currentUser?.uid || "",
-          name,
-          text,
-          spoiler,
-          createdAt: new Date().toISOString()
-        },
-        ...data.comments
-      ]
-    });
+  await updateDoc(titleRef, {
+    comments: arrayUnion({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      userId: currentUser?.uid || "",
+      name,
+      text,
+      spoiler,
+      createdAt: new Date().toISOString()
+    })
   });
 
   return true;
@@ -4131,15 +4125,15 @@ async function renderDetailsPage() {
       showMessage("#detailVoteMessage", "Saving your vote...");
 
       try {
-        const changed = await reactToTitle(reactionButton.dataset.id, reactionButton.dataset.reaction);
+        const result = await reactToTitle(reactionButton.dataset.id, reactionButton.dataset.reaction);
 
-        if (!changed) {
-          showMessage("#detailVoteMessage", "You already picked that option.");
+        if (!result) {
+          showMessage("#detailVoteMessage", "Could not save your vote right now.");
           return;
         }
 
         await renderDetailsPage();
-        showMessage("#detailVoteMessage", "Your vote was saved.");
+        showMessage("#detailVoteMessage", result.cleared ? "Your vote was removed." : "Your vote was saved.");
       } catch (error) {
         console.error(error);
         showMessage("#detailVoteMessage", "Could not save your vote right now.");
@@ -4388,12 +4382,9 @@ function setupLikeButtons() {
     }
 
     try {
-      const changed = await reactToTitle(button.dataset.id, button.dataset.reaction);
+      const result = await reactToTitle(button.dataset.id, button.dataset.reaction);
 
-      if (!changed) {
-        if (document.body.dataset.page === "details") {
-          showMessage("#detailVoteMessage", "You already picked that option.");
-        }
+      if (!result) {
         return;
       }
 
@@ -4401,7 +4392,7 @@ function setupLikeButtons() {
         await renderHomePage();
       } else {
         await renderDetailsPage();
-        showMessage("#detailVoteMessage", "Your vote was saved.");
+        showMessage("#detailVoteMessage", result.cleared ? "Your vote was removed." : "Your vote was saved.");
       }
     } catch (error) {
       console.error(error);
