@@ -12,6 +12,9 @@ const BOLLYWOOD_PAGE_COUNT = 8;
 const SOUTH_PAGE_COUNT = 8;
 const POPULAR_PAGE_COUNT = 10;
 const TRENDING_PAGE_COUNT = 10;
+const TITLE_BATCH_SIZE = 250;
+const PEOPLE_BATCH_SIZE = 60;
+const MAX_PEOPLE_TO_SYNC = 180;
 
 const requiredEnv = ["TMDB_TOKEN", "FIREBASE_SERVICE_ACCOUNT"];
 
@@ -561,7 +564,7 @@ async function upsertTitles(items) {
 
     operationCount += 1;
 
-    if (operationCount === 450) {
+    if (operationCount === TITLE_BATCH_SIZE) {
       await batch.commit();
       batch = db.batch();
       operationCount = 0;
@@ -578,10 +581,18 @@ async function upsertPeople(people) {
     return;
   }
 
+  const filteredPeople = people
+    .filter((person) => person.tmdbPersonId && (person.name || person.image || person.biography))
+    .slice(0, MAX_PEOPLE_TO_SYNC);
+
+  if (!filteredPeople.length) {
+    return;
+  }
+
   let batch = db.batch();
   let operationCount = 0;
 
-  for (const person of people) {
+  for (const person of filteredPeople) {
     const ref = db.collection(PEOPLE_COLLECTION).doc(`tmdb-person-${person.tmdbPersonId}`);
 
     batch.set(
@@ -595,7 +606,7 @@ async function upsertPeople(people) {
 
     operationCount += 1;
 
-    if (operationCount === 450) {
+    if (operationCount === PEOPLE_BATCH_SIZE) {
       await batch.commit();
       batch = db.batch();
       operationCount = 0;
