@@ -1272,7 +1272,7 @@ function reactionButtonsTemplate(title) {
         ${Object.entries(REACTION_OPTIONS)
           .map(
             ([value, option]) => `
-              <button class="reaction-btn reaction-btn-${option.className} ${currentReaction === value ? `active ${option.className}` : ""}" data-id="${title.id}" data-reaction="${value}" type="button">
+              <button class="reaction-btn reaction-btn-${option.className} ${currentReaction === value ? `active ${option.className}` : ""}" data-id="${title.id}" data-reaction="${value}" type="button" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>
                 ${option.label}
               </button>
             `
@@ -1287,6 +1287,7 @@ function reactionButtonsTemplate(title) {
 
 function watchStatusActionsTemplate(title) {
   const currentStatus = getTitleWatchStatus(title.id);
+  const memberReady = isSignedIn();
   const actions = [
     ["interested", "Mark as Interested"],
     ["watching", "Watching..."],
@@ -1303,6 +1304,7 @@ function watchStatusActionsTemplate(title) {
               type="button"
               data-watch-status="${value}"
               data-id="${title.id}"
+              ${memberReady ? "" : "disabled aria-disabled=\"true\""}
             >
               ${
                 currentStatus === value && value === "interested"
@@ -1549,7 +1551,7 @@ function trailerPanelTemplate(title) {
       <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
       <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
       <p class="hero-interest-count">${escapeHtml(interestedCount)} interested</p>
-      <button class="watch-status-btn hero-interest-action ${interestState.className}" type="button" data-watch-status="${interestState.nextStatus}" data-id="${title.id}">
+      <button class="watch-status-btn hero-interest-action ${interestState.className}" type="button" data-watch-status="${interestState.nextStatus}" data-id="${title.id}" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>
         ${escapeHtml(interestState.label)}
       </button>
       <p class="hero-interest-helper">${memberReady ? escapeHtml(interestState.helper) : "Sign in to mark titles as interested."}</p>
@@ -4148,10 +4150,11 @@ async function renderDetailsPage() {
               type="button"
               data-watch-status="${primaryWatchButton.nextStatus}"
               data-id="${title.id}"
+              ${memberReady ? "" : "disabled aria-disabled=\"true\""}
             >
               ${escapeHtml(primaryWatchButton.label)}
             </button>
-            <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collection" : "Add to Collection"}</button>
+            <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>${saved ? "Saved to Collection" : "Add to Collection"}</button>
             ${memberReady ? `<p class="hero-interest-helper detail-cta-helper">${escapeHtml(primaryWatchButton.helper)}</p>` : '<p class="hero-interest-helper detail-cta-helper">Members only can save, track interest, and update watch status.</p>'}
           </div>
         </div>
