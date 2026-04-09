@@ -3137,6 +3137,8 @@ button.ghost-link {
   display: grid;
   gap: 18px;
   margin-top: 28px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .seasons-toolbar {
@@ -3149,19 +3151,19 @@ button.ghost-link {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .season-sequence-filter span {
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   color: #cfc6dc;
 }
 
 .season-sequence-filter select {
-  min-width: 112px;
+  min-width: 96px;
   background: transparent;
   border: 0;
   color: #fff;
@@ -3169,11 +3171,12 @@ button.ghost-link {
   outline: none;
   appearance: none;
   opacity: 1;
+  font-size: 0.92rem;
 }
 
 .season-nav-btn {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3188,6 +3191,7 @@ button.ghost-link {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+  align-items: stretch;
 }
 
 .season-card {
@@ -3200,6 +3204,7 @@ button.ghost-link {
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   min-height: 168px;
+  position: relative;
 }
 
 .season-poster {
@@ -3243,6 +3248,11 @@ button.ghost-link {
   gap: 6px;
 }
 
+.season-card-meta p,
+.season-card-meta small {
+  line-height: 1.25;
+}
+
 .season-view-btn {
   width: 28px;
   height: 28px;
@@ -3255,6 +3265,7 @@ button.ghost-link {
   justify-content: center;
   font-size: 0.85rem;
   flex: 0 0 auto;
+  margin-top: 4px;
 }
 
 .season-score-strip {
