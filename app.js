@@ -3874,6 +3874,29 @@ async function addComment(titleId, form) {
   return true;
 }
 
+function getCommentErrorMessage(error) {
+  const code = String(error?.code || "").toLowerCase();
+  const message = String(error?.message || "").toLowerCase();
+
+  if (code.includes("permission-denied") || message.includes("missing or insufficient permissions")) {
+    return "Comments are blocked by Firebase rules right now.";
+  }
+
+  if (code.includes("unauthenticated")) {
+    return "Please sign in again and try posting.";
+  }
+
+  if (code.includes("deadline-exceeded")) {
+    return "The request took too long. Please try again.";
+  }
+
+  if (code.includes("unavailable")) {
+    return "The connection is busy right now. Please try again.";
+  }
+
+  return "Could not post right now.";
+}
+
 async function deleteComment(titleId, commentId) {
   const titleRef = doc(db, TITLES_COLLECTION, titleId);
 
@@ -4655,17 +4678,23 @@ function setupCommentForm(titleId) {
       if (!added) {
         return;
       }
+    } catch (error) {
+      console.error(error);
+      showMessage("#commentMessage", getCommentErrorMessage(error));
+      return;
+    }
 
-      form.reset();
+    form.reset();
+
+    try {
       await renderDetailsPage();
-
       const snapshot = await getDoc(doc(db, TITLES_COLLECTION, titleId));
       const refreshedTitle = snapshot.exists() ? normalizeTitle(snapshot) : null;
       const successLabel = refreshedTitle ? getCommentSectionCopy(refreshedTitle).successLabel : "Your comment is now live.";
       showMessage("#commentMessage", successLabel);
     } catch (error) {
       console.error(error);
-      showMessage("#commentMessage", "Could not post right now.");
+      showMessage("#commentMessage", "Your post was saved. Refresh once if you do not see it yet.");
     }
   });
 }
