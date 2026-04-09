@@ -1003,6 +1003,10 @@ button.ghost-link {
   align-items: center;
 }
 
+.profile-review-search {
+  margin-bottom: 18px;
+}
+
 .icon-chip.compact {
   min-width: 40px;
   min-height: 40px;
@@ -1019,6 +1023,10 @@ button.ghost-link {
 .profile-interest-list {
   display: grid;
   gap: 14px;
+}
+
+.profile-review-list-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .profile-review-card,
@@ -1043,6 +1051,42 @@ button.ghost-link {
   align-items: center;
   padding: 10px;
   gap: 12px;
+}
+
+.profile-card-menu-wrap {
+  position: relative;
+}
+
+.profile-card-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 170px;
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(18, 18, 22, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+}
+
+.profile-card-dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-card-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .profile-review-poster,
@@ -4101,6 +4145,10 @@ button.ghost-link {
   .profile-review-card,
   .profile-post-card,
   .profile-interest-item {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-review-list-grid {
     grid-template-columns: 1fr;
   }
 

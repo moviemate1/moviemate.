@@ -38,7 +38,7 @@ const SEARCH_PAGE_SIZE = 24;
 const OWNER_PASSCODE = "1A2b3456@";
 const OWNER_NOTIFICATION_TOAST_MS = 3200;
 const REACTION_OPTIONS = {
-  perfect: { label: "Perfect", className: "perfect" },
+  perfect: { label: "Perfection", className: "perfect" },
   goForIt: { label: "Go for it", className: "goforit" },
   timepass: { label: "Timepass", className: "timepass" },
   skip: { label: "Skip", className: "skip" }
@@ -204,6 +204,8 @@ const DEFAULT_USER_PROFILE = {
   reactions: {},
   watchStatus: {},
   collections: [],
+  followers: [],
+  following: [],
   createdAt: null,
   updatedAt: null
 };
@@ -398,7 +400,35 @@ function normalizeUserProfile(data = {}) {
     savedTitles: Array.isArray(data.savedTitles) ? data.savedTitles : [],
     reactions: data.reactions && typeof data.reactions === "object" ? data.reactions : {},
     watchStatus: normalizedWatchStatus,
-    collections: Array.isArray(data.collections) ? data.collections : []
+    collections: Array.isArray(data.collections) ? data.collections : [],
+    followers: Array.isArray(data.followers) ? data.followers : [],
+    following: Array.isArray(data.following) ? data.following : []
+  };
+}
+
+function getCommentSectionCopy(title) {
+  if (isUpcomingTitle(title)) {
+    return {
+      eyebrow: "Discussion",
+      title: `${getDisplayTypeLabel(title)} Discussion`,
+      helper: "Only MovieMate members can join the discussion. Everyone can still read it.",
+      fieldLabel: "Your discussion",
+      placeholder: "Share what you expect from this title",
+      buttonLabel: "Post Discussion",
+      emptyLabel: "No discussion yet. Be the first to start it.",
+      successLabel: "Your discussion is now live."
+    };
+  }
+
+  return {
+    eyebrow: "Reviews",
+    title: `${getDisplayTypeLabel(title)} Reviews`,
+    helper: "Only MovieMate members can post reviews and comments. Everyone can still read them.",
+    fieldLabel: "Your review",
+    placeholder: "Share your thoughts on this title",
+    buttonLabel: "Post Review",
+    emptyLabel: "No reviews yet. Be the first to write one.",
+    successLabel: "Your review is now live."
   };
 }
 
@@ -1335,7 +1365,7 @@ function reactionMeterTemplate(title) {
         </div>
       </div>
       <div class="meter-list">
-        <div class="meter-row"><span class="meter-dot dot-perfect"></span><span>Perfect</span><strong>${perfectPercent}%</strong></div>
+        <div class="meter-row"><span class="meter-dot dot-perfect"></span><span>Perfection</span><strong>${perfectPercent}%</strong></div>
         <div class="meter-row"><span class="meter-dot dot-love"></span><span>Go for it</span><strong>${goForItPercent}%</strong></div>
         <div class="meter-row"><span class="meter-dot dot-timepass"></span><span>Timepass</span><strong>${timepassPercent}%</strong></div>
         <div class="meter-row"><span class="meter-dot dot-skip"></span><span>Skip</span><strong>${skipPercent}%</strong></div>
@@ -1918,24 +1948,23 @@ function upcomingCardTemplate(title) {
 
   return `
     <article class="movie-card upcoming-card">
-      <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
-      <div class="movie-content">
-        <div class="movie-header">
-          <div>
-            <h3>${escapeHtml(title.title)}</h3>
-            <p class="movie-meta">Type: ${escapeHtml(title.type)}</p>
-            <p class="movie-meta">Genre: ${escapeHtml(title.genre)}</p>
-            <p class="movie-meta">Language: ${escapeHtml(title.language.join(", "))}</p>
-            ${title.platforms?.length ? `<p class="movie-meta">Platform: ${escapeHtml(formatPlatforms(title.platforms))}</p>` : ""}
-            <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
-            <div class="status-row">${badges}</div>
+      <a class="movie-card-link" href="${buildTitleUrl(title.id)}">
+        <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+        <div class="movie-content">
+          <div class="movie-header">
+            <div>
+              <h3>${escapeHtml(title.title)}</h3>
+              <p class="movie-meta">Type: ${escapeHtml(title.type)}</p>
+              <p class="movie-meta">Genre: ${escapeHtml(title.genre)}</p>
+              <p class="movie-meta">Language: ${escapeHtml(title.language.join(", "))}</p>
+              ${title.platforms?.length ? `<p class="movie-meta">Platform: ${escapeHtml(formatPlatforms(title.platforms))}</p>` : ""}
+              <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
+              <div class="status-row">${badges}</div>
+            </div>
           </div>
+          <p class="movie-description">${escapeHtml(title.description)}</p>
         </div>
-        <p class="movie-description">${escapeHtml(title.description)}</p>
-        <div class="movie-actions">
-          <a class="details-link" href="${buildTitleUrl(title.id)}">View Details →</a>
-        </div>
-      </div>
+      </a>
     </article>
   `;
 }
@@ -3902,6 +3931,7 @@ async function renderDetailsPage() {
     const displayTypeLabel = getDisplayTypeLabel(title);
     const leadDirector = title.director || "MovieMate";
     const leadCreditLabel = title.type === "Series" ? "Showrunner" : "Directed by";
+    const commentSectionCopy = getCommentSectionCopy(title);
     const primaryLanguage = title.language?.[0] || "Not added";
     const primaryPlatform = formatPlatforms(title.platforms);
     const currentWatchStatus = getTitleWatchStatus(title.id);
@@ -4017,10 +4047,10 @@ async function renderDetailsPage() {
     <section class="comment-section">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Reviews and comments</p>
-          <h2>What viewers are saying</h2>
+          <p class="eyebrow">${escapeHtml(commentSectionCopy.eyebrow)}</p>
+          <h2>${escapeHtml(commentSectionCopy.title)}</h2>
         </div>
-        <p class="section-copy">Only MovieMate members can post reviews and comments. Everyone can still read them.</p>
+        <p class="section-copy">${escapeHtml(commentSectionCopy.helper)}</p>
       </div>
 
       ${
@@ -4033,12 +4063,12 @@ async function renderDetailsPage() {
                   <span>Mark this comment as spoiler</span>
                 </label>
                 <label class="input-group form-span">
-                  <span>Your review or comment</span>
-                  <textarea name="comment" rows="4" placeholder="Share your thoughts on this title"></textarea>
+                  <span>${escapeHtml(commentSectionCopy.fieldLabel)}</span>
+                  <textarea name="comment" rows="4" placeholder="${escapeHtml(commentSectionCopy.placeholder)}"></textarea>
                 </label>
               </div>
               <div class="form-actions">
-                <button class="primary-btn" type="submit">Post Review</button>
+                <button class="primary-btn" type="submit">${escapeHtml(commentSectionCopy.buttonLabel)}</button>
                 <p class="form-message" id="commentMessage" aria-live="polite"></p>
               </div>
             </form>
@@ -4052,7 +4082,7 @@ async function renderDetailsPage() {
       }
 
       <div class="comment-list">
-        ${title.comments.length ? title.comments.map(commentTemplate).join("") : '<p class="empty-state">No reviews yet. Be the first to write one.</p>'}
+        ${title.comments.length ? title.comments.map(commentTemplate).join("") : `<p class="empty-state">${escapeHtml(commentSectionCopy.emptyLabel)}</p>`}
       </div>
     </section>
   `;
@@ -4617,15 +4647,26 @@ function setupCommentForm(titleId) {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const added = await addComment(titleId, form);
+    showMessage("#commentMessage", "Posting...");
 
-    if (!added) {
-      return;
+    try {
+      const added = await addComment(titleId, form);
+
+      if (!added) {
+        return;
+      }
+
+      form.reset();
+      await renderDetailsPage();
+
+      const snapshot = await getDoc(doc(db, TITLES_COLLECTION, titleId));
+      const refreshedTitle = snapshot.exists() ? normalizeTitle(snapshot) : null;
+      const successLabel = refreshedTitle ? getCommentSectionCopy(refreshedTitle).successLabel : "Your comment is now live.";
+      showMessage("#commentMessage", successLabel);
+    } catch (error) {
+      console.error(error);
+      showMessage("#commentMessage", "Could not post right now.");
     }
-
-    form.reset();
-    showMessage("#commentMessage", "Your review is now live.");
-    await renderDetailsPage();
   });
 }
 
@@ -4838,7 +4879,14 @@ function profileReviewCardTemplate(entry) {
           </div>
           <div class="profile-review-head-actions">
             ${reactionLabel ? `<span class="profile-reaction-badge">${escapeHtml(reactionLabel)}</span>` : ""}
-            <button class="profile-card-menu" type="button" aria-label="More options">•••</button>
+            <div class="profile-card-menu-wrap">
+              <button class="profile-card-menu" type="button" aria-label="More options" data-profile-menu-toggle="true">•••</button>
+              <div class="profile-card-dropdown hidden" data-profile-menu="true">
+                <button class="profile-card-dropdown-item" type="button" data-profile-share="story" data-title-id="${entry.title.id}">Share - Story</button>
+                <button class="profile-card-dropdown-item" type="button" data-profile-share="classic" data-title-id="${entry.title.id}">Share - Classic</button>
+                <button class="profile-card-dropdown-item" type="button" data-profile-report="${entry.title.id}">Report</button>
+              </div>
+            </div>
           </div>
         </div>
         <p class="profile-review-meta">${escapeHtml(entry.title.genre)} • ${escapeHtml(entry.title.language.join(", "))}</p>
@@ -4848,7 +4896,6 @@ function profileReviewCardTemplate(entry) {
             <span>♡ ${recommendCount}</span>
             <span>◌ ${reviewCount}</span>
           </div>
-          <a class="ghost-link profile-inline-link" href="${buildTitleUrl(entry.title.id)}">Open title</a>
         </div>
       </div>
     </article>
@@ -4987,8 +5034,8 @@ function renderProfilePage() {
     saved: getSavedTitles().length,
     interested: Object.values(watchStatus).filter((value) => normalizeWatchStatusValue(value) === "interested").length
   };
-  const followersCount = Math.max(12, stats.reviews * 6 + stats.saved * 3 + stats.interested * 4);
-  const followingCount = Math.max(4, Math.min(48, stats.collections + stats.posts + 4));
+  const followersCount = Array.isArray(currentUserProfile.followers) ? currentUserProfile.followers.length : 0;
+  const followingCount = Array.isArray(currentUserProfile.following) ? currentUserProfile.following.length : 0;
 
   target.innerHTML = `
     <section class="profile-page-shell">
@@ -5027,13 +5074,19 @@ function renderProfilePage() {
               <button class="profile-filter-pill" data-profile-filter="skip" type="button">Skip</button>
               <button class="profile-filter-pill" data-profile-filter="timepass" type="button">Timepass</button>
               <button class="profile-filter-pill" data-profile-filter="goForIt" type="button">Go For It</button>
-              <button class="profile-filter-pill" data-profile-filter="perfect" type="button">Perfect</button>
+              <button class="profile-filter-pill" data-profile-filter="perfect" type="button">Perfection</button>
             </div>
             <div class="profile-view-switcher">
               <a class="icon-chip compact" href="/my-reviews.html" aria-label="Open calendar view">☷</a>
-              <button class="icon-chip compact" type="button" aria-label="Grid view">◫</button>
-              <button class="icon-chip compact" type="button" aria-label="Search profile">⌕</button>
+              <button class="icon-chip compact" type="button" aria-label="Grid view" data-profile-grid-toggle="true">◫</button>
+              <button class="icon-chip compact" type="button" aria-label="Search profile" data-profile-search-toggle="true">⌕</button>
             </div>
+          </div>
+          <div class="profile-review-search hidden" id="profileReviewSearchWrap">
+            <label class="input-group">
+              <span>Search reviews</span>
+              <input id="profileReviewSearchInput" type="text" placeholder="Search by title" />
+            </label>
           </div>
           <div class="profile-review-list" id="profileReviewList">
             ${
@@ -5284,6 +5337,27 @@ function renderAccountPage() {
 }
 
 function setupProfileTabs(reviewEntries) {
+  const rerenderReviewList = () => {
+    const activeFilter =
+      document.querySelector(".profile-filter-pill.active")?.dataset.profileFilter || "all";
+    const query = document.querySelector("#profileReviewSearchInput")?.value?.trim().toLowerCase() || "";
+    const list = document.querySelector("#profileReviewList");
+
+    if (!list) {
+      return;
+    }
+
+    let filtered = activeFilter === "all" ? reviewEntries : reviewEntries.filter((entry) => entry.reaction === activeFilter);
+
+    if (query) {
+      filtered = filtered.filter((entry) => entry.title.title.toLowerCase().includes(query));
+    }
+
+    list.innerHTML = filtered.length
+      ? filtered.map(profileReviewCardTemplate).join("")
+      : '<p class="empty-state">No reviews yet for this filter.</p>';
+  };
+
   document.querySelectorAll(".profile-tab").forEach((button) => {
     button.addEventListener("click", () => {
       const tab = button.dataset.profileTab;
@@ -5305,12 +5379,73 @@ function setupProfileTabs(reviewEntries) {
 
       document.querySelectorAll(".profile-filter-pill").forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
-
-      const filtered = filter === "all" ? reviewEntries : reviewEntries.filter((entry) => entry.reaction === filter);
-      list.innerHTML = filtered.length
-        ? filtered.map(profileReviewCardTemplate).join("")
-        : '<p class="empty-state">No reviews yet for this filter.</p>';
+      rerenderReviewList();
     });
+  });
+
+  document.querySelector("[data-profile-grid-toggle='true']")?.addEventListener("click", () => {
+    document.querySelector("#profileReviewList")?.classList.toggle("profile-review-list-grid");
+  });
+
+  document.querySelector("[data-profile-search-toggle='true']")?.addEventListener("click", () => {
+    document.querySelector("#profileReviewSearchWrap")?.classList.toggle("hidden");
+    document.querySelector("#profileReviewSearchInput")?.focus();
+  });
+
+  document.querySelector("#profileReviewSearchInput")?.addEventListener("input", () => {
+    rerenderReviewList();
+  });
+
+  document.addEventListener("click", async (event) => {
+    const target = event.target instanceof HTMLElement ? event.target : null;
+
+    if (!target) {
+      return;
+    }
+
+    const toggle = target.closest("[data-profile-menu-toggle='true']");
+
+    if (toggle) {
+      const wrap = toggle.closest(".profile-card-menu-wrap");
+      const menu = wrap?.querySelector("[data-profile-menu='true']");
+      document.querySelectorAll("[data-profile-menu='true']").forEach((item) => {
+        if (item !== menu) {
+          item.classList.add("hidden");
+        }
+      });
+      menu?.classList.toggle("hidden");
+      return;
+    }
+
+    const shareButton = target.closest("[data-profile-share]");
+
+    if (shareButton) {
+      const titleId = shareButton.getAttribute("data-title-id") || "";
+      const title = titlesCache.find((item) => item.id === titleId);
+
+      if (title) {
+        try {
+          await shareTitle(title);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      shareButton.closest("[data-profile-menu='true']")?.classList.add("hidden");
+      return;
+    }
+
+    const reportButton = target.closest("[data-profile-report]");
+
+    if (reportButton) {
+      window.alert("Report tools can be added next.");
+      reportButton.closest("[data-profile-menu='true']")?.classList.add("hidden");
+      return;
+    }
+
+    if (!target.closest(".profile-card-menu-wrap")) {
+      document.querySelectorAll("[data-profile-menu='true']").forEach((item) => item.classList.add("hidden"));
+    }
   });
 }
 
