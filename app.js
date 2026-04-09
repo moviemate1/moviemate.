@@ -1253,7 +1253,14 @@ function formatReleaseDate(value) {
   const date = new Date(`${value}T00:00:00`);
 
   if (Number.isNaN(date.getTime())) {
-  return value;
+    return value;
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
 }
 
 function getComparableReleaseDate(value) {
@@ -1267,6 +1274,13 @@ function getComparableReleaseDate(value) {
     return raw;
   }
 
+  const dateOnlyMatch = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+
+  if (dateOnlyMatch) {
+    const [, day, month, year] = dateOnlyMatch;
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
   const parsed = new Date(raw);
 
   if (Number.isNaN(parsed.getTime())) {
@@ -1274,13 +1288,6 @@ function getComparableReleaseDate(value) {
   }
 
   return parsed.toISOString().slice(0, 10);
-}
-
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  });
 }
 
 function formatPlatforms(platforms = []) {
