@@ -480,6 +480,27 @@ async function persistUserProfile(partial) {
   await setDoc(ref, nextProfile, { merge: true });
 }
 
+function createActionTimeoutError(label) {
+  const error = new Error(`${label} timed out.`);
+  error.code = "deadline-exceeded";
+  return error;
+}
+
+async function withActionTimeout(promise, label, timeoutMs = 8000) {
+  let timeoutId;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(createActionTimeoutError(label)), timeoutMs);
+      })
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 function slugify(value) {
   return value
     .toLowerCase()
@@ -1159,15 +1180,16 @@ async function syncSavedTitle(titleId) {
     savedTitles: [...saved]
   });
 
-  try {
-    await persistUserProfile({ savedTitles: [...saved] });
-  } catch (error) {
+  persistUserProfile({ savedTitles: [...saved] }).catch((error) => {
     console.warn("Saved titles synced locally, but profile sync failed.", error);
-  }
-
-  await updateDoc(doc(db, TITLES_COLLECTION, titleId), {
-    savesCount: increment(wasSaved ? -1 : 1)
   });
+
+  await withActionTimeout(
+    updateDoc(doc(db, TITLES_COLLECTION, titleId), {
+      savesCount: increment(wasSaved ? -1 : 1)
+    }),
+    "collection update"
+  );
   return true;
 }
 
@@ -1188,11 +1210,10 @@ async function syncWatchStatus(titleId, nextStatus) {
     watchStatus
   });
 
-  try {
-    await persistUserProfile({ watchStatus });
-  } catch (error) {
-    console.warn("Watch status synced locally, but profile sync failed.", error);
-  }
+  await withActionTimeout(
+    persistUserProfile({ watchStatus }),
+    "watch status update"
+  );
 
   return true;
 }
@@ -3948,18 +3969,16 @@ async function reactToTitle(titleId, nextReaction) {
     updates.dislikes = increment(dislikesDelta);
   }
 
-  await updateDoc(doc(db, TITLES_COLLECTION, titleId), updates);
+  await withActionTimeout(updateDoc(doc(db, TITLES_COLLECTION, titleId), updates), "vote save");
 
   setReaction(titleId, isClearing ? "" : nextReaction);
 
   if (isSignedIn()) {
-    try {
-      await persistUserProfile({
-        reactions: { ...(currentUserProfile?.reactions || {}) }
-      });
-    } catch (error) {
+    persistUserProfile({
+      reactions: { ...(currentUserProfile?.reactions || {}) }
+    }).catch((error) => {
       console.warn("Reaction saved, but profile sync failed.", error);
-    }
+    });
   }
 
   return {
@@ -3990,16 +4009,19 @@ async function addComment(titleId, form) {
   }
 
   const titleRef = doc(db, TITLES_COLLECTION, titleId);
-  await updateDoc(titleRef, {
-    comments: arrayUnion({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      userId: currentUser?.uid || "",
-      name,
-      text,
-      spoiler,
-      createdAt: new Date().toISOString()
-    })
-  });
+  await withActionTimeout(
+    updateDoc(titleRef, {
+      comments: arrayUnion({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        userId: currentUser?.uid || "",
+        name,
+        text,
+        spoiler,
+        createdAt: new Date().toISOString()
+      })
+    }),
+    "comment post"
+  );
 
   return true;
 }
@@ -4025,6 +4047,29 @@ function getCommentErrorMessage(error) {
   }
 
   return "Could not post right now.";
+}
+
+function getActionErrorMessage(error, fallback = "Could not update right now.") {
+  const code = String(error?.code || "").toLowerCase();
+  const message = String(error?.message || "").toLowerCase();
+
+  if (code.includes("permission-denied") || message.includes("missing or insufficient permissions")) {
+    return "This action is blocked by Firebase rules right now.";
+  }
+
+  if (code.includes("unauthenticated")) {
+    return "Please sign in again and try once more.";
+  }
+
+  if (code.includes("deadline-exceeded") || message.includes("timed out")) {
+    return "The request took too long. Please try again.";
+  }
+
+  if (code.includes("unavailable") || code.includes("resource-exhausted")) {
+    return "MovieMate is busy right now. Please try again in a moment.";
+  }
+
+  return fallback;
 }
 
 async function deleteComment(titleId, commentId) {
@@ -4272,7 +4317,7 @@ async function renderDetailsPage() {
         showMessage("#detailVoteMessage", result.cleared ? "Your vote was removed." : "Your vote was saved.");
       } catch (error) {
         console.error(error);
-        showMessage("#detailVoteMessage", "Could not save your vote right now.");
+        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not save your vote right now."));
       }
 
       return;
@@ -4292,7 +4337,7 @@ async function renderDetailsPage() {
         showMessage("#detailVoteMessage", isSavedTitle(saveButton.dataset.saveId) ? "Saved to your collection." : "Removed from your collection.");
       } catch (error) {
         console.error(error);
-        showMessage("#detailVoteMessage", "Could not update your collection right now.");
+        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update your collection right now."));
       }
       return;
     }
@@ -4313,7 +4358,7 @@ async function renderDetailsPage() {
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
-        showMessage("#detailVoteMessage", "Could not update watch status right now.");
+        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
       }
       return;
     }
@@ -4373,7 +4418,7 @@ async function renderDetailsPage() {
         showMessage("#detailVoteMessage", isSavedTitle(saveButton.dataset.saveId) ? "Saved to your collection." : "Removed from your collection.");
       } catch (error) {
         console.error(error);
-        showMessage("#detailVoteMessage", "Could not update your collection right now.");
+        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update your collection right now."));
       }
       return;
     }
@@ -4394,7 +4439,7 @@ async function renderDetailsPage() {
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
-        showMessage("#detailVoteMessage", "Could not update watch status right now.");
+        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
       }
     }
     });
