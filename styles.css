@@ -3089,6 +3089,53 @@ button.ghost-link {
   margin-top: 28px;
 }
 
+.seasons-section {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.seasons-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.season-card {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border-radius: 24px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.season-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.season-copy {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+}
+
+.season-copy h3,
+.season-copy p,
+.season-copy small {
+  margin: 0;
+}
+
+.season-copy p,
+.season-copy small {
+  color: var(--muted);
+}
+
 .detail-tag-row {
   display: flex;
   flex-wrap: wrap;
@@ -3843,6 +3890,10 @@ button.ghost-link {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .seasons-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .explore-row-section .trend-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4017,6 +4068,10 @@ button.ghost-link {
   }
 
   .detail-summary-header {
+    grid-template-columns: 1fr;
+  }
+
+  .seasons-grid {
     grid-template-columns: 1fr;
   }
 

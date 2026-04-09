@@ -729,6 +729,16 @@ function normalizeTitle(docLike) {
     : data.platforms
       ? [data.platforms]
       : [];
+  const seasons = Array.isArray(data.seasons)
+    ? data.seasons.map((season, index) => ({
+        number: Number(season.number || index + 1),
+        title: season.title || `Season ${index + 1}`,
+        year: season.year || "",
+        episodes: Number(season.episodes || 0),
+        image: season.image || data.image || "",
+        reviewsCount: Number(season.reviewsCount || 0)
+      }))
+    : [];
 
   return {
     id: data.id || docLike.id,
@@ -766,6 +776,9 @@ function normalizeTitle(docLike) {
     tmdbPopularity: Number(data.tmdbPopularity || 0),
     viewsCount: Number(data.viewsCount || 0),
     savesCount: Number(data.savesCount || 0),
+    seasonsCount: Number(data.seasonsCount || seasons.length || 0),
+    episodesCount: Number(data.episodesCount || 0),
+    seasons,
     importBuckets: Array.isArray(data.importBuckets) ? data.importBuckets : [],
     comments: Array.isArray(data.comments)
       ? data.comments.map((comment, index) => ({
@@ -779,6 +792,71 @@ function normalizeTitle(docLike) {
         }))
       : []
   };
+}
+
+function getDisplayTypeLabel(title) {
+  if (title.type === "Series") {
+    return "TV Show";
+  }
+
+  return title.type || "Movie";
+}
+
+function buildSeasonCards(title) {
+  if (Array.isArray(title.seasons) && title.seasons.length) {
+    return title.seasons;
+  }
+
+  if (title.type !== "Series" || title.seasonsCount <= 1) {
+    return [];
+  }
+
+  return Array.from({ length: title.seasonsCount }, (_, index) => ({
+    number: index + 1,
+    title: `Season ${index + 1}`,
+    year: title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).getFullYear() + index : "",
+    episodes:
+      title.episodesCount && title.seasonsCount
+        ? Math.max(1, Math.round(title.episodesCount / title.seasonsCount))
+        : 0,
+    image: title.image,
+    reviewsCount: 0
+  }));
+}
+
+function seasonsSectionTemplate(title) {
+  const seasons = buildSeasonCards(title);
+
+  if (!seasons.length) {
+    return "";
+  }
+
+  return `
+    <section class="seasons-section">
+      <div class="section-heading compact-heading">
+        <div>
+          <p class="eyebrow">TV show guide</p>
+          <h2>Seasons</h2>
+        </div>
+      </div>
+      <div class="seasons-grid">
+        ${seasons
+          .map(
+            (season) => `
+              <article class="season-card">
+                <img class="season-poster" src="${season.image || title.image}" alt="${escapeHtml(season.title)} poster" loading="lazy" decoding="async" />
+                <div class="season-copy">
+                  <h3>${escapeHtml(season.title)}</h3>
+                  <p>${escapeHtml([season.year, season.episodes ? `${season.episodes} Episodes` : ""].filter(Boolean).join(" • ") || "Episodes not added")}</p>
+                  <small>${season.reviewsCount ? `${season.reviewsCount} Reviews` : "MovieMate season details"}</small>
+                </div>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
 }
 
 function getVisibleTitles(titles) {
@@ -3821,7 +3899,9 @@ async function renderDetailsPage() {
     const saved = isSavedTitle(title.id);
     const embeddedTrailerUrl = getYouTubeEmbedUrl(title.trailerUrl);
     const releaseYear = title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now";
+    const displayTypeLabel = getDisplayTypeLabel(title);
     const leadDirector = title.director || "MovieMate";
+    const leadCreditLabel = title.type === "Series" ? "Showrunner" : "Directed by";
     const primaryLanguage = title.language?.[0] || "Not added";
     const primaryPlatform = formatPlatforms(title.platforms);
     const currentWatchStatus = getTitleWatchStatus(title.id);
@@ -3854,12 +3934,12 @@ async function renderDetailsPage() {
         <div class="detail-summary-header">
           <img class="detail-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
           <div class="detail-copy">
-            <p class="eyebrow">${escapeHtml(title.type)} • ${escapeHtml(String(releaseYear))}</p>
+            <p class="eyebrow">${escapeHtml(displayTypeLabel)} • ${escapeHtml(String(releaseYear))}</p>
             <h1>${escapeHtml(title.title)}</h1>
             <div class="status-row">${badges}</div>
             <div class="detail-facts-grid">
               <div class="detail-fact">
-                <span>Directed by</span>
+                <span>${escapeHtml(leadCreditLabel)}</span>
                 <strong>${escapeHtml(leadDirector)}</strong>
               </div>
               <div class="detail-fact">
@@ -3926,6 +4006,8 @@ async function renderDetailsPage() {
         <p class="detail-overview">${escapeHtml(title.description)}</p>
       </article>
     </section>
+
+    ${seasonsSectionTemplate(title)}
 
     ${peopleSectionTemplate(title)}
 
