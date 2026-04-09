@@ -179,6 +179,7 @@ const auth = getAuth(app);
 let titlesCache = [];
 let titlesCachePromise = null;
 let homepageContentCache = { ...DEFAULT_HOMEPAGE_CONTENT };
+let homepageContentPromise = null;
 let currentUser = null;
 let currentUserProfile = null;
 let browseVisibleCount = SEARCH_PAGE_SIZE;
@@ -1420,17 +1421,33 @@ async function fetchTitles(force = false) {
 }
 
 async function fetchHomepageContent() {
-  const homepageRef = doc(db, SETTINGS_COLLECTION, HOMEPAGE_DOC_ID);
-  const snapshot = await getDoc(homepageRef);
-
-  if (!snapshot.exists()) {
-    homepageContentCache = { ...DEFAULT_HOMEPAGE_CONTENT };
-    await setDoc(homepageRef, homepageContentCache);
+  if (homepageContentCache && homepageContentCache.heroTitle !== DEFAULT_HOMEPAGE_CONTENT.heroTitle) {
     return homepageContentCache;
   }
 
-  homepageContentCache = normalizeHomepageContent(snapshot.data());
-  return homepageContentCache;
+  if (homepageContentPromise) {
+    return homepageContentPromise;
+  }
+
+  const homepageRef = doc(db, SETTINGS_COLLECTION, HOMEPAGE_DOC_ID);
+  homepageContentPromise = (async () => {
+    const snapshot = await getDoc(homepageRef);
+
+    if (!snapshot.exists()) {
+      homepageContentCache = { ...DEFAULT_HOMEPAGE_CONTENT };
+      await setDoc(homepageRef, homepageContentCache);
+      return homepageContentCache;
+    }
+
+    homepageContentCache = normalizeHomepageContent(snapshot.data());
+    return homepageContentCache;
+  })();
+
+  try {
+    return await homepageContentPromise;
+  } finally {
+    homepageContentPromise = null;
+  }
 }
 
 function getCardLabel(title) {
@@ -2896,29 +2913,32 @@ async function renderHomePage() {
   const visibleTitles = getVisibleTitles(titles);
   browseVisibleCount = Math.max(browseVisibleCount, SEARCH_PAGE_SIZE);
   renderHomepageContent(homepageContent);
-  populateSelect(
-    "#genreFilter",
-    [...new Set(visibleTitles.map((title) => title.genre))].sort(),
-    "genres"
-  );
-  populateSelect(
-    "#languageFilter",
-    [...new Set(visibleTitles.flatMap((title) => title.language))].sort(),
-    "languages"
-  );
   renderFeaturedTitles(visibleTitles);
   renderTrendingTitles(visibleTitles);
   renderCuratedExploreRows(visibleTitles);
-  refreshBrowseResults();
-  renderScheduleGrid(visibleTitles);
   renderMostInterestedList(visibleTitles);
-  renderCollectionsGrid(visibleTitles);
-  renderUserNotifications(visibleTitles);
-  renderOwnerPanel(titles);
-  renderOwnerNotifications(titles);
-  renderOwnerAnalytics(visibleTitles);
   renderHeroStats(visibleTitles);
   updateOwnerToggle();
+
+  requestAnimationFrame(() => {
+    populateSelect(
+      "#genreFilter",
+      [...new Set(visibleTitles.map((title) => title.genre))].sort(),
+      "genres"
+    );
+    populateSelect(
+      "#languageFilter",
+      [...new Set(visibleTitles.flatMap((title) => title.language))].sort(),
+      "languages"
+    );
+    refreshBrowseResults();
+    renderScheduleGrid(visibleTitles);
+    renderCollectionsGrid(visibleTitles);
+    renderUserNotifications(visibleTitles);
+    renderOwnerPanel(titles);
+    renderOwnerNotifications(titles);
+    renderOwnerAnalytics(visibleTitles);
+  });
 }
 
 async function addTitle(form) {
