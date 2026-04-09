@@ -1272,7 +1272,7 @@ function reactionButtonsTemplate(title) {
         ${Object.entries(REACTION_OPTIONS)
           .map(
             ([value, option]) => `
-              <button class="reaction-btn reaction-btn-${option.className} ${currentReaction === value ? `active ${option.className}` : ""}" data-id="${title.id}" data-reaction="${value}" type="button" ${memberReady ? "" : "disabled"}>
+              <button class="reaction-btn reaction-btn-${option.className} ${currentReaction === value ? `active ${option.className}` : ""}" data-id="${title.id}" data-reaction="${value}" type="button">
                 ${option.label}
               </button>
             `
@@ -1549,7 +1549,7 @@ function trailerPanelTemplate(title) {
       <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
       <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
       <p class="hero-interest-count">${escapeHtml(interestedCount)} interested</p>
-      <button class="watch-status-btn hero-interest-action ${interestState.className}" type="button" data-watch-status="${interestState.nextStatus}" data-id="${title.id}" ${memberReady ? "" : "disabled"}>
+      <button class="watch-status-btn hero-interest-action ${interestState.className}" type="button" data-watch-status="${interestState.nextStatus}" data-id="${title.id}">
         ${escapeHtml(interestState.label)}
       </button>
       <p class="hero-interest-helper">${memberReady ? escapeHtml(interestState.helper) : "Sign in to mark titles as interested."}</p>
@@ -1876,7 +1876,7 @@ function movieCardTemplate(title) {
         </div>
       </a>
       <div class="movie-actions movie-actions-compact">
-        <button class="owner-action-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled"}>${saved ? "Saved" : "Save"}</button>
+        <button class="owner-action-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved" : "Save"}</button>
       </div>
       ${memberReady ? "" : '<p class="member-action-note card-member-note">Members only can save, vote, and track titles.</p>'}
       ${ownerControls
@@ -4148,11 +4148,10 @@ async function renderDetailsPage() {
               type="button"
               data-watch-status="${primaryWatchButton.nextStatus}"
               data-id="${title.id}"
-              ${memberReady ? "" : "disabled"}
             >
               ${escapeHtml(primaryWatchButton.label)}
             </button>
-            <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled"}>${saved ? "Saved to Collection" : "Add to Collection"}</button>
+            <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved to Collection" : "Add to Collection"}</button>
             ${memberReady ? `<p class="hero-interest-helper detail-cta-helper">${escapeHtml(primaryWatchButton.helper)}</p>` : '<p class="hero-interest-helper detail-cta-helper">Members only can save, track interest, and update watch status.</p>'}
           </div>
         </div>
