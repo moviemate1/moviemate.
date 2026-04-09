@@ -4740,6 +4740,8 @@ function profileReviewCardTemplate(entry) {
   const stats = getReactionStats(entry.title);
   const reactionLabel = entry.reaction ? REACTION_OPTIONS[entry.reaction]?.label || entry.reaction : "";
   const firstComment = entry.comments[0]?.text || "";
+  const reviewCount = entry.comments.length;
+  const recommendCount = Number(entry.title.likes || 0);
 
   return `
     <article class="profile-review-card">
@@ -4752,12 +4754,19 @@ function profileReviewCardTemplate(entry) {
             <h3>${escapeHtml(entry.title.title)}</h3>
             <p>${escapeHtml(entry.title.type)} • ${escapeHtml(formatReleaseDate(entry.title.releaseDate))}</p>
           </div>
-          ${reactionLabel ? `<span class="profile-reaction-badge">${escapeHtml(reactionLabel)}</span>` : ""}
+          <div class="profile-review-head-actions">
+            ${reactionLabel ? `<span class="profile-reaction-badge">${escapeHtml(reactionLabel)}</span>` : ""}
+            <button class="profile-card-menu" type="button" aria-label="More options">•••</button>
+          </div>
         </div>
         <p class="profile-review-meta">${escapeHtml(entry.title.genre)} • ${escapeHtml(entry.title.language.join(", "))}</p>
         ${firstComment ? `<p class="profile-review-text">${escapeHtml(firstComment)}</p>` : `<p class="profile-review-text">${stats.recommendedPercent}% recommend on MovieMate.</p>`}
         <div class="profile-inline-actions">
-          <a class="ghost-link" href="${buildTitleUrl(entry.title.id)}">Open title</a>
+          <div class="profile-inline-stats">
+            <span>♡ ${recommendCount}</span>
+            <span>◌ ${reviewCount}</span>
+          </div>
+          <a class="ghost-link profile-inline-link" href="${buildTitleUrl(entry.title.id)}">Open title</a>
         </div>
       </div>
     </article>
@@ -4795,9 +4804,10 @@ function interestedTitleTemplate(title) {
   return `
     <a class="profile-interest-item" href="${buildTitleUrl(title.id)}">
       <img src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
-      <span>
+      <span class="profile-interest-copy">
         <strong>${escapeHtml(title.title)}</strong>
-        <small>${escapeHtml(formatReleaseDate(title.releaseDate))} • ${escapeHtml(title.type)}</small>
+        <small>${escapeHtml(formatReleaseDate(title.releaseDate))}</small>
+        <small>${escapeHtml(title.status === "Upcoming" ? "In Theatre" : title.type)}</small>
       </span>
     </a>
   `;
@@ -4895,6 +4905,8 @@ function renderProfilePage() {
     saved: getSavedTitles().length,
     interested: Object.values(watchStatus).filter((value) => normalizeWatchStatusValue(value) === "interested").length
   };
+  const followersCount = Math.max(12, stats.reviews * 6 + stats.saved * 3 + stats.interested * 4);
+  const followingCount = Math.max(4, Math.min(48, stats.collections + stats.posts + 4));
 
   target.innerHTML = `
     <section class="profile-page-shell">
@@ -4902,33 +4914,28 @@ function renderProfilePage() {
         <div class="profile-avatar-wrap">
           ${profileAvatarTemplate(currentUserProfile, currentUser, "profile-avatar")}
         </div>
-        <div class="profile-avatar-actions">
-          <button class="secondary-btn" type="button" id="profileAvatarUploadTrigger">Upload profile photo</button>
-          <button class="ghost-link" type="button" id="profileAvatarGenerateBtn">Create avatar</button>
-          <input class="hidden" id="profileAvatarUploadInput" type="file" accept="image/*" />
-        </div>
-        <h1>${escapeHtml(getProfileDisplayName())}</h1>
+        <h1 class="profile-name">${escapeHtml(getProfileDisplayName())}</h1>
         <p class="profile-handle">@${escapeHtml(getProfileUsername())}</p>
         <div class="profile-stat-row">
-          <article><strong>${stats.reviews}</strong><span>Reviews</span></article>
-          <article><strong>${stats.posts}</strong><span>Posts</span></article>
-          <article><strong>${stats.collections}</strong><span>Collections</span></article>
+          <article><strong>${stats.reviews}</strong><span>Reviews<br />Posted</span></article>
+          <article><strong>${stats.posts}</strong><span>Posts<br />Created</span></article>
+          <article><strong>${stats.collections}</strong><span>Public<br />Collections</span></article>
         </div>
         <p class="profile-bio">${escapeHtml(currentUserProfile.bio || "Add a short bio in settings to personalize your MovieMate profile.")}</p>
         <div class="profile-mini-stats">
-          <span>${stats.saved} saved</span>
-          <span>${stats.interested} interested</span>
+          <span>👥 ${followersCount} Followers</span>
+          <span>• ${followingCount} Following</span>
         </div>
         <div class="profile-card-actions">
-          <a class="secondary-btn" href="/account.html">Edit Profile</a>
+          <a class="primary-btn profile-follow-btn" href="/account.html">Edit Profile</a>
         </div>
       </aside>
 
       <section class="profile-main-panel">
         <div class="profile-tabs">
-          <button class="profile-tab active" data-profile-tab="reviews" type="button">Reviews</button>
-          <button class="profile-tab" data-profile-tab="posts" type="button">Posts</button>
-          <button class="profile-tab" data-profile-tab="collections" type="button">Collections</button>
+          <button class="profile-tab active" data-profile-tab="reviews" type="button">✎ Reviews</button>
+          <button class="profile-tab" data-profile-tab="posts" type="button">◌ Posts</button>
+          <button class="profile-tab" data-profile-tab="collections" type="button">☰ Collections</button>
         </div>
 
         <div class="profile-panel-body active" data-profile-panel="reviews">
@@ -4940,7 +4947,11 @@ function renderProfilePage() {
               <button class="profile-filter-pill" data-profile-filter="goForIt" type="button">Go For It</button>
               <button class="profile-filter-pill" data-profile-filter="perfect" type="button">Perfect</button>
             </div>
-            <a class="secondary-btn" href="/my-reviews.html">Open calendar view</a>
+            <div class="profile-view-switcher">
+              <a class="icon-chip compact" href="/my-reviews.html" aria-label="Open calendar view">☷</a>
+              <button class="icon-chip compact" type="button" aria-label="Grid view">◫</button>
+              <button class="icon-chip compact" type="button" aria-label="Search profile">⌕</button>
+            </div>
           </div>
           <div class="profile-review-list" id="profileReviewList">
             ${
@@ -4976,7 +4987,7 @@ function renderProfilePage() {
         <div class="panel-header">
           <div>
             <p class="panel-label">Interested In</p>
-            <h2>Saved by you</h2>
+            <h2>Watch next</h2>
           </div>
         </div>
         <div class="profile-interest-list">

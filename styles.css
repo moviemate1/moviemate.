@@ -819,8 +819,8 @@ button.ghost-link {
 .profile-page-shell,
 .account-page-shell {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 260px;
-  gap: 22px;
+  grid-template-columns: 256px minmax(0, 1fr) 248px;
+  gap: 20px;
   align-items: start;
 }
 
@@ -832,33 +832,23 @@ button.ghost-link {
 .profile-main-panel,
 .profile-interest-panel,
 .account-settings-card {
-  padding: 24px;
-  border-radius: 26px;
-  background: rgba(18, 18, 21, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 28px;
+  border-radius: 24px;
+  background: rgba(18, 18, 21, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow: var(--shadow);
 }
 
 .profile-avatar-wrap {
-  margin-bottom: 18px;
-}
-
-.profile-avatar-actions {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 18px;
-}
-
-.profile-avatar-actions .secondary-btn,
-.profile-avatar-actions .ghost-link {
-  width: 100%;
+  margin-bottom: 16px;
+  display: flex;
   justify-content: center;
 }
 
 .profile-avatar,
 .account-avatar {
-  width: 128px;
-  height: 128px;
+  width: 116px;
+  height: 116px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid rgba(255, 255, 255, 0.1);
@@ -877,68 +867,90 @@ button.ghost-link {
 .profile-side-card h1,
 .account-form-head h1 {
   margin: 0 0 6px;
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(1.7rem, 2.8vw, 2.4rem);
+}
+
+.profile-name {
+  text-align: center;
 }
 
 .profile-handle {
   margin: 0 0 22px;
   color: var(--muted);
+  text-align: center;
 }
 
 .profile-stat-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
 .profile-stat-row article,
 .account-health-item {
-  padding: 14px 12px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 14px 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   text-align: center;
 }
 
 .profile-stat-row strong,
 .account-health-item strong {
   display: block;
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   color: #fff;
 }
 
 .profile-stat-row span,
 .account-health-item span {
   color: var(--muted);
-  font-size: 0.84rem;
+  font-size: 0.74rem;
+  line-height: 1.35;
 }
 
 .profile-bio {
   margin: 0 0 18px;
   color: var(--muted);
-  line-height: 1.75;
+  line-height: 1.65;
+  text-align: center;
+  font-size: 0.96rem;
 }
 
 .profile-mini-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  justify-content: center;
+  gap: 8px;
   color: #d9d9e2;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
+  font-size: 0.92rem;
 }
 
 .profile-card-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  justify-content: center;
+}
+
+.profile-follow-btn {
+  width: 100%;
+  justify-content: center;
+  border-radius: 12px;
+  min-height: 48px;
 }
 
 .profile-tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
+  padding: 8px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .profile-tab,
@@ -954,6 +966,14 @@ button.ghost-link {
   color: #fff;
   cursor: pointer;
   font: inherit;
+}
+
+.profile-tab {
+  min-height: 46px;
+  border-radius: 14px;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .profile-tab.active,
@@ -977,6 +997,23 @@ button.ghost-link {
   flex-wrap: wrap;
 }
 
+.profile-view-switcher {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.icon-chip.compact {
+  min-width: 40px;
+  min-height: 40px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+}
+
 .profile-review-list,
 .profile-post-list,
 .profile-interest-list {
@@ -991,7 +1028,7 @@ button.ghost-link {
   grid-template-columns: 96px minmax(0, 1fr);
   gap: 16px;
   padding: 16px;
-  border-radius: 22px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -1002,8 +1039,10 @@ button.ghost-link {
 }
 
 .profile-interest-item {
-  grid-template-columns: 58px minmax(0, 1fr);
+  grid-template-columns: 54px minmax(0, 1fr);
   align-items: center;
+  padding: 10px;
+  gap: 12px;
 }
 
 .profile-review-poster,
@@ -1022,9 +1061,17 @@ button.ghost-link {
   align-items: start;
 }
 
+.profile-review-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .profile-review-head h3,
 .profile-post-copy h3 {
   margin: 0 0 6px;
+  font-size: 1.34rem;
+  line-height: 1.12;
 }
 
 .profile-review-meta,
@@ -1037,29 +1084,95 @@ button.ghost-link {
 .profile-review-text {
   margin: 12px 0 0;
   color: #e8e8ef;
-  line-height: 1.7;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .profile-inline-actions {
   margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.profile-inline-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #e8e8ef;
+  font-size: 0.96rem;
+}
+
+.profile-inline-link {
+  margin-left: auto;
+}
+
+.profile-card-menu {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: 1px;
+  padding: 4px 0;
 }
 
 .profile-reaction-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 7px 12px;
   border-radius: 999px;
-  background: rgba(36, 201, 111, 0.14);
-  border: 1px solid rgba(36, 201, 111, 0.35);
-  color: #c7ffe0;
+  background: rgba(168, 83, 255, 0.24);
+  border: 1px solid rgba(168, 83, 255, 0.34);
+  color: #edd5ff;
   font-size: 0.82rem;
   white-space: nowrap;
 }
 
 .profile-interest-item strong {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+}
+
+.profile-interest-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.profile-main-panel .empty-state,
+.profile-interest-panel .empty-state {
+  margin: 0;
+}
+
+.profile-interest-panel .panel-header {
+  margin-bottom: 14px;
+}
+
+.profile-interest-panel h2 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.profile-main-panel {
+  padding: 18px;
+}
+
+.profile-main-panel .profile-panel-body {
+  padding: 6px 0 0;
+}
+
+.profile-interest-panel {
+  padding: 22px;
+}
+
+.profile-side-card {
+  padding: 22px;
 }
 
 .account-settings-nav {
