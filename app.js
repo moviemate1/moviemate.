@@ -1154,7 +1154,17 @@ async function syncSavedTitle(titleId) {
     saved.add(titleId);
   }
 
-  await persistUserProfile({ savedTitles: [...saved] });
+  currentUserProfile = normalizeUserProfile({
+    ...currentUserProfile,
+    savedTitles: [...saved]
+  });
+
+  try {
+    await persistUserProfile({ savedTitles: [...saved] });
+  } catch (error) {
+    console.warn("Saved titles synced locally, but profile sync failed.", error);
+  }
+
   await updateDoc(doc(db, TITLES_COLLECTION, titleId), {
     savesCount: increment(wasSaved ? -1 : 1)
   });
@@ -1173,7 +1183,17 @@ async function syncWatchStatus(titleId, nextStatus) {
     watchStatus[titleId] = nextStatus;
   }
 
-  await persistUserProfile({ watchStatus });
+  currentUserProfile = normalizeUserProfile({
+    ...currentUserProfile,
+    watchStatus
+  });
+
+  try {
+    await persistUserProfile({ watchStatus });
+  } catch (error) {
+    console.warn("Watch status synced locally, but profile sync failed.", error);
+  }
+
   return true;
 }
 
@@ -4264,8 +4284,14 @@ async function renderDetailsPage() {
       if (!requireAccount("save titles to your collections")) {
         return;
       }
-      await syncSavedTitle(saveButton.dataset.saveId);
-      await renderDetailsPage();
+      try {
+        await syncSavedTitle(saveButton.dataset.saveId);
+        await renderDetailsPage();
+        showMessage("#detailVoteMessage", isSavedTitle(saveButton.dataset.saveId) ? "Saved to your collection." : "Removed from your collection.");
+      } catch (error) {
+        console.error(error);
+        showMessage("#detailVoteMessage", "Could not update your collection right now.");
+      }
       return;
     }
 
@@ -4279,8 +4305,14 @@ async function renderDetailsPage() {
         return;
       }
 
-      await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
-      await renderDetailsPage();
+      try {
+        await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
+        await renderDetailsPage();
+        showMessage("#detailVoteMessage", "Watch status updated.");
+      } catch (error) {
+        console.error(error);
+        showMessage("#detailVoteMessage", "Could not update watch status right now.");
+      }
       return;
     }
 
@@ -4333,8 +4365,14 @@ async function renderDetailsPage() {
       if (!requireAccount("save titles to your collections")) {
         return;
       }
-      await syncSavedTitle(saveButton.dataset.saveId);
-      await renderDetailsPage();
+      try {
+        await syncSavedTitle(saveButton.dataset.saveId);
+        await renderDetailsPage();
+        showMessage("#detailVoteMessage", isSavedTitle(saveButton.dataset.saveId) ? "Saved to your collection." : "Removed from your collection.");
+      } catch (error) {
+        console.error(error);
+        showMessage("#detailVoteMessage", "Could not update your collection right now.");
+      }
       return;
     }
 
@@ -4348,8 +4386,14 @@ async function renderDetailsPage() {
         return;
       }
 
-      await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
-      await renderDetailsPage();
+      try {
+        await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
+        await renderDetailsPage();
+        showMessage("#detailVoteMessage", "Watch status updated.");
+      } catch (error) {
+        console.error(error);
+        showMessage("#detailVoteMessage", "Could not update watch status right now.");
+      }
     }
     });
 
