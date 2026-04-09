@@ -7,15 +7,15 @@ const TITLES_COLLECTION = "moviemate_titles";
 const PEOPLE_COLLECTION = "moviemate_people";
 const ALLOWED_LANGUAGE_CODES = new Set(["en", "hi", "ja", "ko", "ne", "ta", "te", "ml", "kn"]);
 const WATCH_PROVIDER_REGIONS = ["IN", "US", "GB"];
-const UPCOMING_PAGE_COUNT = 3;
-const BOLLYWOOD_PAGE_COUNT = 3;
-const SOUTH_PAGE_COUNT = 3;
-const POPULAR_PAGE_COUNT = 4;
-const TRENDING_PAGE_COUNT = 4;
-const TITLE_BATCH_SIZE = 80;
+const UPCOMING_PAGE_COUNT = 1;
+const BOLLYWOOD_PAGE_COUNT = 1;
+const SOUTH_PAGE_COUNT = 1;
+const POPULAR_PAGE_COUNT = 1;
+const TRENDING_PAGE_COUNT = 1;
+const TITLE_BATCH_SIZE = 20;
 const PEOPLE_BATCH_SIZE = 20;
-const MAX_TITLES_TO_SYNC = 220;
-const MAX_PEOPLE_TO_SYNC = 60;
+const MAX_TITLES_TO_SYNC = 60;
+const MAX_PEOPLE_TO_SYNC = 20;
 
 const requiredEnv = ["TMDB_TOKEN", "FIREBASE_SERVICE_ACCOUNT"];
 
