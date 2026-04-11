@@ -206,6 +206,9 @@ const DEFAULT_USER_PROFILE = {
   reactions: {},
   watchStatus: {},
   collections: [],
+  followers: [],
+  following: [],
+  notifications: [],
   createdAt: null,
   updatedAt: null
 };
@@ -400,7 +403,10 @@ function normalizeUserProfile(data = {}) {
     savedTitles: Array.isArray(data.savedTitles) ? data.savedTitles : [],
     reactions: data.reactions && typeof data.reactions === "object" ? data.reactions : {},
     watchStatus: normalizedWatchStatus,
-    collections: Array.isArray(data.collections) ? data.collections : []
+    collections: Array.isArray(data.collections) ? data.collections : [],
+    followers: Array.isArray(data.followers) ? data.followers : [],
+    following: Array.isArray(data.following) ? data.following : [],
+    notifications: Array.isArray(data.notifications) ? data.notifications : []
   };
 }
 
@@ -449,6 +455,37 @@ async function persistUserProfile(partial) {
 
   currentUserProfile = nextProfile;
   await setDoc(ref, nextProfile, { merge: true });
+}
+
+function updateTitleCacheEntry(titleId, updater) {
+  let nextEntry = null;
+
+  titlesCache = titlesCache.map((title) => {
+    if (title.id !== titleId) {
+      return title;
+    }
+
+    nextEntry = normalizeTitle(updater(title));
+    return nextEntry;
+  });
+
+  if (nextEntry) {
+    saveTitlesCacheToStorage(titlesCache);
+  }
+
+  return nextEntry;
+}
+
+function patchTitleCounters(titleId, counters = {}) {
+  updateTitleCacheEntry(titleId, (title) => {
+    const nextTitle = { ...title };
+
+    Object.entries(counters).forEach(([key, delta]) => {
+      nextTitle[key] = Math.max(0, Number(nextTitle[key] || 0) + Number(delta || 0));
+    });
+
+    return nextTitle;
+  });
 }
 
 function slugify(value) {
@@ -699,6 +736,7 @@ function normalizeTitle(docLike) {
     submittedBy: data.submittedBy || "",
     submittedByName: data.submittedByName || "",
     createdAt: data.createdAt || null,
+    updatedAt: data.updatedAt || null,
     votePerfect: Number(data.votePerfect || 0),
     voteGoForIt:
       Number(data.voteGoForIt || 0) || (!("voteGoForIt" in data) ? Number(data.likes || 0) : 0),
@@ -715,6 +753,7 @@ function normalizeTitle(docLike) {
     tmdbPopularity: Number(data.tmdbPopularity || 0),
     viewsCount: Number(data.viewsCount || 0),
     savesCount: Number(data.savesCount || 0),
+    interestedCount: Number(data.interestedCount || 0),
     importBuckets: Array.isArray(data.importBuckets) ? data.importBuckets : [],
     comments: Array.isArray(data.comments)
       ? data.comments.map((comment, index) => ({
@@ -884,9 +923,20 @@ async function syncSavedTitle(titleId) {
     saved.add(titleId);
   }
 
-  await persistUserProfile({ savedTitles: [...saved] });
-  await updateDoc(doc(db, TITLES_COLLECTION, titleId), {
+  currentUserProfile = normalizeUserProfile({
+    ...currentUserProfile,
+    savedTitles: [...saved]
+  });
+  patchTitleCounters(titleId, { savesCount: wasSaved ? -1 : 1 });
+
+  persistUserProfile({ savedTitles: [...saved] }).catch((error) => {
+    console.warn("Saved titles synced locally, but profile sync failed.", error);
+  });
+
+  updateDoc(doc(db, TITLES_COLLECTION, titleId), {
     savesCount: increment(wasSaved ? -1 : 1)
+  }).catch((error) => {
+    console.warn("Collection aggregate sync failed.", error);
   });
   return true;
 }
@@ -897,13 +947,38 @@ async function syncWatchStatus(titleId, nextStatus) {
   }
 
   const watchStatus = { ...(currentUserProfile?.watchStatus || {}) };
-  if (nextStatus === "clear" || !nextStatus) {
+  const currentStatus = normalizeWatchStatusValue(watchStatus[titleId] || "");
+  const resolvedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
+  const beforeInterested = currentStatus === "interested";
+  const afterInterested = resolvedNextStatus === "interested";
+
+  if (!resolvedNextStatus) {
     delete watchStatus[titleId];
   } else {
-    watchStatus[titleId] = nextStatus;
+    watchStatus[titleId] = resolvedNextStatus;
   }
 
-  await persistUserProfile({ watchStatus });
+  currentUserProfile = normalizeUserProfile({
+    ...currentUserProfile,
+    watchStatus
+  });
+
+  if (beforeInterested !== afterInterested) {
+    patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
+  }
+
+  persistUserProfile({ watchStatus }).catch((error) => {
+    console.warn("Watch status synced locally, but profile sync failed.", error);
+  });
+
+  if (beforeInterested !== afterInterested) {
+    updateDoc(doc(db, TITLES_COLLECTION, titleId), {
+      interestedCount: increment(afterInterested ? 1 : -1)
+    }).catch((error) => {
+      console.warn("Interested aggregate sync failed.", error);
+    });
+  }
+
   return true;
 }
 
@@ -1538,13 +1613,7 @@ function getHeroLaunchLabel(title) {
 }
 
 function getInterestedCount(title) {
-  const stats = getReactionStats(title);
-  const popularity = Number(title.tmdbPopularity || 0);
-  const saves = Number(title.savesCount || 0);
-  const votes = stats.total;
-  const baseline = title.status === "Upcoming" ? 2400 : 1200;
-  const estimate = Math.round(popularity * 100 + saves * 22 + votes * 28 + baseline);
-  return Math.max(estimate, votes * 12 + 300);
+  return Number(title.interestedCount || 0);
 }
 
 function movieCardTemplate(title) {
@@ -1763,6 +1832,7 @@ function isInsideInterestWindow(title, windowKey) {
 function getInterestScore(title) {
   const stats = getReactionStats(title);
   const popularity = Number(title.tmdbPopularity || 0);
+  const interested = getInterestedCount(title);
   const votes =
     Number(title.votePerfect || 0) +
     Number(title.voteGoForIt || 0) +
@@ -1770,8 +1840,9 @@ function getInterestScore(title) {
     Number(title.voteSkip || 0);
 
   return (
+    interested * 20 +
     stats.recommendedPercent * 2 +
-    popularity * 0.45 +
+    popularity * 0.2 +
     votes * 6 +
     (title.trending ? 26 : 0) +
     (title.pinned ? 16 : 0) +
@@ -2132,7 +2203,12 @@ function renderSearchSuggestions(titles) {
         title.genre,
         title.type,
         title.language.join(" "),
-        formatPlatforms(title.platforms)
+        formatPlatforms(title.platforms),
+        title.director,
+        title.mainLead,
+        title.heroine,
+        ...(title.cast || []).map((person) => `${person.name} ${person.role || ""}`),
+        ...(title.crew || []).map((person) => `${person.name} ${person.role || ""}`)
       ]
         .join(" ")
         .toLowerCase();
@@ -2841,6 +2917,59 @@ function userNotificationTemplate(item) {
 }
 
 function buildUserNotifications(titles) {
+  const profile = currentUserProfile || DEFAULT_USER_PROFILE;
+  const savedSet = new Set(profile.savedTitles || []);
+  const activeWatchTitles = new Set(
+    Object.entries(profile.watchStatus || {})
+      .filter(([, value]) => Boolean(normalizeWatchStatusValue(value)))
+      .map(([titleId]) => titleId)
+  );
+  const derivedNotifications = titles
+    .filter((title) => savedSet.has(title.id) || activeWatchTitles.has(title.id))
+    .flatMap((title) => {
+      const items = [];
+      const createdAtMs = getCreatedAtMs(title.createdAt);
+      const updatedAtMs = getCreatedAtMs(title.updatedAt);
+
+      if (title.status === "Upcoming" && title.releaseDate) {
+        const releaseDate = new Date(`${title.releaseDate}T00:00:00`);
+        const today = new Date();
+
+        if (!Number.isNaN(releaseDate.getTime()) && releaseDate.getTime() <= today.getTime()) {
+          items.push({
+            id: `release-${title.id}-${title.releaseDate}`,
+            label: "Saved title released",
+            title: title.title,
+            copy: `${title.type} • ${formatReleaseDate(title.releaseDate)} • now ready to watch.`,
+            href: buildTitleUrl(title.id),
+            createdAtMs: updatedAtMs || createdAtMs
+          });
+        }
+      }
+
+      if (updatedAtMs) {
+        items.push({
+          id: `update-${title.id}-${updatedAtMs}`,
+          label: "Title updated",
+          title: title.title,
+          copy: "New updates landed for a title you saved or marked as interested.",
+          href: buildTitleUrl(title.id),
+          createdAtMs: updatedAtMs
+        });
+      }
+
+      return items;
+    });
+
+  const directNotifications = (profile.notifications || []).map((entry) => ({
+    id: entry.id,
+    label: entry.label,
+    title: entry.title,
+    copy: entry.copy,
+    href: entry.href,
+    createdAtMs: getCreatedAtMs(entry.createdAt)
+  }));
+
   const recentTitles = [...titles]
     .filter((title) => getCreatedAtMs(title.createdAt) > 0)
     .sort((a, b) => getCreatedAtMs(b.createdAt) - getCreatedAtMs(a.createdAt))
@@ -2864,7 +2993,10 @@ function buildUserNotifications(titles) {
       createdAtMs: 0
     }));
 
-  return [...recentTitles, ...allTimeGreats];
+  return [...directNotifications, ...derivedNotifications, ...recentTitles, ...allTimeGreats]
+    .filter((item, index, array) => array.findIndex((candidate) => candidate.id === item.id) === index)
+    .sort((left, right) => right.createdAtMs - left.createdAtMs)
+    .slice(0, 12);
 }
 
 function renderUserNotifications(titles) {
@@ -2900,7 +3032,12 @@ function filterTitles(titles) {
       title.description.toLowerCase().includes(searchValue) ||
       title.genre.toLowerCase().includes(searchValue) ||
       title.language.join(" ").toLowerCase().includes(searchValue) ||
-      formatPlatforms(title.platforms).toLowerCase().includes(searchValue);
+      formatPlatforms(title.platforms).toLowerCase().includes(searchValue) ||
+      String(title.director || "").toLowerCase().includes(searchValue) ||
+      String(title.mainLead || "").toLowerCase().includes(searchValue) ||
+      String(title.heroine || "").toLowerCase().includes(searchValue) ||
+      (title.cast || []).some((person) => `${person.name} ${person.role || ""}`.toLowerCase().includes(searchValue)) ||
+      (title.crew || []).some((person) => `${person.name} ${person.role || ""}`.toLowerCase().includes(searchValue));
     const typeMatch = typeValue === "all" || title.type === typeValue;
     const genreMatch = genreValue === "all" || title.genre === genreValue;
     const languageMatch = languageValue === "all" || title.language.includes(languageValue);
@@ -3605,7 +3742,7 @@ async function reactToTitle(titleId, nextReaction) {
 
   const currentReaction = getReaction(titleId);
 
-  if (!(nextReaction in REACTION_OPTIONS) || currentReaction === nextReaction) {
+  if (!(nextReaction in REACTION_OPTIONS)) {
     return false;
   }
 
@@ -3618,9 +3755,12 @@ async function reactToTitle(titleId, nextReaction) {
 
   const positiveReactions = new Set(["perfect", "goForIt"]);
   const negativeReactions = new Set(["skip"]);
-  const updates = {
-    [fieldMap[nextReaction]]: increment(1)
-  };
+  const updates = {};
+  const isClearing = currentReaction === nextReaction;
+
+  if (!isClearing) {
+    updates[fieldMap[nextReaction]] = increment(1);
+  }
 
   if (currentReaction && fieldMap[currentReaction]) {
     updates[fieldMap[currentReaction]] = increment(-1);
@@ -3633,7 +3773,7 @@ async function reactToTitle(titleId, nextReaction) {
     likesDelta -= 1;
   }
 
-  if (positiveReactions.has(nextReaction)) {
+  if (!isClearing && positiveReactions.has(nextReaction)) {
     likesDelta += 1;
   }
 
@@ -3641,7 +3781,7 @@ async function reactToTitle(titleId, nextReaction) {
     dislikesDelta -= 1;
   }
 
-  if (negativeReactions.has(nextReaction)) {
+  if (!isClearing && negativeReactions.has(nextReaction)) {
     dislikesDelta += 1;
   }
 
@@ -3653,17 +3793,51 @@ async function reactToTitle(titleId, nextReaction) {
     updates.dislikes = increment(dislikesDelta);
   }
 
-  await updateDoc(doc(db, TITLES_COLLECTION, titleId), updates);
+  updateTitleCacheEntry(titleId, (title) => ({
+    ...title,
+    votePerfect: Math.max(
+      0,
+      Number(title.votePerfect || 0) +
+        (currentReaction === "perfect" ? -1 : 0) +
+        (!isClearing && nextReaction === "perfect" ? 1 : 0)
+    ),
+    voteGoForIt: Math.max(
+      0,
+      Number(title.voteGoForIt || 0) +
+        (currentReaction === "goForIt" ? -1 : 0) +
+        (!isClearing && nextReaction === "goForIt" ? 1 : 0)
+    ),
+    voteTimepass: Math.max(
+      0,
+      Number(title.voteTimepass || 0) +
+        (currentReaction === "timepass" ? -1 : 0) +
+        (!isClearing && nextReaction === "timepass" ? 1 : 0)
+    ),
+    voteSkip: Math.max(
+      0,
+      Number(title.voteSkip || 0) +
+        (currentReaction === "skip" ? -1 : 0) +
+        (!isClearing && nextReaction === "skip" ? 1 : 0)
+    ),
+    likes: Math.max(0, Number(title.likes || 0) + likesDelta),
+    dislikes: Math.max(0, Number(title.dislikes || 0) + dislikesDelta)
+  }));
 
-  setReaction(titleId, nextReaction);
+  setReaction(titleId, isClearing ? "" : nextReaction);
+  persistUserProfile({
+    reactions: { ...(currentUserProfile?.reactions || {}) }
+  }).catch((error) => {
+    console.warn("Reaction saved locally, but profile sync failed.", error);
+  });
 
-  if (isSignedIn()) {
-    await persistUserProfile({
-      reactions: { ...(currentUserProfile?.reactions || {}) }
-    });
-  }
+  updateDoc(doc(db, TITLES_COLLECTION, titleId), updates).catch((error) => {
+    console.warn("Vote aggregate sync failed.", error);
+  });
 
-  return true;
+  return {
+    ok: true,
+    cleared: isClearing
+  };
 }
 
 async function deleteTitle(titleId) {
@@ -5287,7 +5461,6 @@ async function refreshCurrentPage() {
   }
 
   if (document.body.dataset.page === "details") {
-    await fetchTitles();
     await renderDetailsPage();
     updateOwnerToggle();
     return;
@@ -5331,14 +5504,13 @@ async function trackTitleView(titleId) {
   }
 
   sessionStorage.setItem(viewKey, "true");
+  patchTitleCounters(titleId, { viewsCount: 1 });
 
-  try {
-    await updateDoc(doc(db, TITLES_COLLECTION, titleId), {
-      viewsCount: increment(1)
-    });
-  } catch (error) {
+  updateDoc(doc(db, TITLES_COLLECTION, titleId), {
+    viewsCount: increment(1)
+  }).catch((error) => {
     console.error(error);
-  }
+  });
 }
 
 function setupUserNotificationsModal() {
@@ -5614,7 +5786,6 @@ async function init() {
   }
 
   if (document.body.dataset.page === "details") {
-    await fetchTitles();
     await renderDetailsPage();
     updateOwnerToggle();
   }
