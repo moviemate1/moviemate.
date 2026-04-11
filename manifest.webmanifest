@@ -1,0 +1,18 @@
+{
+  "name": "MovieMate",
+  "short_name": "MovieMate",
+  "description": "Discover movies and series through community picks, reviews, collections, and upcoming releases.",
+  "start_url": "/explore/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#070707",
+  "theme_color": "#0a0a0f",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
