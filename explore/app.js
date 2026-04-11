@@ -34,6 +34,7 @@ const OWNER_MODE_KEY = "moviemate_owner_mode";
 const USER_NOTIFICATIONS_SEEN_KEY = "moviemate_notifications_seen_at";
 const TITLES_CACHE_KEY = "moviemate_titles_cache_v1";
 const HOMEPAGE_CONTENT_CACHE_KEY = "moviemate_homepage_content_cache_v1";
+const INSTALL_BANNER_DISMISSED_KEY = "moviemate_install_banner_dismissed_v2";
 const SEARCH_PAGE_SIZE = 24;
 const OWNER_PASSCODE = "1A2b3456@";
 const OWNER_NOTIFICATION_TOAST_MS = 3200;
@@ -185,6 +186,7 @@ let homepageContentPromise = null;
 let currentUser = null;
 let currentUserProfile = null;
 let browseVisibleCount = SEARCH_PAGE_SIZE;
+let deferredInstallPrompt = null;
 let pendingNotificationState = {
   count: null,
   unsubscribe: null
@@ -5391,6 +5393,99 @@ function setupScrollControls() {
   });
 }
 
+function isMobileInstallEligible() {
+  const isMobileViewport = window.matchMedia("(max-width: 820px)").matches;
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+
+  return isMobileViewport && !isStandalone;
+}
+
+function hideInstallBanner() {
+  const banner = document.querySelector("#installBanner");
+  banner?.classList.remove("visible");
+}
+
+function showInstallBanner() {
+  if (!isMobileInstallEligible()) {
+    return;
+  }
+
+  if (localStorage.getItem(INSTALL_BANNER_DISMISSED_KEY) === "true") {
+    return;
+  }
+
+  const banner = document.querySelector("#installBanner");
+  banner?.classList.add("visible");
+}
+
+function dismissInstallBanner() {
+  localStorage.setItem(INSTALL_BANNER_DISMISSED_KEY, "true");
+  hideInstallBanner();
+}
+
+function setupInstallBanner() {
+  const banner = document.querySelector("#installBanner");
+  const actionButton = document.querySelector("#installBannerAction");
+  const closeButton = document.querySelector("#installBannerClose");
+
+  if (!banner || !actionButton || !closeButton) {
+    return;
+  }
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    showInstallBanner();
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    dismissInstallBanner();
+  });
+
+  closeButton.addEventListener("click", dismissInstallBanner);
+
+  actionButton.addEventListener("click", async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice.catch(() => null);
+      deferredInstallPrompt = null;
+      dismissInstallBanner();
+      return;
+    }
+
+    if (/iphone|ipad|ipod/i.test(window.navigator.userAgent)) {
+      window.alert("Use Safari Share > Add to Home Screen to install MovieMate.");
+      dismissInstallBanner();
+      return;
+    }
+
+    window.alert("Use your browser menu and choose Install app or Add to Home screen to install MovieMate.");
+    dismissInstallBanner();
+  });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/service-worker.js").catch((error) => {
+        console.warn("Could not register service worker", error);
+      });
+    });
+  }
+
+  window.addEventListener("resize", () => {
+    if (!isMobileInstallEligible()) {
+      hideInstallBanner();
+      return;
+    }
+
+    if (deferredInstallPrompt && localStorage.getItem(INSTALL_BANNER_DISMISSED_KEY) !== "true") {
+      showInstallBanner();
+    }
+  });
+}
+
 function setupSaveButtons() {
   document.addEventListener("click", async (event) => {
     const button = event.target.closest(".save-title-btn");
@@ -5503,6 +5598,7 @@ async function init() {
   setupSpoilerToggle();
 
   if (document.body.dataset.page === "home") {
+    setupInstallBanner();
     setupFilters();
     setupLoadMore();
     setupScheduleControls();
@@ -5514,6 +5610,7 @@ async function init() {
     setupSuggestForm();
     await renderHomePage();
     refreshHomePageInBackground();
+    window.setTimeout(showInstallBanner, 1200);
   }
 
   if (document.body.dataset.page === "details") {
