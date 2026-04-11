@@ -188,6 +188,7 @@ let usersCache = [];
 let usersCachePromise = null;
 let currentUser = null;
 let currentUserProfile = null;
+let hasResolvedAuthState = false;
 let viewedProfileUid = null;
 let viewedProfileData = null;
 const userProfilesCache = new Map();
@@ -2448,7 +2449,7 @@ function commentTemplate(comment) {
   const canEditOwn = Boolean(viewerUid && comment.userId === viewerUid);
   const likedHelpful = Boolean(viewerUid && Array.isArray(comment.helpfulBy) && comment.helpfulBy.includes(viewerUid));
   const managementControls =
-    isOwnerMode() || canEditOwn
+    canEditOwn
       ? `
           <div class="comment-actions">
             ${
@@ -5641,7 +5642,7 @@ function setupCommentDeleteButtons() {
 
     const title = titlesCache.find((entry) => entry.id === titleId);
     const comment = title?.comments?.find((entry) => entry.id === button.dataset.commentId);
-    const canDelete = isOwnerMode() || Boolean(comment?.userId && comment.userId === currentUser?.uid);
+    const canDelete = Boolean(comment?.userId && comment.userId === currentUser?.uid);
 
     if (!canDelete) {
       return;
@@ -6269,6 +6270,17 @@ function renderProfilePage() {
     return;
   }
 
+  if (!hasResolvedAuthState) {
+    target.innerHTML = `
+      <section class="account-empty-state">
+        <p class="eyebrow">MovieMate account</p>
+        <h1>Loading your profile...</h1>
+        <p class="section-copy">We are restoring your MovieMate session.</p>
+      </section>
+    `;
+    return;
+  }
+
   if (!isSignedIn() || !currentUserProfile) {
     target.innerHTML = `
       <section class="account-empty-state">
@@ -6426,6 +6438,17 @@ function renderAccountPage() {
   const target = document.querySelector("#accountPage");
 
   if (!target) {
+    return;
+  }
+
+  if (!hasResolvedAuthState) {
+    target.innerHTML = `
+      <section class="account-empty-state">
+        <p class="eyebrow">Account settings</p>
+        <h1>Loading your account...</h1>
+        <p class="section-copy">We are restoring your MovieMate session.</p>
+      </section>
+    `;
     return;
   }
 
@@ -7188,6 +7211,7 @@ async function init() {
     } else {
       currentUserProfile = null;
     }
+    hasResolvedAuthState = true;
 
     updateAuthUI();
 
