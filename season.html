@@ -3,8 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MovieMate | Account Settings</title>
-    <meta name="description" content="Edit your MovieMate profile, bio, socials, and account settings." />
+    <title>MovieMate | Season Details</title>
+    <meta
+      name="description"
+      content="Explore a TV season, track watched progress, and read season-specific reviews on MovieMate."
+    />
     <meta name="theme-color" content="#0a0a0f" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -13,45 +16,36 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=38" />
+    <link rel="stylesheet" href="styles.css?v=50" />
   </head>
-  <body data-page="account">
+  <body data-page="season">
     <div class="page-shell detail-shell">
-      <header class="explore-header">
-        <nav class="explore-topbar">
-          <div class="explore-topbar-left">
-            <a class="home-chip" href="/explore/#trending" aria-label="Go to explore">⌂</a>
-            <a class="brand brand-compact" href="/explore/">
-              <span class="brand-mark" aria-hidden="true"></span>
-              <span class="brand-text">MovieMate</span>
-            </a>
-            <span class="beta-chip">settings</span>
-          </div>
-          <div class="explore-nav-center">
-            <a class="explore-nav-link" href="/explore/#trending"><span>◉</span> Explore</a>
-            <a class="explore-nav-link" href="profile.html"><span>☺</span> My Profile</a>
-            <a class="explore-nav-link" href="my-reviews.html"><span>◌</span> My Reviews</a>
-            <a class="explore-nav-link active" href="account.html"><span>◈</span> Settings</a>
-          </div>
-          <div class="explore-actions-right">
-            <div class="account-menu-wrap">
-              <button class="avatar-chip auth-chip account-chip" data-auth-toggle type="button" aria-label="MovieMate account">
-                <span class="account-chip-avatar hidden" data-account-avatar>MM</span>
-                <span class="account-chip-label" data-account-label>Sign In</span>
-              </button>
-              <div class="account-menu hidden" aria-hidden="true">
-                <a class="account-menu-link hidden" data-account-only data-profile-link href="profile.html">My Profile</a>
-                <a class="account-menu-link hidden" data-account-only href="my-reviews.html">My Reviews</a>
-                <a class="account-menu-link hidden" data-account-only data-account-settings-link href="account.html">Settings</a>
-                <button class="account-menu-link hidden danger" data-account-only data-signout-action type="button">Logout</button>
-                <button class="account-menu-link" data-signed-out-only data-signin-action type="button">Sign In</button>
-              </div>
+      <nav class="topbar compact">
+        <a class="brand" href="/explore/">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-text">MovieMate</span>
+        </a>
+        <div class="topbar-actions">
+          <a class="ghost-link" href="/explore/">Back to Browse</a>
+          <a class="ghost-link" href="contact.html">Contact</a>
+          <button class="ghost-link" id="ownerToggle" type="button">Owner Mode</button>
+          <div class="account-menu-wrap">
+            <button class="ghost-link account-top-link" data-auth-toggle type="button">
+              <span class="account-chip-avatar hidden" data-account-avatar>MM</span>
+              <span class="account-chip-label" data-account-label>Sign In</span>
+            </button>
+            <div class="account-menu hidden" aria-hidden="true">
+              <a class="account-menu-link hidden" data-account-only data-profile-link href="profile.html">My Profile</a>
+              <a class="account-menu-link hidden" data-account-only href="my-reviews.html">My Reviews</a>
+              <a class="account-menu-link hidden" data-account-only data-account-settings-link href="account.html">Settings</a>
+              <button class="account-menu-link hidden danger" data-account-only data-signout-action type="button">Logout</button>
+              <button class="account-menu-link" data-signed-out-only data-signin-action type="button">Sign In</button>
             </div>
           </div>
-        </nav>
-      </header>
+        </div>
+      </nav>
 
-      <main class="account-page" id="accountPage"></main>
+      <main class="detail-page" id="seasonPage"></main>
     </div>
 
     <div class="overlay-modal hidden" id="authModal" aria-hidden="true">

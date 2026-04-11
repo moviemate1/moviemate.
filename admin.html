@@ -3,8 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MovieMate | Account Settings</title>
-    <meta name="description" content="Edit your MovieMate profile, bio, socials, and account settings." />
+    <title>MovieMate | Admin Dashboard</title>
+    <meta
+      name="description"
+      content="Open the MovieMate owner dashboard for user, title, and moderation analytics."
+    />
     <meta name="theme-color" content="#0a0a0f" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -13,9 +16,9 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=38" />
+    <link rel="stylesheet" href="styles.css?v=50" />
   </head>
-  <body data-page="account">
+  <body data-page="admin">
     <div class="page-shell detail-shell">
       <header class="explore-header">
         <nav class="explore-topbar">
@@ -25,15 +28,15 @@
               <span class="brand-mark" aria-hidden="true"></span>
               <span class="brand-text">MovieMate</span>
             </a>
-            <span class="beta-chip">settings</span>
+            <span class="beta-chip">admin</span>
           </div>
           <div class="explore-nav-center">
             <a class="explore-nav-link" href="/explore/#trending"><span>◉</span> Explore</a>
             <a class="explore-nav-link" href="profile.html"><span>☺</span> My Profile</a>
-            <a class="explore-nav-link" href="my-reviews.html"><span>◌</span> My Reviews</a>
-            <a class="explore-nav-link active" href="account.html"><span>◈</span> Settings</a>
+            <a class="explore-nav-link active" href="admin.html"><span>★</span> Admin</a>
           </div>
           <div class="explore-actions-right">
+            <button class="ghost-link" id="ownerToggle" type="button">Owner Mode</button>
             <div class="account-menu-wrap">
               <button class="avatar-chip auth-chip account-chip" data-auth-toggle type="button" aria-label="MovieMate account">
                 <span class="account-chip-avatar hidden" data-account-avatar>MM</span>
@@ -51,7 +54,7 @@
         </nav>
       </header>
 
-      <main class="account-page" id="accountPage"></main>
+      <main class="collection-page" id="adminPage"></main>
     </div>
 
     <div class="overlay-modal hidden" id="authModal" aria-hidden="true">
