@@ -28,6 +28,7 @@ import { firebaseConfig } from "/firebase-config.js";
 const TITLES_COLLECTION = "moviemate_titles";
 const SETTINGS_COLLECTION = "moviemate_settings";
 const USERS_COLLECTION = "moviemate_users";
+const TITLE_COMMENTS_SUBCOLLECTION = "comments";
 const HOMEPAGE_DOC_ID = "homepage";
 const REACTIONS_STORAGE_KEY = "moviemate_reactions";
 const SAVED_TITLES_STORAGE_KEY = "moviemate_saved_titles";
@@ -4041,17 +4042,17 @@ async function addComment(titleId, form) {
     return false;
   }
 
-  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+  const commentId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const commentRef = doc(db, TITLES_COLLECTION, titleId, TITLE_COMMENTS_SUBCOLLECTION, commentId);
+
   await withActionTimeout(
-    updateDoc(titleRef, {
-      comments: arrayUnion({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        userId: currentUser?.uid || "",
-        name,
-        text,
-        spoiler,
-        createdAt: new Date().toISOString()
-      })
+    setDoc(commentRef, {
+      id: commentId,
+      userId: currentUser?.uid || "",
+      name,
+      text,
+      spoiler,
+      createdAt: new Date().toISOString()
     }),
     "comment post"
   );
@@ -4106,6 +4107,15 @@ function getActionErrorMessage(error, fallback = "Could not update right now.") 
 }
 
 async function deleteComment(titleId, commentId) {
+  const commentRef = doc(db, TITLES_COLLECTION, titleId, TITLE_COMMENTS_SUBCOLLECTION, commentId);
+
+  try {
+    await deleteDoc(commentRef);
+    return;
+  } catch (error) {
+    console.warn("Could not delete from comment subcollection, trying legacy comment array.", error);
+  }
+
   const titleRef = doc(db, TITLES_COLLECTION, titleId);
 
   await runTransaction(db, async (transaction) => {
@@ -4120,6 +4130,44 @@ async function deleteComment(titleId, commentId) {
       comments: data.comments.filter((comment) => comment.id !== commentId)
     });
   });
+}
+
+async function fetchTitleComments(titleId, legacyComments = []) {
+  const normalizedLegacyComments = Array.isArray(legacyComments)
+    ? legacyComments.map((comment, index) => ({
+        id: comment.id || `${titleId}-legacy-${index}`,
+        userId: comment.userId || "",
+        name: comment.name || "Anonymous",
+        text: comment.text || "",
+        spoiler: Boolean(comment.spoiler),
+        createdAt: comment.createdAt || null,
+        reports: Array.isArray(comment.reports) ? comment.reports : []
+      }))
+    : [];
+
+  try {
+    const snapshot = await getDocs(collection(db, TITLES_COLLECTION, titleId, TITLE_COMMENTS_SUBCOLLECTION));
+    const subcollectionComments = snapshot.docs.map((commentDoc) => {
+      const data = commentDoc.data() || {};
+
+      return {
+        id: data.id || commentDoc.id,
+        userId: data.userId || "",
+        name: data.name || "Anonymous",
+        text: data.text || "",
+        spoiler: Boolean(data.spoiler),
+        createdAt: data.createdAt || null,
+        reports: Array.isArray(data.reports) ? data.reports : []
+      };
+    });
+
+    const merged = [...subcollectionComments, ...normalizedLegacyComments.filter((legacyComment) => !subcollectionComments.some((comment) => comment.id === legacyComment.id))];
+
+    return merged.sort((left, right) => getCreatedAtMs(right.createdAt) - getCreatedAtMs(left.createdAt));
+  } catch (error) {
+    console.warn("Could not load comment subcollection, using legacy comments only.", error);
+    return normalizedLegacyComments.sort((left, right) => getCreatedAtMs(right.createdAt) - getCreatedAtMs(left.createdAt));
+  }
 }
 
 async function renderDetailsPage() {
@@ -4146,6 +4194,7 @@ async function renderDetailsPage() {
     }
 
     const title = normalizeTitle(snapshot);
+    title.comments = await fetchTitleComments(title.id, title.comments);
     titlesCache = [...titlesCache.filter((item) => item.id !== title.id), title];
 
     if (!title.approved && !isOwnerMode()) {
