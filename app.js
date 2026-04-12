@@ -1892,42 +1892,23 @@ async function handleDetailWatchStatusClick(titleId) {
     return false;
   }
 
+  const previousStatus = getTitleWatchStatus(titleId);
   const nextStatus = getNextPrimaryWatchStatus(titleId);
   detailWatchRequestsInFlight.add(titleId);
-  const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
-  const optimisticTitle = getCachedTitleById(titleId);
-  if (optimisticTitle) {
-    detailOptimisticInterestedCounts.set(titleId, getInterestedCount(optimisticTitle));
-  }
-  updateDetailActionUI(titleId);
 
   try {
-    const result = await syncWatchStatus(titleId, localSnapshot?.previousStatus || "", nextStatus);
+    const result = await syncWatchStatus(titleId, previousStatus, nextStatus);
     if (typeof result?.interestedCount === "number") {
       setTitleCounters(titleId, { interestedCount: result.interestedCount });
-      detailOptimisticInterestedCounts.set(titleId, Math.max(0, Number(result.interestedCount || 0)));
     }
     updateDetailActionUI(titleId);
     showMessage("#detailVoteMessage", "Watch status updated.");
-    detailOptimisticInterestedCounts.delete(titleId);
-    updateDetailActionUI(titleId);
     return true;
   } catch (error) {
     console.error(error);
-    rollbackLocalWatchStatus(localSnapshot, titleId);
-
-    if (currentUser) {
-      try {
-        await ensureUserProfile(currentUser);
-      } catch (profileError) {
-        console.error(profileError);
-      }
-    }
 
     updateDetailActionUI(titleId);
     showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
-    detailOptimisticInterestedCounts.delete(titleId);
-    updateDetailActionUI(titleId);
     return false;
   } finally {
     detailWatchRequestsInFlight.delete(titleId);
