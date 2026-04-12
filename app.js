@@ -7,6 +7,7 @@ import {
   getDoc,
   getDocFromServer,
   getDocs,
+  getDocsFromServer,
   getFirestore,
   increment,
   onSnapshot,
@@ -1667,7 +1668,17 @@ async function syncInterestedAggregate(titleId, delta) {
 }
 
 async function calculateInterestedCountFromProfiles(titleId) {
-  const usersSnapshot = await withActionTimeout(getDocs(collection(db, USERS_COLLECTION)), "interest count load");
+  let usersSnapshot;
+
+  try {
+    usersSnapshot = await withActionTimeout(
+      getDocsFromServer(collection(db, USERS_COLLECTION)),
+      "interest count load"
+    );
+  } catch (error) {
+    console.warn("Falling back to cached user profile read for interest count.", error);
+    usersSnapshot = await withActionTimeout(getDocs(collection(db, USERS_COLLECTION)), "interest count load");
+  }
 
   return usersSnapshot.docs.reduce((total, profileDoc) => {
     const status = normalizeWatchStatusValue(profileDoc.data()?.watchStatus?.[titleId] || "");
