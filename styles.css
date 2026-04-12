@@ -3011,16 +3011,31 @@ button.ghost-link {
 }
 
 .detail-fact-platform {
+  align-content: start;
   min-height: 108px;
 }
 
-.detail-platform-value {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  line-height: 1.35;
+.detail-platform-list {
+  display: grid;
+  gap: 8px;
+}
+
+.detail-platform-chip,
+.detail-platform-empty {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.25;
   word-break: break-word;
+}
+
+.detail-platform-empty {
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .detail-hero-description {

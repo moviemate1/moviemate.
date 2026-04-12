@@ -1837,14 +1837,19 @@ function getComparableReleaseDate(value) {
   return parsed.toISOString().slice(0, 10);
 }
 
-function formatPlatforms(platforms = [], limit = 3) {
+function getPrimaryPlatforms(platforms = [], limit = 3) {
   const cleanedPlatforms = [...new Set((platforms || []).map((platform) => String(platform || "").trim()).filter(Boolean))];
+  return cleanedPlatforms.slice(0, limit);
+}
 
-  if (!cleanedPlatforms.length) {
+function formatPlatforms(platforms = [], limit = 3) {
+  const primaryPlatforms = getPrimaryPlatforms(platforms, limit);
+
+  if (!primaryPlatforms.length) {
     return "Platform not added";
   }
 
-  return cleanedPlatforms.slice(0, limit).join(", ");
+  return primaryPlatforms.join(", ");
 }
 
 async function shareTitle(title) {
@@ -5239,7 +5244,16 @@ async function renderDetailsPage() {
     const leadCreditLabel = title.type === "Series" ? "Showrunner" : "Directed by";
     const commentSectionCopy = getCommentSectionCopy(title);
     const primaryLanguage = title.language?.[0] || "Not added";
-    const primaryPlatform = formatPlatforms(title.platforms);
+    const primaryPlatforms = getPrimaryPlatforms(title.platforms);
+    const primaryPlatformMarkup = primaryPlatforms.length
+      ? `
+          <div class="detail-platform-list">
+            ${primaryPlatforms
+              .map((platform) => `<span class="detail-platform-chip">${escapeHtml(platform)}</span>`)
+              .join("")}
+          </div>
+        `
+      : '<strong class="detail-platform-empty">Platform not added</strong>';
     const currentWatchStatus = getTitleWatchStatus(title.id);
     const primaryWatchButton = getPrimaryWatchButtonState(title, currentWatchStatus);
     const memberReady = isSignedIn();
@@ -5288,7 +5302,7 @@ async function renderDetailsPage() {
               </div>
               <div class="detail-fact detail-fact-platform">
                 <span>Platform</span>
-                <strong class="detail-platform-value">${escapeHtml(primaryPlatform)}</strong>
+                ${primaryPlatformMarkup}
               </div>
               <div class="detail-fact">
                 <span>Release</span>
