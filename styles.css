@@ -3010,6 +3010,19 @@ button.ghost-link {
   font-size: 1rem;
 }
 
+.detail-fact-platform {
+  min-height: 108px;
+}
+
+.detail-platform-value {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
 .detail-hero-description {
   margin: 18px 0 0;
   max-width: 70ch;

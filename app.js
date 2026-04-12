@@ -1837,8 +1837,14 @@ function getComparableReleaseDate(value) {
   return parsed.toISOString().slice(0, 10);
 }
 
-function formatPlatforms(platforms = []) {
-  return platforms.length ? platforms.join(", ") : "Platform not added";
+function formatPlatforms(platforms = [], limit = 3) {
+  const cleanedPlatforms = [...new Set((platforms || []).map((platform) => String(platform || "").trim()).filter(Boolean))];
+
+  if (!cleanedPlatforms.length) {
+    return "Platform not added";
+  }
+
+  return cleanedPlatforms.slice(0, limit).join(", ");
 }
 
 async function shareTitle(title) {
@@ -5280,9 +5286,9 @@ async function renderDetailsPage() {
                 <span>Language</span>
                 <strong>${escapeHtml(primaryLanguage)}</strong>
               </div>
-              <div class="detail-fact">
+              <div class="detail-fact detail-fact-platform">
                 <span>Platform</span>
-                <strong>${escapeHtml(primaryPlatform)}</strong>
+                <strong class="detail-platform-value">${escapeHtml(primaryPlatform)}</strong>
               </div>
               <div class="detail-fact">
                 <span>Release</span>
