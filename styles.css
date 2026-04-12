@@ -3301,6 +3301,14 @@ button.ghost-link {
   transition: color 160ms ease, text-shadow 160ms ease, transform 160ms ease;
 }
 
+.genre-chart-core strong {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  transition: color 160ms ease, text-shadow 160ms ease, transform 160ms ease;
+}
+
 .meter-core span,
 .genre-chart-core span {
   color: var(--muted);
