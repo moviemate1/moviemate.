@@ -3263,18 +3263,18 @@ button.ghost-link {
 .genre-chart {
   --meter-focus-glow: rgba(128, 94, 255, 0.2);
   --meter-focus-ring: rgba(128, 94, 255, 0.5);
-  filter: saturate(1.08) brightness(1.02);
+  filter: saturate(1.05) brightness(1.01);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 0 0 7px rgba(128, 94, 255, 0.035),
-    0 18px 42px rgba(128, 94, 255, 0.16);
+    0 0 0 5px rgba(128, 94, 255, 0.028),
+    0 16px 36px rgba(128, 94, 255, 0.14);
 }
 
 .genre-chart::before {
-  inset: -10px;
-  opacity: 0.74;
-  transform: scale(1.015);
-  filter: blur(13px);
+  inset: -8px;
+  opacity: 0.62;
+  transform: scale(1.01);
+  filter: blur(11px);
 }
 
 .genre-chart::after {
