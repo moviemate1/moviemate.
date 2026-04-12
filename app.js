@@ -706,6 +706,13 @@ function setButtonDisabledState(button, disabled) {
   }
 }
 
+function setDetailWatchButtonsBusy(titleId, busy) {
+  document.querySelectorAll(`.watch-status-btn[data-id="${titleId}"]:not([data-season-watch="true"])`).forEach((button) => {
+    setButtonDisabledState(button, busy || !isSignedIn());
+    button.classList.toggle("is-busy", Boolean(busy));
+  });
+}
+
 function mergeLiveTitleCounters(title) {
   const interestedCount = Math.max(0, Number(title.interestedCount || 0));
   const savesCount = Math.max(0, Number(title.savesCount || 0));
@@ -1666,6 +1673,12 @@ async function syncWatchStatus(titleId, nextStatus) {
         { merge: true }
       );
 
+      const nextProfile = normalizeUserProfile({
+        ...baseProfile,
+        watchStatus,
+        updatedAt: new Date().toISOString()
+      });
+
       let nextInterestedCount = null;
 
       if (!isSeasonKey) {
@@ -1688,6 +1701,7 @@ async function syncWatchStatus(titleId, nextStatus) {
       }
 
       return {
+        nextProfile,
         watchStatus,
         currentStatus,
         resolvedNextStatus,
@@ -1697,10 +1711,7 @@ async function syncWatchStatus(titleId, nextStatus) {
     "watch status update"
   );
 
-  currentUserProfile = normalizeUserProfile({
-    ...currentUserProfile,
-    watchStatus: transactionResult.watchStatus
-  });
+  currentUserProfile = transactionResult.nextProfile;
 
   userProfilesCache.set(currentUser.uid, currentUserProfile);
   saveUserProfileCache(currentUser.uid, currentUserProfile);
@@ -5315,12 +5326,15 @@ async function renderDetailsPage() {
       }
 
       try {
+        setDetailWatchButtonsBusy(watchButton.dataset.id, true);
         await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
         updateDetailActionUI(watchButton.dataset.id);
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+      } finally {
+        setDetailWatchButtonsBusy(watchButton.dataset.id, false);
       }
       return;
     }
@@ -5396,12 +5410,15 @@ async function renderDetailsPage() {
       }
 
       try {
+        setDetailWatchButtonsBusy(watchButton.dataset.id, true);
         await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
         updateDetailActionUI(watchButton.dataset.id);
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+      } finally {
+        setDetailWatchButtonsBusy(watchButton.dataset.id, false);
       }
     }
     });
