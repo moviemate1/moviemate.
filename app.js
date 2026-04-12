@@ -489,6 +489,31 @@ function normalizeRelationshipEntry(value) {
   };
 }
 
+function dedupeRelationshipEntries(entries = []) {
+  const seen = new Map();
+
+  (entries || []).forEach((entry) => {
+    const normalized = normalizeRelationshipEntry(entry);
+
+    if (!normalized) {
+      return;
+    }
+
+    const existing = seen.get(normalized.uid);
+
+    if (!existing) {
+      seen.set(normalized.uid, normalized);
+      return;
+    }
+
+    const existingMs = getCreatedAtMs(existing.createdAt);
+    const nextMs = getCreatedAtMs(normalized.createdAt);
+    seen.set(normalized.uid, nextMs > existingMs ? normalized : existing);
+  });
+
+  return [...seen.values()];
+}
+
 function normalizeNotificationEntry(value) {
   if (!value || typeof value !== "object") {
     return null;
@@ -2924,6 +2949,34 @@ function getInterestScore(title) {
   );
 }
 
+function compareMostInterestedTitles(left, right) {
+  const interestedDiff = getInterestedCount(right) - getInterestedCount(left);
+
+  if (interestedDiff) {
+    return interestedDiff;
+  }
+
+  const voteDiff = getReactionStats(right).total - getReactionStats(left).total;
+
+  if (voteDiff) {
+    return voteDiff;
+  }
+
+  const savedDiff = Number(right.savesCount || 0) - Number(left.savesCount || 0);
+
+  if (savedDiff) {
+    return savedDiff;
+  }
+
+  const viewDiff = Number(right.viewsCount || 0) - Number(left.viewsCount || 0);
+
+  if (viewDiff) {
+    return viewDiff;
+  }
+
+  return getInterestScore(right) - getInterestScore(left);
+}
+
 function upcomingCardTemplate(title) {
   const cardLabel = getCardLabel(title);
   const secondaryLine = formatReleaseDate(title.releaseDate);
@@ -3431,9 +3484,7 @@ function renderMostInterestedList(titles) {
     filteredTitles = [...titles];
   }
 
-  const items = [...filteredTitles]
-    .sort((a, b) => getInterestScore(b) - getInterestScore(a))
-    .slice(0, 10);
+  const items = [...filteredTitles].sort(compareMostInterestedTitles).slice(0, 10);
 
   list.innerHTML = items.map(mostInterestedItemTemplate).join("");
 }
@@ -4014,6 +4065,8 @@ function buildUserNotifications(titles) {
       const items = [];
       const createdAtMs = getCreatedAtMs(title.createdAt);
       const updatedAtMs = getCreatedAtMs(title.updatedAt);
+      const savedTracked = savedSet.has(title.id);
+      const interestedTracked = activeWatchTitles.has(title.id);
 
       if (isUpcomingTitle(title) && title.releaseDate) {
         const comparable = getComparableReleaseDate(title.releaseDate);
@@ -4024,7 +4077,7 @@ function buildUserNotifications(titles) {
           if (comparable <= today) {
             items.push({
               id: `release-${title.id}-${comparable}`,
-              label: "Saved title released",
+              label: savedTracked ? "Saved title released" : "Interested title released",
               title: title.title,
               copy: `${getDisplayTypeLabel(title)} • ${formatReleaseDate(title.releaseDate)} • now ready to watch.`,
               href: buildTitleUrl(title.id),
@@ -4036,10 +4089,12 @@ function buildUserNotifications(titles) {
 
       if (updatedAtMs) {
         items.push({
-          id: `update-${title.id}-${updatedAtMs}`,
-          label: "Title updated",
+          id: `${interestedTracked ? "interest" : "saved"}-update-${title.id}-${updatedAtMs}`,
+          label: interestedTracked ? "Interested title updated" : "Saved title updated",
           title: title.title,
-          copy: `New updates landed for a title you saved or marked as interested.`,
+          copy: interestedTracked
+            ? "A title on your watch radar has fresh updates."
+            : "A saved title has fresh updates waiting for you.",
           href: buildTitleUrl(title.id),
           createdAtMs: updatedAtMs
         });
@@ -5821,8 +5876,8 @@ async function renderAdminPage() {
     return;
   }
 
-  const titles = getVisibleTitles(await fetchTitles());
-  const profiles = await fetchUserProfiles();
+  const [allTitles, profiles] = await Promise.all([fetchTitles(), fetchUserProfiles()]);
+  const titles = getVisibleTitles(allTitles);
   const newestUsers = [...profiles]
     .sort((left, right) => getCreatedAtMs(right.createdAt) - getCreatedAtMs(left.createdAt))
     .slice(0, 8);
@@ -5832,13 +5887,32 @@ async function renderAdminPage() {
   const mostViewed = [...titles].sort((left, right) => Number(right.viewsCount || 0) - Number(left.viewsCount || 0)).slice(0, 8);
   const mostSaved = [...titles].sort((left, right) => Number(right.savesCount || 0) - Number(left.savesCount || 0)).slice(0, 8);
   const mostVoted = [...titles].sort((left, right) => getReactionStats(right).total - getReactionStats(left).total).slice(0, 8);
+  const mostInterested = [...titles].sort(compareMostInterestedTitles).slice(0, 8);
   const pendingTitles = getPendingTitles(titlesCache);
+  const adminSummary = [
+    { label: "Total titles", value: titles.length },
+    { label: "Recent users", value: newestUsers.length },
+    { label: "Pending content", value: pendingTitles.length },
+    { label: "Live interested", value: titles.reduce((total, title) => total + getInterestedCount(title), 0) }
+  ];
 
   target.innerHTML = `
     <section class="collection-page-shell">
       <aside class="collection-list-card">
         <p class="eyebrow">Owner dashboard</p>
         <h1>MovieMate Admin</h1>
+        <div class="owner-analytics-grid owner-summary-grid">
+          ${adminSummary
+            .map(
+              (item) => `
+                <article class="analytics-card">
+                  <p class="eyebrow">${escapeHtml(item.label)}</p>
+                  <p class="section-copy">${escapeHtml(String(item.value))}</p>
+                </article>
+              `
+            )
+            .join("")}
+        </div>
         <div class="owner-analytics-grid">
           <article class="analytics-card">
             <p class="eyebrow">New users</p>
@@ -5872,6 +5946,10 @@ async function renderAdminPage() {
           <article class="analytics-card">
             <p class="eyebrow">Most voted titles</p>
             ${mostVoted.length ? mostVoted.map((title) => analyticsRowTemplate(title, "Votes", getReactionStats(title).total)).join("") : '<p class="section-copy">No vote data yet.</p>'}
+          </article>
+          <article class="analytics-card">
+            <p class="eyebrow">Most interested titles</p>
+            ${mostInterested.length ? mostInterested.map((title) => analyticsRowTemplate(title, "Interested", getInterestedCount(title))).join("") : '<p class="section-copy">No interested data yet.</p>'}
           </article>
           <article class="analytics-card">
             <p class="eyebrow">Pending content</p>
@@ -6701,7 +6779,7 @@ function buildInterestedTitles(titles, profile = currentUserProfile) {
         savedIds.has(title.id) ||
         normalizeWatchStatusValue(watchStatus[title.id]) === "interested"
     )
-    .sort((left, right) => getInterestScore(right) - getInterestScore(left))
+    .sort(compareMostInterestedTitles)
     .slice(0, 6);
 }
 
@@ -6747,12 +6825,16 @@ async function toggleFollowUser(targetUid) {
   const followingEntry = { uid: targetUid, createdAt: new Date().toISOString() };
   const followerEntry = { uid: currentUser.uid, createdAt: new Date().toISOString() };
   const alreadyFollowing = isFollowingUid(targetUid);
-  const nextFollowing = alreadyFollowing
-    ? currentUserProfile.following.filter((entry) => entry.uid !== targetUid)
-    : [...(currentUserProfile.following || []), followingEntry];
-  const nextFollowers = alreadyFollowing
-    ? targetProfile.followers.filter((entry) => entry.uid !== currentUser.uid)
-    : [...(targetProfile.followers || []), followerEntry];
+  const nextFollowing = dedupeRelationshipEntries(
+    alreadyFollowing
+      ? currentUserProfile.following.filter((entry) => entry.uid !== targetUid)
+      : [...(currentUserProfile.following || []), followingEntry]
+  );
+  const nextFollowers = dedupeRelationshipEntries(
+    alreadyFollowing
+      ? targetProfile.followers.filter((entry) => entry.uid !== currentUser.uid)
+      : [...(targetProfile.followers || []), followerEntry]
+  );
 
   currentUserProfile = normalizeUserProfile({
     ...currentUserProfile,

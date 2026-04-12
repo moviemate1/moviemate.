@@ -1023,7 +1023,7 @@ button.ghost-link {
 .profile-post-list,
 .profile-interest-list {
   display: grid;
-  gap: 14px;
+  gap: 18px;
 }
 
 .profile-review-list-grid {
@@ -1036,10 +1036,11 @@ button.ghost-link {
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
   gap: 16px;
-  padding: 16px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.16);
 }
 
 .profile-post-card {
@@ -1099,6 +1100,12 @@ button.ghost-link {
   border-radius: 16px;
 }
 
+.profile-review-copy {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
 .profile-review-head {
   display: flex;
   gap: 12px;
@@ -1127,7 +1134,7 @@ button.ghost-link {
 }
 
 .profile-review-text {
-  margin: 12px 0 0;
+  margin: 0;
   color: #e8e8ef;
   line-height: 1.6;
   display: -webkit-box;
@@ -1440,6 +1447,16 @@ button.ghost-link {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+}
+
+.profile-collection-grid .collection-card {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.16);
+}
+
+.profile-collection-grid .collection-copy {
+  padding: 16px 16px 18px;
 }
 
 .reviews-page,
@@ -2380,6 +2397,12 @@ button.ghost-link {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 20px;
+}
+
+.owner-summary-grid .analytics-card {
+  min-height: 112px;
+  display: grid;
+  align-content: space-between;
 }
 
 .analytics-card {
