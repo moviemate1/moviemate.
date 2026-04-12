@@ -198,6 +198,10 @@ let viewedProfileUid = null;
 let viewedProfileData = null;
 const userProfilesCache = new Map();
 let browseVisibleCount = SEARCH_PAGE_SIZE;
+let detailTitleRealtime = {
+  titleId: null,
+  unsubscribe: null
+};
 let pendingNotificationState = {
   count: null,
   unsubscribe: null
@@ -645,6 +649,24 @@ function updateTitleCacheEntry(titleId, updater) {
   return nextTitle;
 }
 
+function getCachedTitleById(titleId) {
+  return titlesCache.find((title) => title.id === titleId) || null;
+}
+
+function replaceTitleCacheEntry(titleLike) {
+  const nextTitle = normalizeTitle(titleLike);
+  const existingIndex = titlesCache.findIndex((title) => title.id === nextTitle.id);
+
+  if (existingIndex === -1) {
+    titlesCache = [...titlesCache, nextTitle];
+  } else {
+    titlesCache = titlesCache.map((title, index) => (index === existingIndex ? nextTitle : title));
+  }
+
+  saveTitlesCacheToStorage(titlesCache);
+  return nextTitle;
+}
+
 function patchTitleCounters(titleId, counters = {}) {
   return updateTitleCacheEntry(titleId, (title) => {
     const next = { ...title };
@@ -668,6 +690,20 @@ function setTitleCounters(titleId, values = {}) {
 
     return next;
   });
+}
+
+function setButtonDisabledState(button, disabled) {
+  if (!button) {
+    return;
+  }
+
+  button.disabled = disabled;
+
+  if (disabled) {
+    button.setAttribute("aria-disabled", "true");
+  } else {
+    button.removeAttribute("aria-disabled");
+  }
 }
 
 function mergeLiveTitleCounters(title) {
@@ -1588,48 +1624,105 @@ async function syncWatchStatus(titleId, nextStatus) {
     return false;
   }
 
-  const watchStatus = { ...(currentUserProfile?.watchStatus || {}) };
-  const currentStatus = normalizeWatchStatusValue(watchStatus[titleId] || "");
+  const userRef = getUserDocRef();
+
+  if (!userRef) {
+    return false;
+  }
+
   const resolvedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
   const isSeasonKey = titleId.includes("::season-");
-  const beforeInterested = !isSeasonKey && countsTowardInterested(currentStatus);
-  const afterInterested = !isSeasonKey && countsTowardInterested(resolvedNextStatus);
+  const transactionResult = await withActionTimeout(
+    runTransaction(db, async (transaction) => {
+      const userSnapshot = await transaction.get(userRef);
+      const baseProfile = normalizeUserProfile(
+        userSnapshot.exists()
+          ? userSnapshot.data()
+          : {
+              ...DEFAULT_USER_PROFILE,
+              displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "MovieMate member",
+              username: buildDefaultUsername(currentUser),
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+      );
+      const watchStatus = { ...(baseProfile.watchStatus || {}) };
+      const currentStatus = normalizeWatchStatusValue(watchStatus[titleId] || "");
+      const beforeInterested = !isSeasonKey && countsTowardInterested(currentStatus);
+      const afterInterested = !isSeasonKey && countsTowardInterested(resolvedNextStatus);
 
-  if (!resolvedNextStatus) {
-    delete watchStatus[titleId];
-  } else {
-    watchStatus[titleId] = resolvedNextStatus;
-  }
+      if (!resolvedNextStatus) {
+        delete watchStatus[titleId];
+      } else {
+        watchStatus[titleId] = resolvedNextStatus;
+      }
+
+      transaction.set(
+        userRef,
+        {
+          watchStatus,
+          updatedAt: new Date().toISOString()
+        },
+        { merge: true }
+      );
+
+      let nextInterestedCount = null;
+
+      if (!isSeasonKey) {
+        const titleRef = doc(db, TITLES_COLLECTION, titleId);
+        const titleSnapshot = await transaction.get(titleRef);
+
+        if (titleSnapshot.exists()) {
+          const currentCount = Math.max(0, Number(titleSnapshot.data()?.interestedCount || 0));
+          nextInterestedCount =
+            beforeInterested === afterInterested
+              ? currentCount
+              : Math.max(0, currentCount + (afterInterested ? 1 : -1));
+
+          if (nextInterestedCount !== currentCount) {
+            transaction.update(titleRef, {
+              interestedCount: nextInterestedCount
+            });
+          }
+        }
+      }
+
+      return {
+        watchStatus,
+        currentStatus,
+        resolvedNextStatus,
+        nextInterestedCount
+      };
+    }),
+    "watch status update"
+  );
 
   currentUserProfile = normalizeUserProfile({
     ...currentUserProfile,
-    watchStatus
+    watchStatus: transactionResult.watchStatus
   });
 
   userProfilesCache.set(currentUser.uid, currentUserProfile);
-  if (!isSeasonKey && beforeInterested !== afterInterested) {
-    patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
-  }
+  saveUserProfileCache(currentUser.uid, currentUserProfile);
 
-  persistUserProfile({ watchStatus }).catch((error) => {
-    console.warn("Watch status synced locally, but profile sync failed.", error);
-  });
+  if (!isSeasonKey) {
+    if (typeof transactionResult.nextInterestedCount === "number") {
+      setTitleCounters(titleId, { interestedCount: transactionResult.nextInterestedCount });
+    } else {
+      const beforeInterested = countsTowardInterested(transactionResult.currentStatus);
+      const afterInterested = countsTowardInterested(transactionResult.resolvedNextStatus);
 
-  if (!isSeasonKey && beforeInterested !== afterInterested) {
-    try {
-      await syncInterestedAggregate(titleId, afterInterested ? 1 : -1);
-    } catch (error) {
-      console.warn("Interested aggregate delta sync failed.", error);
-    }
-
-    try {
-      await syncInterestedAggregateExact(titleId);
-    } catch (error) {
-      console.warn("Interested aggregate exact sync failed.", error);
+      if (beforeInterested !== afterInterested) {
+        patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
+      }
     }
   }
 
-  return true;
+  return {
+    ok: true,
+    status: transactionResult.resolvedNextStatus,
+    interestedCount: transactionResult.nextInterestedCount
+  };
 }
 
 function getReactionStats(title) {
@@ -2342,6 +2435,113 @@ function getInterestedCount(title) {
   }
 
   return storedCount;
+}
+
+function updateDetailActionUI(titleId) {
+  if (document.body.dataset.page !== "details") {
+    return;
+  }
+
+  const title = getCachedTitleById(titleId);
+
+  if (!title) {
+    return;
+  }
+
+  const memberReady = isSignedIn();
+  const currentStatus = getTitleWatchStatus(title.id);
+  const primaryWatchButton = getPrimaryWatchButtonState(title, currentStatus);
+  const interestedText = `${formatLargeNumber(getInterestedCount(title))} interested`;
+  const saved = isSavedTitle(title.id);
+  const currentReaction = getReaction(title.id);
+  const stats = getReactionStats(title);
+
+  document.querySelectorAll(`.watch-status-btn[data-id="${title.id}"]`).forEach((button) => {
+    const isHeroButton = button.classList.contains("hero-interest-action");
+    button.className = isHeroButton
+      ? `watch-status-btn hero-interest-action ${primaryWatchButton.className}`
+      : `watch-status-btn ${primaryWatchButton.className}`;
+    button.textContent = primaryWatchButton.label;
+    button.dataset.watchStatus = primaryWatchButton.nextStatus;
+    setButtonDisabledState(button, !memberReady);
+  });
+
+  document.querySelectorAll(".hero-interest-count").forEach((element) => {
+    element.textContent = interestedText;
+  });
+
+  document.querySelectorAll(".hero-interest-card .hero-interest-helper").forEach((element) => {
+    element.textContent = memberReady ? primaryWatchButton.helper : "Sign in to mark titles as interested.";
+  });
+
+  document.querySelectorAll(".detail-cta-helper").forEach((element) => {
+    element.textContent = memberReady
+      ? primaryWatchButton.helper
+      : "Members only can save, track interest, and update watch status.";
+  });
+
+  const saveButton = document.querySelector(`.detail-save-btn[data-save-id="${title.id}"]`);
+
+  if (saveButton) {
+    saveButton.textContent = saved ? "Saved to Collection" : "Add to Collection";
+    saveButton.classList.toggle("active", saved);
+    setButtonDisabledState(saveButton, !memberReady);
+  }
+
+  document.querySelectorAll(`.reaction-btn[data-id="${title.id}"]`).forEach((button) => {
+    const reactionValue = button.dataset.reaction;
+    const option = REACTION_OPTIONS[reactionValue];
+
+    if (!option) {
+      return;
+    }
+
+    button.className =
+      currentReaction === reactionValue
+        ? `reaction-btn reaction-btn-${option.className} active ${option.className}`
+        : `reaction-btn reaction-btn-${option.className}`;
+    setButtonDisabledState(button, !memberReady);
+  });
+
+  const reactionSummary = document.querySelector(".reaction-summary");
+
+  if (reactionSummary) {
+    reactionSummary.textContent = `${stats.total} votes • ${stats.recommendedPercent}% recommend`;
+  }
+}
+
+function setupDetailTitleRealtime(titleId) {
+  detailTitleRealtime.unsubscribe?.();
+  detailTitleRealtime = {
+    titleId,
+    unsubscribe: null
+  };
+
+  if (document.body.dataset.page !== "details" || !titleId) {
+    return;
+  }
+
+  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+
+  detailTitleRealtime.unsubscribe = onSnapshot(
+    titleRef,
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        return;
+      }
+
+      const cachedTitle = getCachedTitleById(titleId);
+      replaceTitleCacheEntry({
+        ...(cachedTitle || {}),
+        ...mergeLiveTitleCounters(normalizeTitle(snapshot)),
+        comments: cachedTitle?.comments || []
+      });
+      updateDetailActionUI(titleId);
+    },
+    (error) => {
+      console.warn("Could not watch live title updates.", error);
+    }
+  );
 }
 
 function movieCardTemplate(title) {
@@ -4873,9 +5073,9 @@ async function renderDetailsPage() {
       return;
     }
 
-    const title = mergeLiveTitleCounters(normalizeTitle(snapshot));
+    const title = replaceTitleCacheEntry(mergeLiveTitleCounters(normalizeTitle(snapshot)));
     title.comments = await fetchTitleComments(title.id, title.comments);
-    titlesCache = [...titlesCache.filter((item) => item.id !== title.id), title];
+    replaceTitleCacheEntry(title);
 
     if (!title.approved && !isOwnerMode()) {
       target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
@@ -5075,7 +5275,7 @@ async function renderDetailsPage() {
           return;
         }
 
-        await renderDetailsPage();
+        updateDetailActionUI(reactionButton.dataset.id);
         showMessage("#detailVoteMessage", result.cleared ? "Your vote was removed." : "Your vote was saved.");
       } catch (error) {
         console.error(error);
@@ -5095,7 +5295,7 @@ async function renderDetailsPage() {
       }
       try {
         await syncSavedTitle(saveButton.dataset.saveId);
-        await renderDetailsPage();
+        updateDetailActionUI(saveButton.dataset.saveId);
         showMessage("#detailVoteMessage", isSavedTitle(saveButton.dataset.saveId) ? "Saved to your collection." : "Removed from your collection.");
       } catch (error) {
         console.error(error);
@@ -5116,7 +5316,7 @@ async function renderDetailsPage() {
 
       try {
         await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
-        await renderDetailsPage();
+        updateDetailActionUI(watchButton.dataset.id);
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
@@ -5176,7 +5376,7 @@ async function renderDetailsPage() {
       }
       try {
         await syncSavedTitle(saveButton.dataset.saveId);
-        await renderDetailsPage();
+        updateDetailActionUI(saveButton.dataset.saveId);
         showMessage("#detailVoteMessage", isSavedTitle(saveButton.dataset.saveId) ? "Saved to your collection." : "Removed from your collection.");
       } catch (error) {
         console.error(error);
@@ -5197,7 +5397,7 @@ async function renderDetailsPage() {
 
       try {
         await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
-        await renderDetailsPage();
+        updateDetailActionUI(watchButton.dataset.id);
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
@@ -5212,6 +5412,7 @@ async function renderDetailsPage() {
 
     setupCommentForm(title.id);
     setupSeasonControls();
+    setupDetailTitleRealtime(title.id);
   } catch (error) {
     console.error(error);
     target.innerHTML = `
