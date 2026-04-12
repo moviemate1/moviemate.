@@ -1846,30 +1846,23 @@ function getInterestScore(title) {
 }
 
 function upcomingCardTemplate(title) {
-  const badges = `
-    <span class="status-pill status-upcoming">Upcoming</span>
-    ${title.pinned ? '<span class="status-pill status-pinned">Pinned</span>' : ""}
-    ${title.trending ? '<span class="status-pill status-trending">Trending</span>' : ""}
-    ${title.source === "tmdb" ? '<span class="status-pill status-source">TMDb</span>' : ""}
-  `;
+  const cardLabel = getCardLabel(title);
+  const secondaryLine = formatReleaseDate(title.releaseDate);
 
   return `
-    <article class="movie-card upcoming-card">
+    <article class="movie-card movie-card-compact upcoming-card">
       <a class="movie-card-link" href="${buildTitleUrl(title.id)}">
         <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
         <div class="movie-content">
-          <div class="movie-header">
-            <div>
-              <h3>${escapeHtml(title.title)}</h3>
-              <p class="movie-meta">Type: ${escapeHtml(title.type)}</p>
-              <p class="movie-meta">Genre: ${escapeHtml(title.genre)}</p>
-              <p class="movie-meta">Language: ${escapeHtml(title.language.join(", "))}</p>
-              ${title.platforms?.length ? `<p class="movie-meta">Platform: ${escapeHtml(formatPlatforms(title.platforms))}</p>` : ""}
-              <p class="movie-meta">Release date: ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
-              <div class="status-row">${badges}</div>
+          <div class="movie-card-summary movie-card-summary-feed">
+            <div class="movie-header movie-header-feed">
+              <div>
+                <h3>${escapeHtml(title.title)}</h3>
+                <p class="movie-meta">${escapeHtml(cardLabel)}</p>
+                <p class="movie-meta subtle-line clamp-line">${escapeHtml(secondaryLine)}</p>
+              </div>
             </div>
           </div>
-          <p class="movie-description">${escapeHtml(title.description)}</p>
         </div>
       </a>
     </article>
