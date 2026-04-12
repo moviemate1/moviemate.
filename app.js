@@ -202,6 +202,7 @@ let detailTitleRealtime = {
   titleId: null,
   unsubscribe: null
 };
+const detailWatchBusyTimers = new Map();
 let pendingNotificationState = {
   count: null,
   unsubscribe: null
@@ -719,6 +720,21 @@ function setDetailWatchButtonsBusy(titleId, busy) {
 
     button.classList.toggle("is-busy", Boolean(busy));
   });
+}
+
+function scheduleDetailWatchButtonsRelease(titleId, delay = 900) {
+  const existingTimer = detailWatchBusyTimers.get(titleId);
+
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+  }
+
+  const timer = setTimeout(() => {
+    setDetailWatchButtonsBusy(titleId, false);
+    detailWatchBusyTimers.delete(titleId);
+  }, delay);
+
+  detailWatchBusyTimers.set(titleId, timer);
 }
 
 function mergeLiveTitleCounters(title) {
@@ -5404,6 +5420,7 @@ async function renderDetailsPage() {
       const titleId = watchButton.dataset.id;
       const nextStatus = watchButton.dataset.watchStatus;
       setDetailWatchButtonsBusy(titleId, true);
+      scheduleDetailWatchButtonsRelease(titleId);
       const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
       updateDetailActionUI(titleId);
       setDetailWatchButtonsBusy(titleId, true);
@@ -5416,6 +5433,11 @@ async function renderDetailsPage() {
           showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
         }).finally(() => {
           setDetailWatchButtonsBusy(titleId, false);
+          const existingTimer = detailWatchBusyTimers.get(titleId);
+          if (existingTimer) {
+            clearTimeout(existingTimer);
+            detailWatchBusyTimers.delete(titleId);
+          }
         });
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
@@ -5423,6 +5445,11 @@ async function renderDetailsPage() {
         rollbackLocalWatchStatus(localSnapshot, titleId);
         updateDetailActionUI(titleId);
         setDetailWatchButtonsBusy(titleId, false);
+        const existingTimer = detailWatchBusyTimers.get(titleId);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+          detailWatchBusyTimers.delete(titleId);
+        }
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
       }
       return;
@@ -5512,6 +5539,7 @@ async function renderDetailsPage() {
       const titleId = watchButton.dataset.id;
       const nextStatus = watchButton.dataset.watchStatus;
       setDetailWatchButtonsBusy(titleId, true);
+      scheduleDetailWatchButtonsRelease(titleId);
       const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
       updateDetailActionUI(titleId);
       setDetailWatchButtonsBusy(titleId, true);
@@ -5524,6 +5552,11 @@ async function renderDetailsPage() {
           showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
         }).finally(() => {
           setDetailWatchButtonsBusy(titleId, false);
+          const existingTimer = detailWatchBusyTimers.get(titleId);
+          if (existingTimer) {
+            clearTimeout(existingTimer);
+            detailWatchBusyTimers.delete(titleId);
+          }
         });
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
@@ -5531,6 +5564,11 @@ async function renderDetailsPage() {
         rollbackLocalWatchStatus(localSnapshot, titleId);
         updateDetailActionUI(titleId);
         setDetailWatchButtonsBusy(titleId, false);
+        const existingTimer = detailWatchBusyTimers.get(titleId);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+          detailWatchBusyTimers.delete(titleId);
+        }
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
       }
     }
