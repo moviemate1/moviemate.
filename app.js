@@ -1661,8 +1661,6 @@ async function syncWatchStatus(titleId, nextStatus) {
       );
       const watchStatus = { ...(baseProfile.watchStatus || {}) };
       const currentStatus = normalizeWatchStatusValue(watchStatus[titleId] || "");
-      const beforeInterested = !isSeasonKey && countsTowardInterested(currentStatus);
-      const afterInterested = !isSeasonKey && countsTowardInterested(resolvedNextStatus);
 
       if (!resolvedNextStatus) {
         delete watchStatus[titleId];
@@ -1685,33 +1683,11 @@ async function syncWatchStatus(titleId, nextStatus) {
         updatedAt: new Date().toISOString()
       });
 
-      let nextInterestedCount = null;
-
-      if (!isSeasonKey) {
-        const titleRef = doc(db, TITLES_COLLECTION, titleId);
-        const titleSnapshot = await transaction.get(titleRef);
-
-        if (titleSnapshot.exists()) {
-          const currentCount = Math.max(0, Number(titleSnapshot.data()?.interestedCount || 0));
-          nextInterestedCount =
-            beforeInterested === afterInterested
-              ? currentCount
-              : Math.max(0, currentCount + (afterInterested ? 1 : -1));
-
-          if (nextInterestedCount !== currentCount) {
-            transaction.update(titleRef, {
-              interestedCount: nextInterestedCount
-            });
-          }
-        }
-      }
-
       return {
         nextProfile,
         watchStatus,
         currentStatus,
-        resolvedNextStatus,
-        nextInterestedCount
+        resolvedNextStatus
       };
     }),
     "watch status update"
@@ -1723,15 +1699,22 @@ async function syncWatchStatus(titleId, nextStatus) {
   saveUserProfileCache(currentUser.uid, currentUserProfile);
 
   if (!isSeasonKey) {
-    if (typeof transactionResult.nextInterestedCount === "number") {
-      setTitleCounters(titleId, { interestedCount: transactionResult.nextInterestedCount });
-    } else {
-      const beforeInterested = countsTowardInterested(transactionResult.currentStatus);
-      const afterInterested = countsTowardInterested(transactionResult.resolvedNextStatus);
+    const beforeInterested = countsTowardInterested(transactionResult.currentStatus);
+    const afterInterested = countsTowardInterested(transactionResult.resolvedNextStatus);
 
-      if (beforeInterested !== afterInterested) {
-        patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
-      }
+    if (beforeInterested !== afterInterested) {
+      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
+    }
+
+    try {
+      const exactCount = await syncInterestedAggregateExact(titleId);
+      transactionResult.nextInterestedCount = exactCount;
+    } catch (error) {
+      console.warn("Exact interested count sync failed.", error);
+      transactionResult.nextInterestedCount = Math.max(
+        0,
+        Number(getCachedTitleById(titleId)?.interestedCount || 0)
+      );
     }
   }
 
