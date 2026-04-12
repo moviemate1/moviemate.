@@ -202,7 +202,6 @@ let detailTitleRealtime = {
   titleId: null,
   unsubscribe: null
 };
-const detailWatchBusyTimers = new Map();
 const detailWatchRequestsInFlight = new Set();
 let pendingNotificationState = {
   count: null,
@@ -706,36 +705,6 @@ function setButtonDisabledState(button, disabled) {
   } else {
     button.removeAttribute("aria-disabled");
   }
-}
-
-function setDetailWatchButtonsBusy(titleId, busy) {
-  document.querySelectorAll(`.watch-status-btn[data-id="${titleId}"]:not([data-season-watch="true"])`).forEach((button) => {
-    if (busy) {
-      button.disabled = false;
-      button.removeAttribute("aria-disabled");
-      button.dataset.busy = "true";
-    } else {
-      setButtonDisabledState(button, !isSignedIn());
-      delete button.dataset.busy;
-    }
-
-    button.classList.toggle("is-busy", Boolean(busy));
-  });
-}
-
-function scheduleDetailWatchButtonsRelease(titleId, delay = 900) {
-  const existingTimer = detailWatchBusyTimers.get(titleId);
-
-  if (existingTimer) {
-    clearTimeout(existingTimer);
-  }
-
-  const timer = setTimeout(() => {
-    setDetailWatchButtonsBusy(titleId, false);
-    detailWatchBusyTimers.delete(titleId);
-  }, delay);
-
-  detailWatchBusyTimers.set(titleId, timer);
 }
 
 function mergeLiveTitleCounters(title) {
@@ -1916,6 +1885,31 @@ async function shareTitle(title) {
 
   await navigator.clipboard.writeText(shareData.url);
   return true;
+}
+
+async function handleDetailWatchStatusClick(titleId, nextStatus) {
+  if (!titleId || detailWatchRequestsInFlight.has(titleId)) {
+    return false;
+  }
+
+  detailWatchRequestsInFlight.add(titleId);
+  const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
+  updateDetailActionUI(titleId);
+
+  try {
+    await syncWatchStatus(titleId, nextStatus);
+    updateDetailActionUI(titleId);
+    showMessage("#detailVoteMessage", "Watch status updated.");
+    return true;
+  } catch (error) {
+    console.error(error);
+    rollbackLocalWatchStatus(localSnapshot, titleId);
+    updateDetailActionUI(titleId);
+    showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+    return false;
+  } finally {
+    detailWatchRequestsInFlight.delete(titleId);
+  }
 }
 
 function reactionButtonsTemplate(title) {
@@ -5416,33 +5410,7 @@ async function renderDetailsPage() {
 
       const titleId = watchButton.dataset.id;
       const nextStatus = watchButton.dataset.watchStatus;
-
-      if (detailWatchRequestsInFlight.has(titleId)) {
-        return;
-      }
-
-      detailWatchRequestsInFlight.add(titleId);
-      const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
-      updateDetailActionUI(titleId);
-
-      try {
-        syncWatchStatus(titleId, nextStatus).catch((error) => {
-          console.error(error);
-          rollbackLocalWatchStatus(localSnapshot, titleId);
-          updateDetailActionUI(titleId);
-          showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
-        }).finally(() => {
-          detailWatchRequestsInFlight.delete(titleId);
-          updateDetailActionUI(titleId);
-        });
-        showMessage("#detailVoteMessage", "Watch status updated.");
-      } catch (error) {
-        console.error(error);
-        rollbackLocalWatchStatus(localSnapshot, titleId);
-        updateDetailActionUI(titleId);
-        detailWatchRequestsInFlight.delete(titleId);
-        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
-      }
+      await handleDetailWatchStatusClick(titleId, nextStatus);
       return;
     }
 
@@ -5525,33 +5493,7 @@ async function renderDetailsPage() {
 
       const titleId = watchButton.dataset.id;
       const nextStatus = watchButton.dataset.watchStatus;
-
-      if (detailWatchRequestsInFlight.has(titleId)) {
-        return;
-      }
-
-      detailWatchRequestsInFlight.add(titleId);
-      const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
-      updateDetailActionUI(titleId);
-
-      try {
-        syncWatchStatus(titleId, nextStatus).catch((error) => {
-          console.error(error);
-          rollbackLocalWatchStatus(localSnapshot, titleId);
-          updateDetailActionUI(titleId);
-          showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
-        }).finally(() => {
-          detailWatchRequestsInFlight.delete(titleId);
-          updateDetailActionUI(titleId);
-        });
-        showMessage("#detailVoteMessage", "Watch status updated.");
-      } catch (error) {
-        console.error(error);
-        rollbackLocalWatchStatus(localSnapshot, titleId);
-        updateDetailActionUI(titleId);
-        detailWatchRequestsInFlight.delete(titleId);
-        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
-      }
+      await handleDetailWatchStatusClick(titleId, nextStatus);
     }
     });
 
