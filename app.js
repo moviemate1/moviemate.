@@ -2097,25 +2097,25 @@ function reactionMeterTemplate(title) {
   const recommendedPercent = stats.recommendedPercent;
 
   return `
-    <article class="insight-card">
+    <article class="insight-card detail-meter-card">
       <div class="insight-header">
         <div>
           <p class="eyebrow">MovieMate Meter</p>
-          <h3>${recommendedPercent}% recommend</h3>
+          <h3 data-meter-recommend>${recommendedPercent}% recommend</h3>
         </div>
-        <span class="insight-pill">${formatLargeNumber(total)} votes</span>
+        <span class="insight-pill" data-meter-votes>${formatLargeNumber(total)} votes</span>
       </div>
-      <div class="meter-visual" style="background: conic-gradient(#9a5cff 0 ${perfectPercent}%, #18cf9b ${perfectPercent}% ${perfectPercent + goForItPercent}%, #ffbf47 ${perfectPercent + goForItPercent}% ${perfectPercent + goForItPercent + timepassPercent}%, #ff6b6b ${perfectPercent + goForItPercent + timepassPercent}% 100%);">
+      <div class="meter-visual" data-meter-visual style="background: conic-gradient(#9a5cff 0 ${perfectPercent}%, #18cf9b ${perfectPercent}% ${perfectPercent + goForItPercent}%, #ffbf47 ${perfectPercent + goForItPercent}% ${perfectPercent + goForItPercent + timepassPercent}%, #ff6b6b ${perfectPercent + goForItPercent + timepassPercent}% 100%);">
         <div class="meter-core">
-          <strong>${recommendedPercent}%</strong>
-          <span>${stats.goForIt + stats.perfect}/${total} recommend</span>
+          <strong data-meter-core-percent>${recommendedPercent}%</strong>
+          <span data-meter-core-copy>${stats.goForIt + stats.perfect}/${total} recommend</span>
         </div>
       </div>
       <div class="meter-list">
-        <div class="meter-row"><span class="meter-dot dot-perfect"></span><span>Perfection</span><strong>${perfectPercent}%</strong></div>
-        <div class="meter-row"><span class="meter-dot dot-love"></span><span>Go for it</span><strong>${goForItPercent}%</strong></div>
-        <div class="meter-row"><span class="meter-dot dot-timepass"></span><span>Timepass</span><strong>${timepassPercent}%</strong></div>
-        <div class="meter-row"><span class="meter-dot dot-skip"></span><span>Skip</span><strong>${skipPercent}%</strong></div>
+        <div class="meter-row"><span class="meter-dot dot-perfect"></span><span>Perfection</span><strong data-meter-perfect>${perfectPercent}%</strong></div>
+        <div class="meter-row"><span class="meter-dot dot-love"></span><span>Go for it</span><strong data-meter-go>${goForItPercent}%</strong></div>
+        <div class="meter-row"><span class="meter-dot dot-timepass"></span><span>Timepass</span><strong data-meter-timepass>${timepassPercent}%</strong></div>
+        <div class="meter-row"><span class="meter-dot dot-skip"></span><span>Skip</span><strong data-meter-skip>${skipPercent}%</strong></div>
       </div>
     </article>
   `;
@@ -2560,6 +2560,62 @@ function updateDetailActionUI(titleId) {
 
   if (reactionSummary) {
     reactionSummary.textContent = `${stats.total} votes • ${stats.recommendedPercent}% recommend`;
+  }
+
+  const meterCard = document.querySelector(".detail-meter-card");
+
+  if (meterCard) {
+    const total = Math.max(stats.total, 1);
+    const perfectPercent = stats.perfectPercent;
+    const goForItPercent = stats.goForItPercent;
+    const timepassPercent = stats.timepassPercent;
+    const skipPercent = stats.skipPercent;
+    const recommendedPercent = stats.recommendedPercent;
+    const meterVisual = meterCard.querySelector("[data-meter-visual]");
+    const meterRecommend = meterCard.querySelector("[data-meter-recommend]");
+    const meterVotes = meterCard.querySelector("[data-meter-votes]");
+    const meterCorePercent = meterCard.querySelector("[data-meter-core-percent]");
+    const meterCoreCopy = meterCard.querySelector("[data-meter-core-copy]");
+    const meterPerfect = meterCard.querySelector("[data-meter-perfect]");
+    const meterGo = meterCard.querySelector("[data-meter-go]");
+    const meterTimepass = meterCard.querySelector("[data-meter-timepass]");
+    const meterSkip = meterCard.querySelector("[data-meter-skip]");
+
+    if (meterVisual) {
+      meterVisual.style.background = `conic-gradient(#9a5cff 0 ${perfectPercent}%, #18cf9b ${perfectPercent}% ${perfectPercent + goForItPercent}%, #ffbf47 ${perfectPercent + goForItPercent}% ${perfectPercent + goForItPercent + timepassPercent}%, #ff6b6b ${perfectPercent + goForItPercent + timepassPercent}% 100%)`;
+    }
+
+    if (meterRecommend) {
+      meterRecommend.textContent = `${recommendedPercent}% recommend`;
+    }
+
+    if (meterVotes) {
+      meterVotes.textContent = `${formatLargeNumber(total)} votes`;
+    }
+
+    if (meterCorePercent) {
+      meterCorePercent.textContent = `${recommendedPercent}%`;
+    }
+
+    if (meterCoreCopy) {
+      meterCoreCopy.textContent = `${stats.goForIt + stats.perfect}/${total} recommend`;
+    }
+
+    if (meterPerfect) {
+      meterPerfect.textContent = `${perfectPercent}%`;
+    }
+
+    if (meterGo) {
+      meterGo.textContent = `${goForItPercent}%`;
+    }
+
+    if (meterTimepass) {
+      meterTimepass.textContent = `${timepassPercent}%`;
+    }
+
+    if (meterSkip) {
+      meterSkip.textContent = `${skipPercent}%`;
+    }
   }
 }
 
