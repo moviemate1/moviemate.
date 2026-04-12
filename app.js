@@ -1539,6 +1539,8 @@ function applyLocalWatchStatus(titleId, nextStatus) {
 
   const normalizedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
   const previousProfile = currentUserProfile ? normalizeUserProfile(currentUserProfile) : normalizeUserProfile({});
+  const previousStatus = normalizeWatchStatusValue(previousProfile.watchStatus?.[titleId] || "");
+  const isSeasonKey = titleId.includes("::season-");
   const nextWatchStatus = { ...(previousProfile.watchStatus || {}) };
 
   if (!normalizedNextStatus) {
@@ -1558,8 +1560,18 @@ function applyLocalWatchStatus(titleId, nextStatus) {
     saveUserProfileCache(currentUser.uid, currentUserProfile);
   }
 
+  if (!isSeasonKey) {
+    const beforeInterested = countsTowardInterested(previousStatus);
+    const afterInterested = countsTowardInterested(normalizedNextStatus);
+
+    if (beforeInterested !== afterInterested) {
+      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
+    }
+  }
+
   return {
     previousProfile,
+    previousStatus,
     nextStatus: normalizedNextStatus
   };
 }
@@ -1567,6 +1579,15 @@ function applyLocalWatchStatus(titleId, nextStatus) {
 function rollbackLocalWatchStatus(snapshot, titleId) {
   if (!snapshot) {
     return;
+  }
+
+  if (!titleId.includes("::season-")) {
+    const beforeInterested = countsTowardInterested(snapshot.nextStatus);
+    const afterInterested = countsTowardInterested(snapshot.previousStatus);
+
+    if (beforeInterested !== afterInterested) {
+      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
+    }
   }
 
   currentUserProfile = normalizeUserProfile(snapshot.previousProfile || {});
