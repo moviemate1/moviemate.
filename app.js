@@ -203,9 +203,6 @@ let detailTitleRealtime = {
   unsubscribe: null
 };
 const detailWatchRequestsInFlight = new Set();
-const detailWatchPendingStatus = new Map();
-const detailWatchCommitTimers = new Map();
-const detailWatchLastTapAt = new Map();
 let pendingNotificationState = {
   count: null,
   unsubscribe: null
@@ -1890,39 +1887,28 @@ async function shareTitle(title) {
   return true;
 }
 
-function scheduleDetailWatchStatusCommit(titleId, delay = 260) {
-  const existingTimer = detailWatchCommitTimers.get(titleId);
-
-  if (existingTimer) {
-    clearTimeout(existingTimer);
+async function handleDetailWatchStatusClick(titleId) {
+  if (!titleId) {
+    return false;
   }
 
-  const timer = setTimeout(() => {
-    detailWatchCommitTimers.delete(titleId);
-    void flushDetailWatchStatusCommit(titleId);
-  }, delay);
-
-  detailWatchCommitTimers.set(titleId, timer);
-}
-
-async function flushDetailWatchStatusCommit(titleId) {
-  if (!titleId || detailWatchRequestsInFlight.has(titleId)) {
-    return;
+  if (detailWatchRequestsInFlight.has(titleId)) {
+    return false;
   }
 
-  if (!detailWatchPendingStatus.has(titleId)) {
-    return;
-  }
-
-  const nextStatus = detailWatchPendingStatus.get(titleId);
-  detailWatchPendingStatus.delete(titleId);
+  const nextStatus = getNextPrimaryWatchStatus(titleId);
   detailWatchRequestsInFlight.add(titleId);
+  const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
+  updateDetailActionUI(titleId);
 
   try {
     await syncWatchStatus(titleId, nextStatus);
     updateDetailActionUI(titleId);
+    showMessage("#detailVoteMessage", "Watch status updated.");
+    return true;
   } catch (error) {
     console.error(error);
+    rollbackLocalWatchStatus(localSnapshot, titleId);
 
     if (currentUser) {
       try {
@@ -1934,33 +1920,10 @@ async function flushDetailWatchStatusCommit(titleId) {
 
     updateDetailActionUI(titleId);
     showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+    return false;
   } finally {
     detailWatchRequestsInFlight.delete(titleId);
-
-    if (detailWatchPendingStatus.has(titleId)) {
-      void flushDetailWatchStatusCommit(titleId);
-    }
   }
-}
-
-async function handleDetailWatchStatusClick(titleId, nextStatus) {
-  if (!titleId) {
-    return false;
-  }
-
-  const now = Date.now();
-  const lastTapAt = detailWatchLastTapAt.get(titleId) || 0;
-
-  if (now - lastTapAt < 400) {
-    return false;
-  }
-
-  detailWatchLastTapAt.set(titleId, now);
-  applyLocalWatchStatus(titleId, nextStatus);
-  detailWatchPendingStatus.set(titleId, nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus));
-  updateDetailActionUI(titleId);
-  scheduleDetailWatchStatusCommit(titleId);
-  return true;
 }
 
 function reactionButtonsTemplate(title) {
@@ -5471,8 +5434,7 @@ async function renderDetailsPage() {
       }
 
       const titleId = watchButton.dataset.id;
-      const nextStatus = getNextPrimaryWatchStatus(titleId);
-      await handleDetailWatchStatusClick(titleId, nextStatus);
+      await handleDetailWatchStatusClick(titleId);
       return;
     }
 
@@ -5554,8 +5516,7 @@ async function renderDetailsPage() {
       }
 
       const titleId = watchButton.dataset.id;
-      const nextStatus = getNextPrimaryWatchStatus(titleId);
-      await handleDetailWatchStatusClick(titleId, nextStatus);
+      await handleDetailWatchStatusClick(titleId);
     }
     });
 
