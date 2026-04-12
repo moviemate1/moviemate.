@@ -1487,6 +1487,36 @@ async function syncSavedTitle(titleId) {
   return true;
 }
 
+async function syncInterestedAggregate(titleId, delta) {
+  if (!delta) {
+    return;
+  }
+
+  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+
+  await withActionTimeout(
+    runTransaction(db, async (transaction) => {
+      const snapshot = await transaction.get(titleRef);
+
+      if (!snapshot.exists()) {
+        return;
+      }
+
+      const currentCount = Math.max(0, Number(snapshot.data()?.interestedCount || 0));
+      const nextCount = Math.max(0, currentCount + Number(delta || 0));
+
+      if (nextCount === currentCount) {
+        return;
+      }
+
+      transaction.update(titleRef, {
+        interestedCount: nextCount
+      });
+    }),
+    "interest update"
+  );
+}
+
 async function syncWatchStatus(titleId, nextStatus) {
   if (!isSignedIn()) {
     return false;
@@ -1520,14 +1550,11 @@ async function syncWatchStatus(titleId, nextStatus) {
   });
 
   if (!isSeasonKey && beforeInterested !== afterInterested) {
-    withActionTimeout(
-      updateDoc(doc(db, TITLES_COLLECTION, titleId), {
-        interestedCount: increment(afterInterested ? 1 : -1)
-      }),
-      "interest update"
-    ).catch((error) => {
+    try {
+      await syncInterestedAggregate(titleId, afterInterested ? 1 : -1);
+    } catch (error) {
       console.warn("Interested aggregate sync failed.", error);
-    });
+    }
   }
 
   return true;
