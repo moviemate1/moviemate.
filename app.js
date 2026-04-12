@@ -1698,7 +1698,7 @@ async function syncInterestedAggregateExact(titleId) {
   return exactCount;
 }
 
-async function syncWatchStatus(titleId, nextStatus) {
+async function syncWatchStatus(titleId, previousStatusValue, nextStatus) {
   if (!isSignedIn()) {
     return false;
   }
@@ -1721,6 +1721,7 @@ async function syncWatchStatus(titleId, nextStatus) {
         }
       );
   const watchStatus = { ...(baseProfile.watchStatus || {}) };
+  const previousStatus = normalizeWatchStatusValue(previousStatusValue || "");
 
   if (!resolvedNextStatus) {
     delete watchStatus[titleId];
@@ -1753,7 +1754,35 @@ async function syncWatchStatus(titleId, nextStatus) {
   let nextInterestedCount = null;
 
   if (!isSeasonKey) {
-    nextInterestedCount = await syncInterestedAggregateExact(titleId);
+    const beforeInterested = countsTowardInterested(previousStatus);
+    const afterInterested = countsTowardInterested(resolvedNextStatus);
+
+    if (beforeInterested !== afterInterested) {
+      const titleRef = doc(db, TITLES_COLLECTION, titleId);
+      nextInterestedCount = await withActionTimeout(
+        runTransaction(db, async (transaction) => {
+          const snapshot = await transaction.get(titleRef);
+
+          if (!snapshot.exists()) {
+            return 0;
+          }
+
+          const currentCount = Math.max(0, Number(snapshot.data()?.interestedCount || 0));
+          const nextCount = Math.max(0, currentCount + (afterInterested ? 1 : -1));
+          transaction.update(titleRef, {
+            interestedCount: nextCount
+          });
+          return nextCount;
+        }),
+        "interest update"
+      );
+    } else {
+      nextInterestedCount = Math.max(0, Number(getCachedTitleById(titleId)?.interestedCount || 0));
+    }
+
+    setTitleCounters(titleId, {
+      interestedCount: nextInterestedCount
+    });
   }
 
   return {
@@ -1873,12 +1902,15 @@ async function handleDetailWatchStatusClick(titleId) {
   updateDetailActionUI(titleId);
 
   try {
-    const result = await syncWatchStatus(titleId, nextStatus);
+    const result = await syncWatchStatus(titleId, localSnapshot?.previousStatus || "", nextStatus);
     if (typeof result?.interestedCount === "number") {
+      setTitleCounters(titleId, { interestedCount: result.interestedCount });
       detailOptimisticInterestedCounts.set(titleId, Math.max(0, Number(result.interestedCount || 0)));
     }
     updateDetailActionUI(titleId);
     showMessage("#detailVoteMessage", "Watch status updated.");
+    detailOptimisticInterestedCounts.delete(titleId);
+    updateDetailActionUI(titleId);
     return true;
   } catch (error) {
     console.error(error);
@@ -1894,12 +1926,10 @@ async function handleDetailWatchStatusClick(titleId) {
 
     updateDetailActionUI(titleId);
     showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+    detailOptimisticInterestedCounts.delete(titleId);
+    updateDetailActionUI(titleId);
     return false;
   } finally {
-    window.setTimeout(() => {
-      detailOptimisticInterestedCounts.delete(titleId);
-      updateDetailActionUI(titleId);
-    }, 600);
     detailWatchRequestsInFlight.delete(titleId);
   }
 }
