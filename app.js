@@ -202,8 +202,7 @@ let detailTitleRealtime = {
   titleId: null,
   unsubscribe: null
 };
-const detailWatchSyncQueues = new Map();
-const detailWatchQueuedStatus = new Map();
+const detailWatchRequestsInFlight = new Set();
 const detailWatchLastTapAt = new Map();
 let pendingNotificationState = {
   count: null,
@@ -1889,45 +1888,6 @@ async function shareTitle(title) {
   return true;
 }
 
-function queueDetailWatchStatusSync(titleId) {
-  const existingQueue = detailWatchSyncQueues.get(titleId);
-
-  if (existingQueue) {
-    return existingQueue;
-  }
-
-  const queuePromise = (async () => {
-    while (detailWatchQueuedStatus.has(titleId)) {
-      const nextStatus = detailWatchQueuedStatus.get(titleId);
-      detailWatchQueuedStatus.delete(titleId);
-
-      try {
-        await syncWatchStatus(titleId, nextStatus);
-      } catch (error) {
-        console.error(error);
-
-        if (currentUser) {
-          try {
-            await ensureUserProfile(currentUser);
-          } catch (profileError) {
-            console.error(profileError);
-          }
-        }
-
-        updateDetailActionUI(titleId);
-        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
-        break;
-      }
-    }
-  })().finally(() => {
-    detailWatchSyncQueues.delete(titleId);
-    updateDetailActionUI(titleId);
-  });
-
-  detailWatchSyncQueues.set(titleId, queuePromise);
-  return queuePromise;
-}
-
 async function handleDetailWatchStatusClick(titleId, nextStatus) {
   if (!titleId) {
     return false;
@@ -1940,13 +1900,39 @@ async function handleDetailWatchStatusClick(titleId, nextStatus) {
     return false;
   }
 
+  if (detailWatchRequestsInFlight.has(titleId)) {
+    return false;
+  }
+
   detailWatchLastTapAt.set(titleId, now);
-  applyLocalWatchStatus(titleId, nextStatus);
-  const normalizedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
-  detailWatchQueuedStatus.set(titleId, normalizedNextStatus);
+  detailWatchRequestsInFlight.add(titleId);
+  const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
   updateDetailActionUI(titleId);
-  queueDetailWatchStatusSync(titleId);
-  showMessage("#detailVoteMessage", "Watch status updated.");
+
+  syncWatchStatus(titleId, nextStatus)
+    .then(() => {
+      updateDetailActionUI(titleId);
+      showMessage("#detailVoteMessage", "Watch status updated.");
+    })
+    .catch(async (error) => {
+      console.error(error);
+      rollbackLocalWatchStatus(localSnapshot, titleId);
+
+      if (currentUser) {
+        try {
+          await ensureUserProfile(currentUser);
+        } catch (profileError) {
+          console.error(profileError);
+        }
+      }
+
+      updateDetailActionUI(titleId);
+      showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+    })
+    .finally(() => {
+      detailWatchRequestsInFlight.delete(titleId);
+    });
+
   return true;
 }
 
