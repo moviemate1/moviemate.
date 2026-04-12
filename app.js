@@ -1895,25 +1895,7 @@ function isUpcomingTitle(title) {
   return comparableReleaseDate > today;
 }
 
-function getUpcomingInterestState(status) {
-  if (status === "interested" || status === "watching" || status === "watched") {
-    return {
-      label: "Interested",
-      nextStatus: "clear",
-      className: "watch-status-btn-interested active",
-      helper: "Tap again to remove this from interested."
-    };
-  }
-
-  return {
-    label: "Mark as Interested",
-    nextStatus: "interested",
-    className: "watch-status-btn-interested",
-    helper: "Members can mark unreleased titles as interested."
-  };
-}
-
-function getReleasedWatchCycleState(status) {
+function getWatchCycleState(status) {
   if (status === "interested") {
     return {
       label: "Interested",
@@ -1950,7 +1932,7 @@ function getReleasedWatchCycleState(status) {
 }
 
 function getPrimaryWatchButtonState(title, status) {
-  return getReleasedWatchCycleState(status);
+  return getWatchCycleState(status);
 }
 
 function toYouTubeSearchUrl(title) {
