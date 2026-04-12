@@ -2852,15 +2852,46 @@ button.ghost-link {
 }
 
 .trailer-btn,
-.save-title-btn {
+.save-title-btn,
+.share-title-btn {
   color: #fff;
   position: relative;
   z-index: 13;
 }
 
+.detail-actions .trailer-btn,
+.detail-actions .share-title-btn {
+  min-height: 52px;
+  padding-inline: 18px;
+}
+
 .save-title-btn {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.12);
+}
+
+.share-title-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(126, 70, 255, 0.18) 0%, rgba(73, 126, 255, 0.16) 100%);
+  border-color: rgba(141, 164, 255, 0.36);
+  color: #f4f6ff;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 24px rgba(74, 100, 255, 0.16);
+}
+
+.share-title-btn::before {
+  content: "↗";
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.share-title-btn:hover {
+  border-color: rgba(160, 182, 255, 0.56);
+  background: linear-gradient(135deg, rgba(126, 70, 255, 0.26) 0%, rgba(73, 126, 255, 0.22) 100%);
 }
 
 .detail-insights-grid {
@@ -4048,6 +4079,12 @@ button.ghost-link {
   .reaction-buttons > *,
   .comment-actions > * {
     width: 100%;
+  }
+
+  .detail-actions .trailer-btn,
+  .detail-actions .share-title-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .profile-review-card,
