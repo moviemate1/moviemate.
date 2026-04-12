@@ -28,6 +28,7 @@ body {
   min-height: 100vh;
   font-family: "Manrope", sans-serif;
   color: var(--text);
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top right, rgba(229, 9, 20, 0.22), transparent 26%),
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 20%),
@@ -4108,6 +4109,11 @@ button.ghost-link {
     width: min(100% - 20px, 1240px);
   }
 
+  body[data-page="details"] .page-shell {
+    width: calc(100% - 12px);
+    padding-inline: 0;
+  }
+
   .explore-topbar {
     padding: 10px 12px;
     gap: 10px;
@@ -4129,6 +4135,27 @@ button.ghost-link {
   .explore-actions-right {
     display: inline-flex;
     margin-left: auto;
+  }
+
+  body[data-page="details"] .topbar.compact {
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  body[data-page="details"] .topbar.compact .brand {
+    font-size: 1.55rem;
+  }
+
+  body[data-page="details"] .topbar.compact .topbar-actions {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  body[data-page="details"] .topbar.compact .ghost-link,
+  body[data-page="details"] .topbar.compact .account-top-link {
+    padding: 9px 12px;
+    font-size: 0.88rem;
   }
 
   .trend-grid {
@@ -4261,6 +4288,97 @@ button.ghost-link {
     grid-template-columns: 1fr;
   }
 
+  .detail-hero-card {
+    padding: 14px;
+    border-radius: 24px;
+    gap: 14px;
+  }
+
+  .trailer-stage {
+    border-radius: 22px;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    min-height: 0;
+  }
+
+  .trailer-poster {
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .trailer-overlay {
+    padding: 18px 16px 16px;
+  }
+
+  .trailer-overlay h2 {
+    max-width: 10ch;
+    font-size: clamp(1.9rem, 8vw, 2.7rem);
+  }
+
+  .trailer-play-button {
+    width: 70px;
+    height: 70px;
+  }
+
+  .detail-summary {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .detail-poster {
+    width: min(165px, 42vw);
+    max-width: 100%;
+  }
+
+  .detail-copy h1 {
+    font-size: clamp(2rem, 8.5vw, 3rem);
+    line-height: 0.96;
+  }
+
+  .detail-facts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .detail-fact {
+    min-width: 0;
+    padding: 11px 12px;
+  }
+
+  .detail-fact strong {
+    font-size: 0.95rem;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .detail-hero-description {
+    margin-top: 14px;
+    font-size: 0.94rem;
+    line-height: 1.6;
+  }
+
+  .detail-cta-stack {
+    margin-top: 6px;
+    align-self: stretch;
+  }
+
+  .detail-cta-stack .watch-status-btn,
+  .detail-cta-stack .detail-save-btn {
+    min-height: 48px;
+  }
+
+  .detail-action-strip .detail-actions,
+  .detail-insights-grid .insight-card,
+  .comment-card,
+  .member-lock-card {
+    border-radius: 22px;
+  }
+
+  .detail-insights-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
   .seasons-grid {
     grid-template-columns: 1fr;
   }
@@ -4316,6 +4434,34 @@ button.ghost-link {
 }
 
 @media (max-width: 560px) {
+  body[data-page="details"] .page-shell {
+    width: calc(100% - 8px);
+  }
+
+  body[data-page="details"] .topbar.compact .topbar-actions {
+    justify-content: stretch;
+  }
+
+  body[data-page="details"] .topbar.compact .ghost-link,
+  body[data-page="details"] .topbar.compact .account-top-link {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .detail-summary {
+    padding: 16px;
+  }
+
+  .detail-poster {
+    width: min(150px, 46vw);
+  }
+
+  .hero-interest-card {
+    margin: 12px 12px 0;
+    padding: 14px 16px;
+    border-radius: 20px;
+  }
   .movie-grid {
     grid-template-columns: 1fr;
   }
