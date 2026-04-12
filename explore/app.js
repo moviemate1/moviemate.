@@ -1845,6 +1845,34 @@ function getInterestScore(title) {
   );
 }
 
+function compareMostInterestedTitles(left, right) {
+  const interestedDiff = getInterestedCount(right) - getInterestedCount(left);
+
+  if (interestedDiff) {
+    return interestedDiff;
+  }
+
+  const voteDiff = getReactionStats(right).total - getReactionStats(left).total;
+
+  if (voteDiff) {
+    return voteDiff;
+  }
+
+  const savedDiff = Number(right.savesCount || 0) - Number(left.savesCount || 0);
+
+  if (savedDiff) {
+    return savedDiff;
+  }
+
+  const viewDiff = Number(right.viewsCount || 0) - Number(left.viewsCount || 0);
+
+  if (viewDiff) {
+    return viewDiff;
+  }
+
+  return getInterestScore(right) - getInterestScore(left);
+}
+
 function upcomingCardTemplate(title) {
   const cardLabel = getCardLabel(title);
   const secondaryLine = formatReleaseDate(title.releaseDate);
@@ -2336,9 +2364,7 @@ function renderMostInterestedList(titles) {
     filteredTitles = [...titles];
   }
 
-  const items = [...filteredTitles]
-    .sort((a, b) => getInterestScore(b) - getInterestScore(a))
-    .slice(0, 10);
+  const items = [...filteredTitles].sort(compareMostInterestedTitles).slice(0, 10);
 
   list.innerHTML = items.map(mostInterestedItemTemplate).join("");
 }
@@ -2918,6 +2944,8 @@ function buildUserNotifications(titles) {
       const items = [];
       const createdAtMs = getCreatedAtMs(title.createdAt);
       const updatedAtMs = getCreatedAtMs(title.updatedAt);
+      const savedTracked = savedSet.has(title.id);
+      const interestedTracked = activeWatchTitles.has(title.id);
 
       if (title.status === "Upcoming" && title.releaseDate) {
         const releaseDate = new Date(`${title.releaseDate}T00:00:00`);
@@ -2926,7 +2954,7 @@ function buildUserNotifications(titles) {
         if (!Number.isNaN(releaseDate.getTime()) && releaseDate.getTime() <= today.getTime()) {
           items.push({
             id: `release-${title.id}-${title.releaseDate}`,
-            label: "Saved title released",
+            label: savedTracked ? "Saved title released" : "Interested title released",
             title: title.title,
             copy: `${title.type} • ${formatReleaseDate(title.releaseDate)} • now ready to watch.`,
             href: buildTitleUrl(title.id),
@@ -2937,10 +2965,12 @@ function buildUserNotifications(titles) {
 
       if (updatedAtMs) {
         items.push({
-          id: `update-${title.id}-${updatedAtMs}`,
-          label: "Title updated",
+          id: `${interestedTracked ? "interest" : "saved"}-update-${title.id}-${updatedAtMs}`,
+          label: interestedTracked ? "Interested title updated" : "Saved title updated",
           title: title.title,
-          copy: "New updates landed for a title you saved or marked as interested.",
+          copy: interestedTracked
+            ? "A title on your watch radar has fresh updates."
+            : "A saved title has fresh updates waiting for you.",
           href: buildTitleUrl(title.id),
           createdAtMs: updatedAtMs
         });
@@ -4892,7 +4922,7 @@ function buildInterestedTitles(titles) {
         savedIds.has(title.id) ||
         normalizeWatchStatusValue(watchStatus[title.id]) === "interested"
     )
-    .sort((left, right) => getInterestScore(right) - getInterestScore(left))
+    .sort(compareMostInterestedTitles)
     .slice(0, 6);
 }
 
