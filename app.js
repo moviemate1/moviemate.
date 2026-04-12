@@ -15,11 +15,13 @@ import {
   updateDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import {
+  browserLocalPersistence,
   createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -34,6 +36,8 @@ const REACTIONS_STORAGE_KEY = "moviemate_reactions";
 const SAVED_TITLES_STORAGE_KEY = "moviemate_saved_titles";
 const OWNER_MODE_KEY = "moviemate_owner_mode";
 const USER_NOTIFICATIONS_SEEN_KEY = "moviemate_notifications_seen_at";
+const LAST_AUTH_UID_KEY = "moviemate_last_auth_uid";
+const USER_PROFILE_CACHE_PREFIX = "moviemate_user_profile_cache_";
 const TITLES_CACHE_KEY = "moviemate_titles_cache_v1";
 const HOMEPAGE_CONTENT_CACHE_KEY = "moviemate_homepage_content_cache_v1";
 const SEARCH_PAGE_SIZE = 24;
@@ -221,6 +225,74 @@ const DEFAULT_USER_PROFILE = {
 
 function isOwnerMode() {
   return localStorage.getItem(OWNER_MODE_KEY) === "true";
+}
+
+function getProfileCacheKey(uid) {
+  return uid ? `${USER_PROFILE_CACHE_PREFIX}${uid}` : "";
+}
+
+function rememberSignedInUid(uid) {
+  try {
+    if (uid) {
+      localStorage.setItem(LAST_AUTH_UID_KEY, uid);
+    } else {
+      localStorage.removeItem(LAST_AUTH_UID_KEY);
+    }
+  } catch (error) {
+    console.warn("Could not update auth uid cache", error);
+  }
+}
+
+function getRememberedSignedInUid() {
+  try {
+    return localStorage.getItem(LAST_AUTH_UID_KEY) || "";
+  } catch (error) {
+    console.warn("Could not read auth uid cache", error);
+    return "";
+  }
+}
+
+function saveUserProfileCache(uid, profile) {
+  const key = getProfileCacheKey(uid);
+
+  if (!key || !profile) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(key, JSON.stringify(profile));
+    rememberSignedInUid(uid);
+  } catch (error) {
+    console.warn("Could not store profile cache", error);
+  }
+}
+
+function loadUserProfileCache(uid) {
+  const key = getProfileCacheKey(uid);
+
+  if (!key) {
+    return null;
+  }
+
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? normalizeUserProfile(JSON.parse(raw)) : null;
+  } catch (error) {
+    console.warn("Could not read profile cache", error);
+    return null;
+  }
+}
+
+function clearUserProfileCache(uid) {
+  const key = getProfileCacheKey(uid);
+
+  try {
+    if (key) {
+      localStorage.removeItem(key);
+    }
+  } catch (error) {
+    console.warn("Could not clear profile cache", error);
+  }
 }
 
 function saveTitlesCacheToStorage(titles) {
@@ -516,10 +588,16 @@ async function ensureUserProfile(user) {
 
     await setDoc(ref, profile, { merge: true });
     currentUserProfile = normalizeUserProfile(profile);
+    userProfilesCache.set(user.uid, currentUserProfile);
+    saveUserProfileCache(user.uid, currentUserProfile);
+    rememberSignedInUid(user.uid);
     return currentUserProfile;
   }
 
   currentUserProfile = normalizeUserProfile(snapshot.data());
+  userProfilesCache.set(user.uid, currentUserProfile);
+  saveUserProfileCache(user.uid, currentUserProfile);
+  rememberSignedInUid(user.uid);
   return currentUserProfile;
 }
 
@@ -538,6 +616,7 @@ async function persistUserProfile(partial) {
 
   currentUserProfile = nextProfile;
   userProfilesCache.set(currentUser.uid, nextProfile);
+  saveUserProfileCache(currentUser.uid, nextProfile);
   usersCache = usersCache.length
     ? usersCache.some((profile) => profile.id === currentUser.uid)
       ? usersCache.map((profile) => (profile.id === currentUser.uid ? nextProfile : profile))
@@ -3997,6 +4076,8 @@ async function handleAuthSubmit(form) {
     return;
   }
 
+  await setPersistence(auth, browserLocalPersistence);
+
   if (mode === "signup") {
     const credentials = await createUserWithEmailAndPassword(auth, email, password);
     currentUser = credentials.user;
@@ -4066,7 +4147,10 @@ function setupAuthModal() {
   document.querySelectorAll("[data-signout-action]").forEach((button) => {
     button.addEventListener("click", async () => {
       closeAccountMenus();
+      const uidToClear = currentUser?.uid || getRememberedSignedInUid();
       await signOut(auth);
+      clearUserProfileCache(uidToClear);
+      rememberSignedInUid("");
     });
   });
 
@@ -6270,7 +6354,19 @@ function renderProfilePage() {
     return;
   }
 
-  if (!hasResolvedAuthState) {
+  const cachedUid = getRememberedSignedInUid();
+  const resolvedCurrentUid = currentUser?.uid || cachedUid;
+
+  if (!hasResolvedAuthState && !currentUserProfile && cachedUid) {
+    const cachedProfile = loadUserProfileCache(cachedUid);
+
+    if (cachedProfile) {
+      currentUserProfile = cachedProfile;
+      userProfilesCache.set(cachedUid, cachedProfile);
+    }
+  }
+
+  if (!hasResolvedAuthState && !currentUserProfile) {
     target.innerHTML = `
       <section class="account-empty-state">
         <p class="eyebrow">MovieMate account</p>
@@ -6295,9 +6391,9 @@ function renderProfilePage() {
   }
 
   const profileParams = new URLSearchParams(window.location.search);
-  const targetUid = profileParams.get("uid") || currentUser.uid;
-  const profileData = targetUid === currentUser.uid ? currentUserProfile : viewedProfileData || currentUserProfile;
-  const isOwnProfile = targetUid === currentUser.uid;
+  const targetUid = profileParams.get("uid") || resolvedCurrentUid;
+  const profileData = targetUid === resolvedCurrentUid ? currentUserProfile : viewedProfileData || currentUserProfile;
+  const isOwnProfile = targetUid === resolvedCurrentUid;
 
   if (!isOwnProfile && !viewedProfileData) {
     target.innerHTML = `
@@ -6331,10 +6427,10 @@ function renderProfilePage() {
     <section class="profile-page-shell">
       <aside class="profile-side-card">
         <div class="profile-avatar-wrap">
-          ${profileAvatarTemplate(profileData, targetUid === currentUser.uid ? currentUser : null, "profile-avatar")}
+          ${profileAvatarTemplate(profileData, targetUid === resolvedCurrentUid ? currentUser : null, "profile-avatar")}
         </div>
-        <h1 class="profile-name">${escapeHtml(getProfileDisplayName(profileData, targetUid === currentUser.uid ? currentUser : null))}</h1>
-        <p class="profile-handle">@${escapeHtml(getProfileUsername(profileData, targetUid === currentUser.uid ? currentUser : null))}</p>
+        <h1 class="profile-name">${escapeHtml(getProfileDisplayName(profileData, targetUid === resolvedCurrentUid ? currentUser : null))}</h1>
+        <p class="profile-handle">@${escapeHtml(getProfileUsername(profileData, targetUid === resolvedCurrentUid ? currentUser : null))}</p>
         <div class="profile-stat-row">
           <article><strong>${stats.reviews}</strong><span>Reviews<br />Posted</span></article>
           <article><strong>${stats.posts}</strong><span>Posts<br />Created</span></article>
@@ -6441,7 +6537,18 @@ function renderAccountPage() {
     return;
   }
 
-  if (!hasResolvedAuthState) {
+  const cachedUid = getRememberedSignedInUid();
+
+  if (!hasResolvedAuthState && !currentUserProfile && cachedUid) {
+    const cachedProfile = loadUserProfileCache(cachedUid);
+
+    if (cachedProfile) {
+      currentUserProfile = cachedProfile;
+      userProfilesCache.set(cachedUid, cachedProfile);
+    }
+  }
+
+  if (!hasResolvedAuthState && !currentUserProfile) {
     target.innerHTML = `
       <section class="account-empty-state">
         <p class="eyebrow">Account settings</p>
@@ -7133,6 +7240,11 @@ function setupOwnerNotificationsRealtime() {
 
 async function init() {
   let hasHandledInitialAuthState = false;
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch (error) {
+    console.warn("Could not set auth persistence.", error);
+  }
   hydrateStartupCaches();
   setupLikeButtons();
   setupSaveButtons();
