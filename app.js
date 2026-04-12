@@ -1230,6 +1230,7 @@ function normalizeTitle(docLike) {
           userId: comment.userId || "",
           name: comment.name || "Anonymous",
           text: comment.text || "",
+          reaction: comment.reaction && REACTION_OPTIONS[comment.reaction] ? comment.reaction : "",
           spoiler: Boolean(comment.spoiler),
           seasonNumber: Number(comment.seasonNumber || 0),
           createdAt: comment.createdAt || null,
@@ -3224,6 +3225,29 @@ function commentTemplate(comment) {
   `;
 }
 
+function commentReactionPickerTemplate(titleId) {
+  const currentReaction = getReaction(titleId);
+
+  return `
+    <div class="comment-reaction-picker" data-comment-reaction-picker="true">
+      <input type="hidden" name="reaction" value="${escapeHtml(currentReaction)}" />
+      ${Object.entries(REACTION_OPTIONS)
+        .map(
+          ([value, option]) => `
+            <button
+              class="comment-reaction-option comment-reaction-option-${option.className} ${currentReaction === value ? "active" : ""}"
+              type="button"
+              data-comment-reaction-value="${value}"
+            >
+              ${escapeHtml(option.label)}
+            </button>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function populateSelect(selectId, values, label) {
   const select = document.querySelector(selectId);
 
@@ -5205,7 +5229,8 @@ async function addComment(titleId, form, options = {}) {
   const text = formData.get("comment")?.toString().trim() || "";
   const spoiler = formData.get("spoiler") === "on";
   const seasonNumber = Number(options.seasonNumber || 0);
-  const reaction = getReaction(titleId);
+  const reactionFromForm = formData.get("reaction")?.toString().trim() || "";
+  const reaction = reactionFromForm && REACTION_OPTIONS[reactionFromForm] ? reactionFromForm : getReaction(titleId);
 
   if (!text) {
     showMessage("#commentMessage", "Please write a review or comment first.");
@@ -5372,6 +5397,7 @@ async function fetchTitleComments(titleId, legacyComments = [], options = {}) {
         userId: comment.userId || "",
         name: comment.name || "Anonymous",
         text: comment.text || "",
+        reaction: comment.reaction && REACTION_OPTIONS[comment.reaction] ? comment.reaction : "",
         spoiler: Boolean(comment.spoiler),
         seasonNumber: Number(comment.seasonNumber || 0),
         createdAt: comment.createdAt || null,
@@ -5392,6 +5418,7 @@ async function fetchTitleComments(titleId, legacyComments = [], options = {}) {
         userId: data.userId || "",
         name: data.name || "Anonymous",
         text: data.text || "",
+        reaction: data.reaction && REACTION_OPTIONS[data.reaction] ? data.reaction : "",
         spoiler: Boolean(data.spoiler),
         seasonNumber: Number(data.seasonNumber || 0),
         createdAt: data.createdAt || null,
@@ -5606,6 +5633,10 @@ async function renderDetailsPage() {
                 <label class="check-option spoiler-check form-span">
                   <input name="spoiler" type="checkbox" />
                   <span>Mark this comment as spoiler</span>
+                </label>
+                <label class="input-group form-span">
+                  <span>Your reaction</span>
+                  ${commentReactionPickerTemplate(title.id)}
                 </label>
                 <label class="input-group form-span">
                   <span>${escapeHtml(commentSectionCopy.fieldLabel)}</span>
@@ -6508,6 +6539,25 @@ function setupCommentInteractionButtons() {
     }
   });
 
+  document.addEventListener("click", (event) => {
+    const reactionButton = event.target instanceof HTMLElement ? event.target.closest("[data-comment-reaction-value]") : null;
+
+    if (!reactionButton) {
+      return;
+    }
+
+    const picker = reactionButton.closest("[data-comment-reaction-picker='true']");
+    const input = picker?.querySelector("input[name='reaction']");
+
+    if (!picker || !input) {
+      return;
+    }
+
+    picker.querySelectorAll("[data-comment-reaction-value]").forEach((button) => button.classList.remove("active"));
+    reactionButton.classList.add("active");
+    input.value = reactionButton.getAttribute("data-comment-reaction-value") || "";
+  });
+
   document.addEventListener("click", async (event) => {
     const editButton = event.target.closest(".comment-edit-btn");
 
@@ -6621,6 +6671,66 @@ function setupCommentInteractionButtons() {
 }
 
 function setupDetailMeterInteractions() {
+  const applyMeterSelection = (meterCard, segment) => {
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title) {
+      return;
+    }
+
+    meterCard.dataset.lockedSegment = segment || "";
+    applyMeterDisplay(meterCard, getReactionStats(title), segment || "");
+  };
+
+  const getMeterSegmentKeyFromPointer = (meterCard, event) => {
+    const meterVisual = meterCard?.querySelector("[data-meter-visual]");
+
+    if (!meterVisual) {
+      return "";
+    }
+
+    const rect = meterVisual.getBoundingClientRect();
+    const point = "touches" in event && event.touches?.length ? event.touches[0] : event;
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = point.clientX - centerX;
+    const dy = point.clientY - centerY;
+    const radius = rect.width / 2;
+    const innerRadius = radius - 24;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance < innerRadius || distance > radius) {
+      return "";
+    }
+
+    let angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    angle = (angle + 90 + 360) % 360;
+    const percent = (angle / 360) * 100;
+    const titleId = meterCard.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!title) {
+      return "";
+    }
+
+    const stats = getReactionStats(title);
+    const perfectEnd = stats.perfectPercent;
+    const goEnd = perfectEnd + stats.goForItPercent;
+    const timepassEnd = goEnd + stats.timepassPercent;
+
+    if (percent <= perfectEnd) {
+      return "perfect";
+    }
+    if (percent <= goEnd) {
+      return "goForIt";
+    }
+    if (percent <= timepassEnd) {
+      return "timepass";
+    }
+    return "skip";
+  };
+
   document.addEventListener("click", (event) => {
     const target = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
 
@@ -6629,16 +6739,7 @@ function setupDetailMeterInteractions() {
     }
 
     const meterCard = target.closest("[data-meter-card='true']");
-    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
-    const title = getCachedTitleById(titleId);
-
-    if (!meterCard || !title) {
-      return;
-    }
-
-    const segment = target.getAttribute("data-meter-segment") || "";
-    meterCard.dataset.lockedSegment = segment;
-    applyMeterDisplay(meterCard, getReactionStats(title), segment);
+    applyMeterSelection(meterCard, target.getAttribute("data-meter-segment") || "");
   });
 
   document.addEventListener("mouseover", (event) => {
@@ -6676,6 +6777,28 @@ function setupDetailMeterInteractions() {
 
     applyMeterDisplay(meterCard, getReactionStats(title), meterCard.dataset.lockedSegment || "");
   });
+
+  document.addEventListener("click", (event) => {
+    const meterVisual = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+
+    if (!meterVisual || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = meterVisual.closest("[data-meter-card='true']");
+    applyMeterSelection(meterCard, getMeterSegmentKeyFromPointer(meterCard, event));
+  });
+
+  document.addEventListener("touchstart", (event) => {
+    const touchTarget = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+
+    if (!touchTarget || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = touchTarget.closest("[data-meter-card='true']");
+    applyMeterSelection(meterCard, getMeterSegmentKeyFromPointer(meterCard, event));
+  }, { passive: true });
 }
 
 function updateOwnerToggle() {
@@ -6770,6 +6893,11 @@ function setupCommentForm(titleId, options = {}) {
     }
 
     form.reset();
+    const reactionInput = form.querySelector("input[name='reaction']");
+    if (reactionInput) {
+      reactionInput.value = "";
+    }
+    form.querySelectorAll("[data-comment-reaction-value]").forEach((button) => button.classList.remove("active"));
 
     try {
       await renderDetailsPage();

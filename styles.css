@@ -3869,6 +3869,55 @@ button.ghost-link {
   margin-bottom: 20px;
 }
 
+.comment-reaction-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.comment-reaction-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f4f4f6;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.comment-reaction-option:hover {
+  transform: translateY(-1px);
+}
+
+.comment-reaction-option-perfect.active {
+  background: linear-gradient(135deg, rgba(154, 92, 255, 0.28), rgba(193, 113, 255, 0.2));
+  border-color: rgba(175, 108, 255, 0.68);
+  box-shadow: 0 12px 28px rgba(154, 92, 255, 0.18);
+}
+
+.comment-reaction-option-goforit.active {
+  background: linear-gradient(135deg, rgba(24, 207, 155, 0.28), rgba(84, 239, 191, 0.18));
+  border-color: rgba(63, 220, 171, 0.68);
+  box-shadow: 0 12px 28px rgba(24, 207, 155, 0.16);
+}
+
+.comment-reaction-option-timepass.active {
+  background: linear-gradient(135deg, rgba(255, 191, 71, 0.28), rgba(255, 216, 125, 0.18));
+  border-color: rgba(255, 198, 86, 0.68);
+  box-shadow: 0 12px 28px rgba(255, 191, 71, 0.16);
+}
+
+.comment-reaction-option-skip.active {
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.26), rgba(255, 146, 146, 0.18));
+  border-color: rgba(255, 120, 120, 0.68);
+  box-shadow: 0 12px 28px rgba(255, 107, 107, 0.16);
+}
+
 .member-lock-card {
   display: grid;
   gap: 14px;
