@@ -203,7 +203,7 @@ let detailTitleRealtime = {
   titleId: null,
   unsubscribe: null
 };
-const detailWatchRequestsInFlight = new Set();
+const detailWatchTapGuard = new Map();
 let pendingNotificationState = {
   count: null,
   unsubscribe: null
@@ -1896,13 +1896,19 @@ async function handleDetailWatchStatusClick(titleId) {
     return false;
   }
 
-  if (detailWatchRequestsInFlight.has(titleId)) {
+  const now = Date.now();
+  const lastTapAt = detailWatchTapGuard.get(titleId) || 0;
+
+  if (now - lastTapAt < 300) {
     return false;
   }
 
+  detailWatchTapGuard.set(titleId, now);
+
   const previousStatus = getTitleWatchStatus(titleId);
   const nextStatus = getNextPrimaryWatchStatus(titleId);
-  detailWatchRequestsInFlight.add(titleId);
+  const localSnapshot = applyLocalWatchStatus(titleId, nextStatus, { patchInterestedCount: false });
+  updateDetailActionUI(titleId);
 
   try {
     const result = await syncWatchStatus(titleId, previousStatus, nextStatus);
@@ -1914,11 +1920,10 @@ async function handleDetailWatchStatusClick(titleId) {
     return true;
   } catch (error) {
     console.error(error);
+    rollbackLocalWatchStatus(localSnapshot, titleId, { patchInterestedCount: false });
     updateDetailActionUI(titleId);
     showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
     return false;
-  } finally {
-    detailWatchRequestsInFlight.delete(titleId);
   }
 }
 
