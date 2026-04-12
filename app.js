@@ -203,8 +203,7 @@ let detailTitleRealtime = {
   titleId: null,
   unsubscribe: null
 };
-const detailWatchRequestsInFlight = new Set();
-const detailOptimisticInterestedCounts = new Map();
+const detailWatchTapGuard = new Map();
 let pendingNotificationState = {
   count: null,
   unsubscribe: null
@@ -1897,6 +1896,15 @@ async function handleDetailWatchStatusClick(titleId) {
     return false;
   }
 
+  const now = Date.now();
+  const lastTapAt = detailWatchTapGuard.get(titleId) || 0;
+
+  if (now - lastTapAt < 350) {
+    return false;
+  }
+
+  detailWatchTapGuard.set(titleId, now);
+
   const previousStatus = getTitleWatchStatus(titleId);
   const nextStatus = getNextPrimaryWatchStatus(titleId);
   const localSnapshot = applyLocalWatchStatus(titleId, nextStatus, { patchInterestedCount: false });
@@ -2540,11 +2548,7 @@ function getHeroLaunchLabel(title) {
 }
 
 function getInterestedCount(title) {
-  const optimisticCount = detailOptimisticInterestedCounts.get(title.id);
-  const storedCount =
-    typeof optimisticCount === "number"
-      ? Math.max(0, optimisticCount)
-      : Math.max(0, Number(title.interestedCount || 0));
+  const storedCount = Math.max(0, Number(title.interestedCount || 0));
   const currentStatus = getTitleWatchStatus(title.id);
 
   if (countsTowardInterested(currentStatus)) {
