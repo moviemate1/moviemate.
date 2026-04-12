@@ -204,6 +204,7 @@ let detailTitleRealtime = {
 };
 const detailWatchSyncQueues = new Map();
 const detailWatchQueuedStatus = new Map();
+const detailWatchLastTapAt = new Map();
 let pendingNotificationState = {
   count: null,
   unsubscribe: null
@@ -1932,6 +1933,14 @@ async function handleDetailWatchStatusClick(titleId, nextStatus) {
     return false;
   }
 
+  const now = Date.now();
+  const lastTapAt = detailWatchLastTapAt.get(titleId) || 0;
+
+  if (now - lastTapAt < 400) {
+    return false;
+  }
+
+  detailWatchLastTapAt.set(titleId, now);
   applyLocalWatchStatus(titleId, nextStatus);
   const normalizedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
   detailWatchQueuedStatus.set(titleId, normalizedNextStatus);
