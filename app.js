@@ -1109,7 +1109,7 @@ function normalizeTitle(docLike) {
     tmdbPopularity: Number(data.tmdbPopularity || 0),
     viewsCount: Number(data.viewsCount || 0),
     savesCount: Number(data.savesCount || 0),
-    interestedCount: Number(data.interestedCount || 0),
+    interestedCount: Math.max(0, Number(data.interestedCount || 0)),
     seasonsCount: Number(data.seasonsCount || seasons.length || 0),
     episodesCount: Number(data.episodesCount || 0),
     seasons,
@@ -2262,7 +2262,14 @@ function getHeroLaunchLabel(title) {
 }
 
 function getInterestedCount(title) {
-  return Number(title.interestedCount || 0);
+  const storedCount = Math.max(0, Number(title.interestedCount || 0));
+  const currentStatus = getTitleWatchStatus(title.id);
+
+  if (currentStatus === "interested") {
+    return Math.max(1, storedCount);
+  }
+
+  return storedCount;
 }
 
 function movieCardTemplate(title) {
