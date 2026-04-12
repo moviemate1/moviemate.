@@ -1713,7 +1713,6 @@ async function syncWatchStatus(titleId, previousStatusValue, nextStatus) {
   }
 
   const rawNextStatus = typeof nextStatus === "undefined" ? previousStatusValue : nextStatus;
-  const rawPreviousStatus = typeof nextStatus === "undefined" ? "" : previousStatusValue;
   const resolvedNextStatus = rawNextStatus === "clear" || !rawNextStatus ? "" : normalizeWatchStatusValue(rawNextStatus);
   const isSeasonKey = titleId.includes("::season-");
   const baseProfile = currentUserProfile
@@ -1726,11 +1725,6 @@ async function syncWatchStatus(titleId, previousStatusValue, nextStatus) {
         }
       );
   const watchStatus = { ...(baseProfile.watchStatus || {}) };
-  const previousStatus =
-    typeof nextStatus === "undefined"
-      ? normalizeWatchStatusValue(baseProfile.watchStatus?.[titleId] || "")
-      : normalizeWatchStatusValue(rawPreviousStatus || "");
-
   if (!resolvedNextStatus) {
     delete watchStatus[titleId];
   } else {
@@ -1762,35 +1756,7 @@ async function syncWatchStatus(titleId, previousStatusValue, nextStatus) {
   let nextInterestedCount = null;
 
   if (!isSeasonKey) {
-    const beforeInterested = countsTowardInterested(previousStatus);
-    const afterInterested = countsTowardInterested(resolvedNextStatus);
-
-    if (beforeInterested !== afterInterested) {
-      const titleRef = doc(db, TITLES_COLLECTION, titleId);
-      nextInterestedCount = await withActionTimeout(
-        runTransaction(db, async (transaction) => {
-          const snapshot = await transaction.get(titleRef);
-
-          if (!snapshot.exists()) {
-            return 0;
-          }
-
-          const currentCount = Math.max(0, Number(snapshot.data()?.interestedCount || 0));
-          const nextCount = Math.max(0, currentCount + (afterInterested ? 1 : -1));
-          transaction.update(titleRef, {
-            interestedCount: nextCount
-          });
-          return nextCount;
-        }),
-        "interest update"
-      );
-    } else {
-      nextInterestedCount = Math.max(0, Number(getCachedTitleById(titleId)?.interestedCount || 0));
-    }
-
-    setTitleCounters(titleId, {
-      interestedCount: nextInterestedCount
-    });
+    nextInterestedCount = await syncInterestedAggregateExact(titleId);
   }
 
   return {
@@ -1902,7 +1868,9 @@ async function handleDetailWatchStatusClick(titleId) {
 
   const previousStatus = getTitleWatchStatus(titleId);
   const nextStatus = getNextPrimaryWatchStatus(titleId);
+  const localSnapshot = applyLocalWatchStatus(titleId, nextStatus, { patchInterestedCount: false });
   detailWatchRequestsInFlight.add(titleId);
+  updateDetailActionUI(titleId);
 
   try {
     const result = await syncWatchStatus(titleId, previousStatus, nextStatus);
@@ -1914,6 +1882,7 @@ async function handleDetailWatchStatusClick(titleId) {
     return true;
   } catch (error) {
     console.error(error);
+    rollbackLocalWatchStatus(localSnapshot, titleId, { patchInterestedCount: false });
     updateDetailActionUI(titleId);
     showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
     return false;
