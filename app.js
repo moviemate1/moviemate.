@@ -2239,7 +2239,6 @@ function getInterestedCount(title) {
 }
 
 function movieCardTemplate(title) {
-  const saved = isSavedTitle(title.id);
   const memberReady = isSignedIn();
   const ownerControls = isOwnerMode()
     ? `
@@ -2276,10 +2275,6 @@ function movieCardTemplate(title) {
           </div>
         </div>
       </a>
-      <div class="movie-actions movie-actions-compact">
-        <button class="owner-action-btn save-title-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button">${saved ? "Saved" : "Save"}</button>
-      </div>
-      ${memberReady ? "" : '<p class="member-action-note card-member-note">Members only can save, vote, and track titles.</p>'}
       ${ownerControls
         ? `
         <div class="movie-owner-controls">
