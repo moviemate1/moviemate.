@@ -658,6 +658,18 @@ function patchTitleCounters(titleId, counters = {}) {
   });
 }
 
+function setTitleCounters(titleId, values = {}) {
+  return updateTitleCacheEntry(titleId, (title) => {
+    const next = { ...title };
+
+    Object.entries(values).forEach(([field, value]) => {
+      next[field] = Math.max(0, Number(value || 0));
+    });
+
+    return next;
+  });
+}
+
 function mergeLiveTitleCounters(title) {
   const interestedCount = Math.max(0, Number(title.interestedCount || 0));
   const savesCount = Math.max(0, Number(title.savesCount || 0));
@@ -1550,6 +1562,27 @@ async function syncInterestedAggregate(titleId, delta) {
   );
 }
 
+async function calculateInterestedCountFromProfiles(titleId) {
+  const usersSnapshot = await withActionTimeout(getDocs(collection(db, USERS_COLLECTION)), "interest count load");
+
+  return usersSnapshot.docs.reduce((total, profileDoc) => {
+    const status = normalizeWatchStatusValue(profileDoc.data()?.watchStatus?.[titleId] || "");
+    return total + (countsTowardInterested(status) ? 1 : 0);
+  }, 0);
+}
+
+async function syncInterestedAggregateExact(titleId) {
+  const exactCount = await calculateInterestedCountFromProfiles(titleId);
+  await withActionTimeout(
+    updateDoc(doc(db, TITLES_COLLECTION, titleId), {
+      interestedCount: exactCount
+    }),
+    "interest count sync"
+  );
+  setTitleCounters(titleId, { interestedCount: exactCount });
+  return exactCount;
+}
+
 async function syncWatchStatus(titleId, nextStatus) {
   if (!isSignedIn()) {
     return false;
@@ -1586,7 +1619,13 @@ async function syncWatchStatus(titleId, nextStatus) {
     try {
       await syncInterestedAggregate(titleId, afterInterested ? 1 : -1);
     } catch (error) {
-      console.warn("Interested aggregate sync failed.", error);
+      console.warn("Interested aggregate delta sync failed.", error);
+    }
+
+    try {
+      await syncInterestedAggregateExact(titleId);
+    } catch (error) {
+      console.warn("Interested aggregate exact sync failed.", error);
     }
   }
 
