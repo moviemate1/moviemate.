@@ -1902,9 +1902,7 @@ async function handleDetailWatchStatusClick(titleId) {
 
   const previousStatus = getTitleWatchStatus(titleId);
   const nextStatus = getNextPrimaryWatchStatus(titleId);
-  const localSnapshot = applyLocalWatchStatus(titleId, nextStatus, { patchInterestedCount: false });
   detailWatchRequestsInFlight.add(titleId);
-  updateDetailActionUI(titleId);
 
   try {
     const result = await syncWatchStatus(titleId, previousStatus, nextStatus);
@@ -1916,7 +1914,6 @@ async function handleDetailWatchStatusClick(titleId) {
     return true;
   } catch (error) {
     console.error(error);
-    rollbackLocalWatchStatus(localSnapshot, titleId, { patchInterestedCount: false });
     updateDetailActionUI(titleId);
     showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
     return false;
