@@ -2672,17 +2672,17 @@ button.ghost-link {
 
 .reaction-btn.active.perfect,
 .reaction-btn-perfect.active {
-  background: linear-gradient(135deg, rgba(154, 92, 255, 0.28), rgba(193, 113, 255, 0.2));
-  border-color: rgba(175, 108, 255, 0.68);
-  box-shadow: 0 12px 28px rgba(154, 92, 255, 0.18);
+  background: linear-gradient(135deg, rgba(176, 108, 255, 0.34), rgba(214, 146, 255, 0.24));
+  border-color: rgba(186, 124, 255, 0.8);
+  box-shadow: 0 14px 34px rgba(176, 108, 255, 0.24);
   color: #f8f1ff;
 }
 
 .reaction-btn.active.goforit,
 .reaction-btn-goforit.active {
-  background: linear-gradient(135deg, rgba(24, 207, 155, 0.28), rgba(84, 239, 191, 0.18));
-  border-color: rgba(63, 220, 171, 0.68);
-  box-shadow: 0 12px 28px rgba(24, 207, 155, 0.16);
+  background: linear-gradient(135deg, rgba(57, 226, 164, 0.32), rgba(117, 245, 197, 0.2));
+  border-color: rgba(87, 231, 178, 0.78);
+  box-shadow: 0 14px 34px rgba(57, 226, 164, 0.22);
   color: #eafff8;
 }
 
@@ -3193,14 +3193,17 @@ button.ghost-link {
   aspect-ratio: 1;
   margin: 8px auto 20px;
   border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
-.meter-visual {
+.meter-visual,
+.genre-chart {
   --meter-focus-ring: transparent;
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
-.meter-visual::before {
+.meter-visual::before,
+.genre-chart::before {
   content: "";
   position: absolute;
   inset: -10px;
@@ -3218,28 +3221,30 @@ button.ghost-link {
 .genre-chart::after {
   content: "";
   position: absolute;
-  inset: 24px;
+  inset: 20px;
   border-radius: 50%;
   background: rgba(10, 10, 15, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.meter-visual.is-focused {
+.meter-visual.is-focused,
+.genre-chart.is-focused {
   transform: scale(1.04);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 22px 54px var(--meter-focus-glow, transparent);
 }
 
-.meter-visual.is-focused::before {
+.meter-visual.is-focused::before,
+.genre-chart.is-focused::before {
   opacity: 1;
   transform: scale(1.02);
 }
 
 .meter-visual[data-meter-focus="perfect"] {
-  --meter-focus-ring: rgba(154, 92, 255, 0.96);
+  --meter-focus-ring: rgba(176, 108, 255, 0.98);
 }
 
 .meter-visual[data-meter-focus="go"] {
-  --meter-focus-ring: rgba(24, 207, 155, 0.96);
+  --meter-focus-ring: rgba(57, 226, 164, 0.98);
 }
 
 .meter-visual[data-meter-focus="timepass"] {
@@ -3253,6 +3258,21 @@ button.ghost-link {
 .meter-visual.is-focused::after {
   border-color: color-mix(in srgb, var(--meter-focus-ring) 38%, rgba(255, 255, 255, 0.08));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--meter-focus-ring) 22%, transparent);
+}
+
+.genre-chart {
+  --meter-focus-glow: rgba(128, 94, 255, 0.2);
+  --meter-focus-ring: rgba(128, 94, 255, 0.5);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 18px 42px rgba(128, 94, 255, 0.16);
+}
+
+.genre-chart::before {
+  opacity: 0.72;
+  transform: scale(1.01);
+}
+
+.genre-chart::after {
+  box-shadow: inset 0 0 0 1px rgba(128, 94, 255, 0.12);
 }
 
 .meter-core,
@@ -3318,15 +3338,15 @@ button.ghost-link {
 }
 
 .meter-row-go.active {
-  border-color: rgba(24, 207, 155, 0.46);
-  background: rgba(24, 207, 155, 0.12);
-  box-shadow: 0 14px 32px rgba(24, 207, 155, 0.2);
+  border-color: rgba(57, 226, 164, 0.52);
+  background: rgba(57, 226, 164, 0.14);
+  box-shadow: 0 14px 32px rgba(57, 226, 164, 0.24);
 }
 
 .meter-row-perfect.active {
-  border-color: rgba(154, 92, 255, 0.46);
-  background: rgba(154, 92, 255, 0.12);
-  box-shadow: 0 14px 32px rgba(154, 92, 255, 0.2);
+  border-color: rgba(176, 108, 255, 0.52);
+  background: rgba(176, 108, 255, 0.14);
+  box-shadow: 0 14px 32px rgba(176, 108, 255, 0.24);
 }
 
 .meter-row-timepass.active {
@@ -3357,7 +3377,11 @@ button.ghost-link {
 }
 
 .dot-perfect {
-  background: #9a5cff;
+  background: #b06cff;
+}
+
+.dot-go {
+  background: #39e2a4;
 }
 
 .dot-mixed {
@@ -3936,15 +3960,15 @@ button.ghost-link {
 }
 
 .comment-reaction-option-perfect.active {
-  background: linear-gradient(135deg, rgba(154, 92, 255, 0.28), rgba(193, 113, 255, 0.2));
-  border-color: rgba(175, 108, 255, 0.68);
-  box-shadow: 0 12px 28px rgba(154, 92, 255, 0.18);
+  background: linear-gradient(135deg, rgba(176, 108, 255, 0.34), rgba(214, 146, 255, 0.24));
+  border-color: rgba(186, 124, 255, 0.8);
+  box-shadow: 0 14px 34px rgba(176, 108, 255, 0.24);
 }
 
 .comment-reaction-option-goforit.active {
-  background: linear-gradient(135deg, rgba(24, 207, 155, 0.28), rgba(84, 239, 191, 0.18));
-  border-color: rgba(63, 220, 171, 0.68);
-  box-shadow: 0 12px 28px rgba(24, 207, 155, 0.16);
+  background: linear-gradient(135deg, rgba(57, 226, 164, 0.32), rgba(117, 245, 197, 0.2));
+  border-color: rgba(87, 231, 178, 0.78);
+  box-shadow: 0 14px 34px rgba(57, 226, 164, 0.22);
 }
 
 .comment-reaction-option-timepass.active {
@@ -4035,14 +4059,14 @@ button.ghost-link {
 }
 
 .comment-reaction-perfect {
-  background: rgba(154, 92, 255, 0.18);
-  border-color: rgba(154, 92, 255, 0.36);
+  background: rgba(176, 108, 255, 0.2);
+  border-color: rgba(176, 108, 255, 0.42);
   color: #f5eaff;
 }
 
 .comment-reaction-goforit {
-  background: rgba(24, 207, 155, 0.16);
-  border-color: rgba(24, 207, 155, 0.34);
+  background: rgba(57, 226, 164, 0.18);
+  border-color: rgba(57, 226, 164, 0.4);
   color: #e5fff5;
 }
 

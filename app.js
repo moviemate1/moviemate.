@@ -52,11 +52,18 @@ const REACTION_OPTIONS = {
   skip: { label: "Skip", className: "skip" }
 };
 const REACTION_METER_COLORS = {
-  perfect: { solid: "#9a5cff", glow: "rgba(154, 92, 255, 0.34)" },
-  goForIt: { solid: "#18cf9b", glow: "rgba(24, 207, 155, 0.34)" },
+  perfect: { solid: "#b06cff", glow: "rgba(176, 108, 255, 0.42)" },
+  goForIt: { solid: "#39e2a4", glow: "rgba(57, 226, 164, 0.4)" },
   timepass: { solid: "#ffbf47", glow: "rgba(255, 191, 71, 0.32)" },
   skip: { solid: "#ff6b6b", glow: "rgba(255, 107, 107, 0.3)" }
 };
+
+function getReactionMeterGradient(stats) {
+  const perfectEnd = stats.perfectPercent;
+  const goEnd = perfectEnd + stats.goForItPercent;
+  const timepassEnd = goEnd + stats.timepassPercent;
+  return `conic-gradient(${REACTION_METER_COLORS.perfect.solid} 0 ${perfectEnd}%, ${REACTION_METER_COLORS.goForIt.solid} ${perfectEnd}% ${goEnd}%, ${REACTION_METER_COLORS.timepass.solid} ${goEnd}% ${timepassEnd}%, ${REACTION_METER_COLORS.skip.solid} ${timepassEnd}% 100%)`;
+}
 const DEFAULT_HOMEPAGE_CONTENT = {
   heroEyebrow: "MoviemateHub picks for every mood",
   heroTitle: "Discover movies and series worth your time.",
@@ -2213,7 +2220,7 @@ function reactionMeterTemplate(title) {
         </div>
         <span class="insight-pill" data-meter-votes>${formatLargeNumber(total)} votes</span>
       </div>
-      <div class="meter-visual" data-meter-visual style="background: conic-gradient(#9a5cff 0 ${perfectPercent}%, #18cf9b ${perfectPercent}% ${perfectPercent + goForItPercent}%, #ffbf47 ${perfectPercent + goForItPercent}% ${perfectPercent + goForItPercent + timepassPercent}%, #ff6b6b ${perfectPercent + goForItPercent + timepassPercent}% 100%);">
+      <div class="meter-visual" data-meter-visual style="background: ${getReactionMeterGradient(stats)};">
         <div class="meter-core">
           <strong data-meter-core-percent>${recommendedPercent}%</strong>
           <span data-meter-core-copy>${stats.goForIt + stats.perfect}/${total} recommend</span>
@@ -2333,7 +2340,7 @@ function vibeChartTemplate(title) {
           <h3>${escapeHtml(title.genre || "Story mix")}</h3>
         </div>
       </div>
-      <div class="genre-chart" style="${genreChartStyle(segments)}">
+      <div class="genre-chart" data-vibe-chart="true" style="${genreChartStyle(segments)}">
         <div class="genre-chart-core">
           <span>${segments.length} moods</span>
         </div>
@@ -2783,7 +2790,7 @@ function updateDetailActionUI(titleId) {
     const meterSkip = meterCard.querySelector("[data-meter-skip]");
 
     if (meterVisual) {
-      meterVisual.style.background = `conic-gradient(#9a5cff 0 ${perfectPercent}%, #18cf9b ${perfectPercent}% ${perfectPercent + goForItPercent}%, #ffbf47 ${perfectPercent + goForItPercent}% ${perfectPercent + goForItPercent + timepassPercent}%, #ff6b6b ${perfectPercent + goForItPercent + timepassPercent}% 100%)`;
+      meterVisual.style.background = getReactionMeterGradient(stats);
     }
 
     if (meterRecommend) {
