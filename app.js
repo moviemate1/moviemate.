@@ -1539,8 +1539,6 @@ function applyLocalWatchStatus(titleId, nextStatus) {
 
   const normalizedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
   const previousProfile = currentUserProfile ? normalizeUserProfile(currentUserProfile) : normalizeUserProfile({});
-  const previousStatus = normalizeWatchStatusValue(previousProfile.watchStatus?.[titleId] || "");
-  const isSeasonKey = titleId.includes("::season-");
   const nextWatchStatus = { ...(previousProfile.watchStatus || {}) };
 
   if (!normalizedNextStatus) {
@@ -1560,18 +1558,8 @@ function applyLocalWatchStatus(titleId, nextStatus) {
     saveUserProfileCache(currentUser.uid, currentUserProfile);
   }
 
-  if (!isSeasonKey) {
-    const beforeInterested = countsTowardInterested(previousStatus);
-    const afterInterested = countsTowardInterested(normalizedNextStatus);
-
-    if (beforeInterested !== afterInterested) {
-      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
-    }
-  }
-
   return {
     previousProfile,
-    previousStatus,
     nextStatus: normalizedNextStatus
   };
 }
@@ -1579,15 +1567,6 @@ function applyLocalWatchStatus(titleId, nextStatus) {
 function rollbackLocalWatchStatus(snapshot, titleId) {
   if (!snapshot) {
     return;
-  }
-
-  if (!titleId.includes("::season-")) {
-    const beforeInterested = countsTowardInterested(snapshot.nextStatus);
-    const afterInterested = countsTowardInterested(snapshot.previousStatus);
-
-    if (beforeInterested !== afterInterested) {
-      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
-    }
   }
 
   currentUserProfile = normalizeUserProfile(snapshot.previousProfile || {});
@@ -1699,100 +1678,55 @@ async function syncWatchStatus(titleId, nextStatus) {
 
   const resolvedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
   const isSeasonKey = titleId.includes("::season-");
-  const transactionResult = await withActionTimeout(
-    runTransaction(db, async (transaction) => {
-      const userSnapshot = await transaction.get(userRef);
-      const baseProfile = normalizeUserProfile(
-        userSnapshot.exists()
-          ? userSnapshot.data()
-          : {
-              ...DEFAULT_USER_PROFILE,
-              displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "MovieMate member",
-              username: buildDefaultUsername(currentUser),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            }
-      );
-      const watchStatus = { ...(baseProfile.watchStatus || {}) };
-      const currentStatus = normalizeWatchStatusValue(watchStatus[titleId] || "");
-      const beforeInterested = !isSeasonKey && countsTowardInterested(currentStatus);
-      const afterInterested = !isSeasonKey && countsTowardInterested(resolvedNextStatus);
-
-      if (!resolvedNextStatus) {
-        delete watchStatus[titleId];
-      } else {
-        watchStatus[titleId] = resolvedNextStatus;
-      }
-
-      transaction.set(
-        userRef,
-        {
-          watchStatus,
-          updatedAt: new Date().toISOString()
-        },
-        { merge: true }
-      );
-
-      const nextProfile = normalizeUserProfile({
-        ...baseProfile,
-        watchStatus,
-        updatedAt: new Date().toISOString()
-      });
-
-      let nextInterestedCount = null;
-
-      if (!isSeasonKey) {
-        const titleRef = doc(db, TITLES_COLLECTION, titleId);
-        const titleSnapshot = await transaction.get(titleRef);
-
-        if (titleSnapshot.exists()) {
-          const currentCount = Math.max(0, Number(titleSnapshot.data()?.interestedCount || 0));
-          nextInterestedCount =
-            beforeInterested === afterInterested
-              ? currentCount
-              : Math.max(0, currentCount + (afterInterested ? 1 : -1));
-
-          if (nextInterestedCount !== currentCount) {
-            transaction.update(titleRef, {
-              interestedCount: nextInterestedCount
-            });
-          }
+  const baseProfile = currentUserProfile
+    ? normalizeUserProfile(currentUserProfile)
+    : normalizeUserProfile(
+        (await ensureUserProfile(currentUser)) || {
+          ...DEFAULT_USER_PROFILE,
+          displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "MovieMate member",
+          username: buildDefaultUsername(currentUser)
         }
-      }
+      );
+  const watchStatus = { ...(baseProfile.watchStatus || {}) };
 
-      return {
-        nextProfile,
+  if (!resolvedNextStatus) {
+    delete watchStatus[titleId];
+  } else {
+    watchStatus[titleId] = resolvedNextStatus;
+  }
+
+  const nextProfile = normalizeUserProfile({
+    ...baseProfile,
+    watchStatus,
+    updatedAt: new Date().toISOString()
+  });
+
+  await withActionTimeout(
+    setDoc(
+      userRef,
+      {
         watchStatus,
-        currentStatus,
-        resolvedNextStatus,
-        nextInterestedCount
-      };
-    }),
+        updatedAt: nextProfile.updatedAt
+      },
+      { merge: true }
+    ),
     "watch status update"
   );
 
-  currentUserProfile = transactionResult.nextProfile;
-
+  currentUserProfile = nextProfile;
   userProfilesCache.set(currentUser.uid, currentUserProfile);
   saveUserProfileCache(currentUser.uid, currentUserProfile);
 
-  if (!isSeasonKey) {
-    if (typeof transactionResult.nextInterestedCount === "number") {
-      setTitleCounters(titleId, { interestedCount: transactionResult.nextInterestedCount });
-    } else {
-      const beforeInterested = countsTowardInterested(transactionResult.currentStatus);
-      const afterInterested = countsTowardInterested(transactionResult.resolvedNextStatus);
+  let nextInterestedCount = null;
 
-      if (beforeInterested !== afterInterested) {
-        patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
-      }
-    }
+  if (!isSeasonKey) {
+    nextInterestedCount = await syncInterestedAggregateExact(titleId);
   }
 
   return {
     ok: true,
-    status: transactionResult.resolvedNextStatus,
-    interestedCount: transactionResult.nextInterestedCount
+    status: resolvedNextStatus,
+    interestedCount: nextInterestedCount
   };
 }
 
