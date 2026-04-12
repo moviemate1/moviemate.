@@ -5377,25 +5377,27 @@ async function renderDetailsPage() {
         return;
       }
 
-      const localSnapshot = applyLocalWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
-      updateDetailActionUI(watchButton.dataset.id);
+      const titleId = watchButton.dataset.id;
+      const nextStatus = watchButton.dataset.watchStatus;
+      const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
+      updateDetailActionUI(titleId);
 
       try {
-        setDetailWatchButtonsBusy(watchButton.dataset.id, true);
-        syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus).catch((error) => {
+        setDetailWatchButtonsBusy(titleId, true);
+        syncWatchStatus(titleId, nextStatus).catch((error) => {
           console.error(error);
-          rollbackLocalWatchStatus(localSnapshot, watchButton.dataset.id);
-          updateDetailActionUI(watchButton.dataset.id);
+          rollbackLocalWatchStatus(localSnapshot, titleId);
+          updateDetailActionUI(titleId);
           showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
         }).finally(() => {
-          setDetailWatchButtonsBusy(watchButton.dataset.id, false);
+          setDetailWatchButtonsBusy(titleId, false);
         });
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
-        rollbackLocalWatchStatus(localSnapshot, watchButton.dataset.id);
-        updateDetailActionUI(watchButton.dataset.id);
-        setDetailWatchButtonsBusy(watchButton.dataset.id, false);
+        rollbackLocalWatchStatus(localSnapshot, titleId);
+        updateDetailActionUI(titleId);
+        setDetailWatchButtonsBusy(titleId, false);
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
       }
       return;
@@ -5478,25 +5480,27 @@ async function renderDetailsPage() {
         return;
       }
 
-      const localSnapshot = applyLocalWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
-      updateDetailActionUI(watchButton.dataset.id);
+      const titleId = watchButton.dataset.id;
+      const nextStatus = watchButton.dataset.watchStatus;
+      const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
+      updateDetailActionUI(titleId);
 
       try {
-        setDetailWatchButtonsBusy(watchButton.dataset.id, true);
-        syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus).catch((error) => {
+        setDetailWatchButtonsBusy(titleId, true);
+        syncWatchStatus(titleId, nextStatus).catch((error) => {
           console.error(error);
-          rollbackLocalWatchStatus(localSnapshot, watchButton.dataset.id);
-          updateDetailActionUI(watchButton.dataset.id);
+          rollbackLocalWatchStatus(localSnapshot, titleId);
+          updateDetailActionUI(titleId);
           showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
         }).finally(() => {
-          setDetailWatchButtonsBusy(watchButton.dataset.id, false);
+          setDetailWatchButtonsBusy(titleId, false);
         });
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
-        rollbackLocalWatchStatus(localSnapshot, watchButton.dataset.id);
-        updateDetailActionUI(watchButton.dataset.id);
-        setDetailWatchButtonsBusy(watchButton.dataset.id, false);
+        rollbackLocalWatchStatus(localSnapshot, titleId);
+        updateDetailActionUI(titleId);
+        setDetailWatchButtonsBusy(titleId, false);
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
       }
     }
