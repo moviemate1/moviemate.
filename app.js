@@ -1950,9 +1950,7 @@ function getReleasedWatchCycleState(status) {
 }
 
 function getPrimaryWatchButtonState(title, status) {
-  return isUpcomingTitle(title)
-    ? getUpcomingInterestState(status)
-    : getReleasedWatchCycleState(status);
+  return getReleasedWatchCycleState(status);
 }
 
 function toYouTubeSearchUrl(title) {
