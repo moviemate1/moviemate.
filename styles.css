@@ -2561,7 +2561,6 @@ button.ghost-link {
 }
 
 .watch-status-btn.is-busy {
-  pointer-events: none;
   opacity: 1;
   transform: none;
 }
