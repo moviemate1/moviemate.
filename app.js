@@ -4741,34 +4741,47 @@ function renderHeroStats(titles) {
 async function submitOwnerEdit(form) {
   const formData = new FormData(form);
   const titleId = formData.get("id")?.toString().trim() || "";
+  const submitButton = form.querySelector("button[type='submit']");
 
   if (!titleId) {
     return;
   }
 
-  await updateTitleStatus(titleId, {
-    title: formData.get("title")?.toString().trim() || "",
-    type: formData.get("type")?.toString().trim() || "Movie",
-    status: formData.get("status")?.toString().trim() || "Released",
-    genre: formData.get("genre")?.toString().trim() || "",
-    platforms: (formData.get("platforms")?.toString().trim() || "")
-      .split(",")
-      .map((value) => value.trim())
-      .filter(Boolean),
-    language: (formData.get("language")?.toString().trim() || "")
-      .split(",")
-      .map((value) => value.trim())
-      .filter(Boolean),
-    releaseDate: formData.get("releaseDate")?.toString().trim() || "",
-    image: formData.get("image")?.toString().trim() || "",
-    trailerUrl: formData.get("trailerUrl")?.toString().trim() || "",
-    director: formData.get("director")?.toString().trim() || "",
-    mainLead: formData.get("mainLead")?.toString().trim() || "",
-    heroine: formData.get("heroine")?.toString().trim() || "",
-    cast: parseNameList(formData.get("castText"), "Cast"),
-    crew: parseCrewText(formData.get("crewText")),
-    description: formData.get("description")?.toString().trim() || ""
-  });
+  try {
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Saving...";
+    }
+
+    await updateTitleStatus(titleId, {
+      title: formData.get("title")?.toString().trim() || "",
+      type: formData.get("type")?.toString().trim() || "Movie",
+      status: formData.get("status")?.toString().trim() || "Released",
+      genre: formData.get("genre")?.toString().trim() || "",
+      platforms: (formData.get("platforms")?.toString().trim() || "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+      language: (formData.get("language")?.toString().trim() || "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+      releaseDate: formData.get("releaseDate")?.toString().trim() || "",
+      image: formData.get("image")?.toString().trim() || "",
+      trailerUrl: formData.get("trailerUrl")?.toString().trim() || "",
+      director: formData.get("director")?.toString().trim() || "",
+      mainLead: formData.get("mainLead")?.toString().trim() || "",
+      heroine: formData.get("heroine")?.toString().trim() || "",
+      cast: parseNameList(formData.get("castText"), "Cast"),
+      crew: parseCrewText(formData.get("crewText")),
+      description: formData.get("description")?.toString().trim() || ""
+    });
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Save Changes";
+    }
+  }
 }
 
 function renderOwnerNotifications(titles) {
@@ -6116,16 +6129,21 @@ function setupOwnerEditForm() {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    await submitOwnerEdit(form);
-    showMessage("#ownerEditMessage", "Title updated successfully.");
+    try {
+      await submitOwnerEdit(form);
+      showMessage("#ownerEditMessage", "Title updated successfully.");
 
-    if (document.body.dataset.page === "home") {
-      await renderHomePage();
-    } else {
-      await renderDetailsPage();
+      if (document.body.dataset.page === "home") {
+        await renderHomePage();
+      } else {
+        await renderDetailsPage();
+      }
+
+      closeOwnerEditModal();
+    } catch (error) {
+      console.error(error);
+      showMessage("#ownerEditMessage", getActionErrorMessage(error, "Could not save changes right now."));
     }
-
-    closeOwnerEditModal();
   });
 }
 
