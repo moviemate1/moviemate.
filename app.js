@@ -711,8 +711,10 @@ function setDetailWatchButtonsBusy(titleId, busy) {
     if (busy) {
       button.disabled = false;
       button.removeAttribute("aria-disabled");
+      button.dataset.busy = "true";
     } else {
       setButtonDisabledState(button, !isSignedIn());
+      delete button.dataset.busy;
     }
 
     button.classList.toggle("is-busy", Boolean(busy));
@@ -5391,14 +5393,20 @@ async function renderDetailsPage() {
       event.preventDefault();
       event.stopPropagation();
 
+      if (watchButton.dataset.busy === "true") {
+        return;
+      }
+
       if (!requireAccount("track interested, watching, and watched titles")) {
         return;
       }
 
       const titleId = watchButton.dataset.id;
       const nextStatus = watchButton.dataset.watchStatus;
+      setDetailWatchButtonsBusy(titleId, true);
       const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
       updateDetailActionUI(titleId);
+      setDetailWatchButtonsBusy(titleId, true);
 
       try {
         syncWatchStatus(titleId, nextStatus).catch((error) => {
@@ -5406,12 +5414,15 @@ async function renderDetailsPage() {
           rollbackLocalWatchStatus(localSnapshot, titleId);
           updateDetailActionUI(titleId);
           showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+        }).finally(() => {
+          setDetailWatchButtonsBusy(titleId, false);
         });
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
         rollbackLocalWatchStatus(localSnapshot, titleId);
         updateDetailActionUI(titleId);
+        setDetailWatchButtonsBusy(titleId, false);
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
       }
       return;
@@ -5490,14 +5501,20 @@ async function renderDetailsPage() {
       event.preventDefault();
       event.stopPropagation();
 
+      if (watchButton.dataset.busy === "true") {
+        return;
+      }
+
       if (!requireAccount("track interested, watching, and watched titles")) {
         return;
       }
 
       const titleId = watchButton.dataset.id;
       const nextStatus = watchButton.dataset.watchStatus;
+      setDetailWatchButtonsBusy(titleId, true);
       const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
       updateDetailActionUI(titleId);
+      setDetailWatchButtonsBusy(titleId, true);
 
       try {
         syncWatchStatus(titleId, nextStatus).catch((error) => {
@@ -5505,12 +5522,15 @@ async function renderDetailsPage() {
           rollbackLocalWatchStatus(localSnapshot, titleId);
           updateDetailActionUI(titleId);
           showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+        }).finally(() => {
+          setDetailWatchButtonsBusy(titleId, false);
         });
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
         rollbackLocalWatchStatus(localSnapshot, titleId);
         updateDetailActionUI(titleId);
+        setDetailWatchButtonsBusy(titleId, false);
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
       }
     }
