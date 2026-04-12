@@ -1711,85 +1711,49 @@ async function syncWatchStatus(titleId, nextStatus) {
 
   const resolvedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
   const isSeasonKey = titleId.includes("::season-");
-  const transactionResult = await withActionTimeout(
-    runTransaction(db, async (transaction) => {
-      const userSnapshot = await transaction.get(userRef);
-      const baseProfile = normalizeUserProfile(
-        userSnapshot.exists()
-          ? { id: currentUser.uid, ...userSnapshot.data() }
-          : {
-              ...DEFAULT_USER_PROFILE,
-              id: currentUser.uid,
-              displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "MovieMate member",
-              username: buildDefaultUsername(currentUser),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            }
-      );
-      const watchStatus = { ...(baseProfile.watchStatus || {}) };
-      const previousStatus = normalizeWatchStatusValue(watchStatus[titleId] || "");
-      const beforeInterested = !isSeasonKey && countsTowardInterested(previousStatus);
-      const afterInterested = !isSeasonKey && countsTowardInterested(resolvedNextStatus);
-
-      if (!resolvedNextStatus) {
-        delete watchStatus[titleId];
-      } else {
-        watchStatus[titleId] = resolvedNextStatus;
-      }
-
-      const nextProfile = normalizeUserProfile({
-        ...baseProfile,
-        watchStatus,
-        updatedAt: new Date().toISOString()
-      });
-
-      transaction.set(
-        userRef,
-        {
-          watchStatus,
-          updatedAt: nextProfile.updatedAt
-        },
-        { merge: true }
-      );
-
-      let nextInterestedCount = null;
-
-      if (!isSeasonKey) {
-        const titleRef = doc(db, TITLES_COLLECTION, titleId);
-        const titleSnapshot = await transaction.get(titleRef);
-
-        if (titleSnapshot.exists()) {
-          const currentCount = Math.max(0, Number(titleSnapshot.data()?.interestedCount || 0));
-          nextInterestedCount =
-            beforeInterested === afterInterested
-              ? currentCount
-              : Math.max(0, currentCount + (afterInterested ? 1 : -1));
-
-          if (nextInterestedCount !== currentCount) {
-            transaction.update(titleRef, {
-              interestedCount: nextInterestedCount
-            });
-          }
+  const baseProfile = currentUserProfile
+    ? normalizeUserProfile(currentUserProfile)
+    : normalizeUserProfile(
+        (await ensureUserProfile(currentUser)) || {
+          ...DEFAULT_USER_PROFILE,
+          displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "MovieMate member",
+          username: buildDefaultUsername(currentUser)
         }
-      }
+      );
+  const watchStatus = { ...(baseProfile.watchStatus || {}) };
 
-      return {
-        nextProfile,
-        nextInterestedCount
-      };
-    }),
+  if (!resolvedNextStatus) {
+    delete watchStatus[titleId];
+  } else {
+    watchStatus[titleId] = resolvedNextStatus;
+  }
+
+  const nextProfile = normalizeUserProfile({
+    ...baseProfile,
+    watchStatus,
+    updatedAt: new Date().toISOString()
+  });
+
+  await withActionTimeout(
+    setDoc(
+      userRef,
+      {
+        watchStatus,
+        updatedAt: nextProfile.updatedAt
+      },
+      { merge: true }
+    ),
     "watch status update"
   );
 
-  currentUserProfile = transactionResult.nextProfile;
+  currentUserProfile = nextProfile;
   userProfilesCache.set(currentUser.uid, currentUserProfile);
   saveUserProfileCache(currentUser.uid, currentUserProfile);
 
   let nextInterestedCount = null;
 
-  if (!isSeasonKey && typeof transactionResult.nextInterestedCount === "number") {
-    nextInterestedCount = transactionResult.nextInterestedCount;
-    setTitleCounters(titleId, { interestedCount: nextInterestedCount });
+  if (!isSeasonKey) {
+    nextInterestedCount = await syncInterestedAggregateExact(titleId);
   }
 
   return {
