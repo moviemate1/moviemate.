@@ -5,6 +5,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocFromServer,
   getDocs,
   getFirestore,
   increment,
@@ -655,6 +656,33 @@ function patchTitleCounters(titleId, counters = {}) {
 
     return next;
   });
+}
+
+function mergeLiveTitleCounters(title) {
+  const interestedCount = Math.max(0, Number(title.interestedCount || 0));
+  const savesCount = Math.max(0, Number(title.savesCount || 0));
+  const viewsCount = Math.max(0, Number(title.viewsCount || 0));
+  const currentStatus = getTitleWatchStatus(title.id);
+
+  return {
+    ...title,
+    interestedCount: countsTowardInterested(currentStatus)
+      ? Math.max(1, interestedCount)
+      : interestedCount,
+    savesCount,
+    viewsCount
+  };
+}
+
+async function fetchTitleSnapshot(titleId) {
+  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+
+  try {
+    return await getDocFromServer(titleRef);
+  } catch (error) {
+    console.warn("Falling back to cached title read.", error);
+    return getDoc(titleRef);
+  }
 }
 
 function insertTitleCommentInCache(titleId, comment) {
@@ -1388,6 +1416,11 @@ function getTitleWatchStatus(titleId) {
   return normalizeWatchStatusValue(getWatchStatusMap()[titleId] || "");
 }
 
+function countsTowardInterested(value) {
+  const normalized = normalizeWatchStatusValue(value);
+  return normalized === "interested" || normalized === "watching" || normalized === "watched";
+}
+
 function getCreatedAtMs(value) {
   if (!value) {
     return 0;
@@ -1526,8 +1559,8 @@ async function syncWatchStatus(titleId, nextStatus) {
   const currentStatus = normalizeWatchStatusValue(watchStatus[titleId] || "");
   const resolvedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
   const isSeasonKey = titleId.includes("::season-");
-  const beforeInterested = !isSeasonKey && currentStatus === "interested";
-  const afterInterested = !isSeasonKey && resolvedNextStatus === "interested";
+  const beforeInterested = !isSeasonKey && countsTowardInterested(currentStatus);
+  const afterInterested = !isSeasonKey && countsTowardInterested(resolvedNextStatus);
 
   if (!resolvedNextStatus) {
     delete watchStatus[titleId];
@@ -2265,7 +2298,7 @@ function getInterestedCount(title) {
   const storedCount = Math.max(0, Number(title.interestedCount || 0));
   const currentStatus = getTitleWatchStatus(title.id);
 
-  if (currentStatus === "interested") {
+  if (countsTowardInterested(currentStatus)) {
     return Math.max(1, storedCount);
   }
 
@@ -4794,14 +4827,14 @@ async function renderDetailsPage() {
   }
 
   try {
-    const snapshot = await getDoc(doc(db, TITLES_COLLECTION, titleId));
+    const snapshot = await fetchTitleSnapshot(titleId);
 
     if (!snapshot.exists()) {
       target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
       return;
     }
 
-    const title = normalizeTitle(snapshot);
+    const title = mergeLiveTitleCounters(normalizeTitle(snapshot));
     title.comments = await fetchTitleComments(title.id, title.comments);
     titlesCache = [...titlesCache.filter((item) => item.id !== title.id), title];
 
@@ -5196,7 +5229,7 @@ async function renderSeasonPage() {
   }
 
   try {
-    const snapshot = await getDoc(doc(db, TITLES_COLLECTION, titleId));
+    const snapshot = await fetchTitleSnapshot(titleId);
 
     if (!snapshot.exists()) {
       target.innerHTML = `<section class="account-empty-state"><h1>Season not found.</h1></section>`;
