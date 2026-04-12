@@ -2560,12 +2560,35 @@ button.ghost-link {
   font-weight: 700;
 }
 
+.watch-status-btn.is-busy {
+  pointer-events: none;
+  opacity: 1;
+  transform: none;
+}
+
+.watch-status-btn.is-busy::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  margin-left: 8px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-top-color: rgba(255, 255, 255, 0.92);
+  animation: moviemate-spin 0.8s linear infinite;
+}
+
 .watch-status-btn:disabled,
 .save-title-btn:disabled,
 .reaction-btn:disabled {
   cursor: not-allowed;
   opacity: 0.55;
   transform: none;
+}
+
+@keyframes moviemate-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .member-action-note {

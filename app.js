@@ -708,7 +708,13 @@ function setButtonDisabledState(button, disabled) {
 
 function setDetailWatchButtonsBusy(titleId, busy) {
   document.querySelectorAll(`.watch-status-btn[data-id="${titleId}"]:not([data-season-watch="true"])`).forEach((button) => {
-    setButtonDisabledState(button, busy || !isSignedIn());
+    if (busy) {
+      button.disabled = false;
+      button.removeAttribute("aria-disabled");
+    } else {
+      setButtonDisabledState(button, !isSignedIn());
+    }
+
     button.classList.toggle("is-busy", Boolean(busy));
   });
 }
