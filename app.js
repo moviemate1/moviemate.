@@ -3972,7 +3972,39 @@ function setAuthMode(mode) {
   signupTab?.classList.toggle("active", mode === "signup");
 }
 
+function getCachedAuthUiState() {
+  if (hasResolvedAuthState || isSignedIn()) {
+    return null;
+  }
+
+  const cachedUid = getRememberedSignedInUid();
+
+  if (!cachedUid) {
+    return null;
+  }
+
+  const cachedProfile = currentUserProfile || loadUserProfileCache(cachedUid);
+
+  if (!cachedProfile) {
+    return null;
+  }
+
+  return {
+    uid: cachedUid,
+    profile: cachedProfile
+  };
+}
+
 function updateAuthUI() {
+  const cachedAuthUiState = getCachedAuthUiState();
+  const signedInForUi = isSignedIn() || Boolean(cachedAuthUiState);
+  const uiProfile = isSignedIn() ? currentUserProfile : cachedAuthUiState?.profile || null;
+  const uiUser = isSignedIn()
+    ? currentUser
+    : cachedAuthUiState
+      ? { uid: cachedAuthUiState.uid, email: "", displayName: cachedAuthUiState.profile?.displayName || "" }
+      : null;
+
   document.querySelectorAll("[data-auth-toggle]").forEach((button) => {
     if (!(button instanceof HTMLElement)) {
       return;
@@ -3980,9 +4012,9 @@ function updateAuthUI() {
 
     const avatar = button.querySelector("[data-account-avatar]");
     const label = button.querySelector("[data-account-label]");
-    const avatarData = getProfileAvatar();
+    const avatarData = getProfileAvatar(uiProfile, uiUser);
 
-    if (isSignedIn()) {
+    if (signedInForUi) {
       button.classList.add("signed-in");
       if (avatar) {
         if (avatarData.image) {
@@ -3992,7 +4024,7 @@ function updateAuthUI() {
           avatar.style.backgroundPosition = "center";
           avatar.style.backgroundRepeat = "no-repeat";
         } else {
-          avatar.textContent = getProfileInitials();
+          avatar.textContent = getProfileInitials(uiProfile, uiUser);
           avatar.style.backgroundImage = "";
           avatar.style.backgroundSize = "";
           avatar.style.backgroundPosition = "";
@@ -4001,9 +4033,9 @@ function updateAuthUI() {
         avatar.classList.remove("hidden");
       }
       if (label) {
-        label.textContent = getProfileDisplayName();
+        label.textContent = getProfileDisplayName(uiProfile, uiUser);
       } else {
-        button.textContent = getProfileDisplayName();
+        button.textContent = getProfileDisplayName(uiProfile, uiUser);
       }
     } else {
       button.classList.remove("signed-in");
@@ -4024,11 +4056,11 @@ function updateAuthUI() {
   });
 
   document.querySelectorAll("[data-account-only]").forEach((element) => {
-    element.classList.toggle("hidden", !isSignedIn());
+    element.classList.toggle("hidden", !signedInForUi);
   });
 
   document.querySelectorAll("[data-signed-out-only]").forEach((element) => {
-    element.classList.toggle("hidden", isSignedIn());
+    element.classList.toggle("hidden", signedInForUi);
   });
 
   document.querySelectorAll("[data-profile-link]").forEach((link) => {
@@ -4046,8 +4078,8 @@ function updateAuthUI() {
   const authHint = document.querySelector("#authHint");
 
   if (authHint) {
-    authHint.textContent = isSignedIn()
-      ? `Signed in as ${currentUser?.email || "MovieMate member"}`
+    authHint.textContent = signedInForUi
+      ? `Signed in as ${currentUser?.email || uiProfile?.displayName || "MovieMate member"}`
       : "Sign in to keep collections, member reactions, and your watch progress across devices.";
   }
 }
@@ -6395,19 +6427,18 @@ function renderProfilePage() {
   }
   const visibleTitles = getVisibleTitles(titlesCache);
   const reviewEntries = getProfileReviewEntries(visibleTitles, targetUid);
-  const submittedTitles = getProfilePosts(titlesCache, targetUid);
   const personalCollections = buildPersonalCollections(visibleTitles);
   const interestedTitles = buildInterestedTitles(visibleTitles, profileData);
   const watchStatus = profileData?.watchStatus || {};
+  const followersCount = getProfileFollowersCount(profileData);
+  const followingCount = getProfileFollowingCount(profileData);
   const stats = {
     reviews: reviewEntries.length,
-    posts: submittedTitles.length,
+    following: followingCount,
     collections: isOwnProfile ? personalCollections.length : 0,
     saved: Array.isArray(profileData?.savedTitles) ? profileData.savedTitles.length : 0,
     interested: Object.values(watchStatus).filter((value) => normalizeWatchStatusValue(value) === "interested").length
   };
-  const followersCount = getProfileFollowersCount(profileData);
-  const followingCount = getProfileFollowingCount(profileData);
   const followActive = !isOwnProfile && isFollowingUid(targetUid);
   const profileCollections = isOwnProfile ? personalCollections : [];
 
@@ -6421,7 +6452,7 @@ function renderProfilePage() {
         <p class="profile-handle">@${escapeHtml(getProfileUsername(profileData, targetUid === resolvedCurrentUid ? currentUser : null))}</p>
         <div class="profile-stat-row">
           <article><strong>${stats.reviews}</strong><span>Reviews<br />Posted</span></article>
-          <article><strong>${stats.posts}</strong><span>Posts<br />Created</span></article>
+          <article><strong>${stats.following}</strong><span>Profiles<br />Following</span></article>
           <article><strong>${stats.collections}</strong><span>Public<br />Collections</span></article>
         </div>
         <p class="profile-bio">${escapeHtml(profileData?.bio || "Add a short bio in settings to personalize your MovieMate profile.")}</p>
@@ -6441,7 +6472,6 @@ function renderProfilePage() {
       <section class="profile-main-panel">
         <div class="profile-tabs">
           <button class="profile-tab active" data-profile-tab="reviews" type="button">✎ Reviews</button>
-          <button class="profile-tab" data-profile-tab="posts" type="button">◌ Posts</button>
           <button class="profile-tab" data-profile-tab="collections" type="button">☰ Collections</button>
         </div>
 
@@ -6471,16 +6501,6 @@ function renderProfilePage() {
               reviewEntries.length
                 ? reviewEntries.map(profileReviewCardTemplate).join("")
                 : '<p class="empty-state">Vote on titles or leave comments to build your review profile.</p>'
-            }
-          </div>
-        </div>
-
-        <div class="profile-panel-body hidden" data-profile-panel="posts">
-          <div class="profile-post-list">
-            ${
-              submittedTitles.length
-                ? submittedTitles.map(profilePostCardTemplate).join("")
-                : '<p class="empty-state">Titles you add or save will start shaping this area over time.</p>'
             }
           </div>
         </div>
