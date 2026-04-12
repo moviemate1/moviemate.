@@ -1544,71 +1544,6 @@ function clearReaction(titleId) {
   setReaction(titleId, "");
 }
 
-function applyLocalWatchStatus(titleId, nextStatus) {
-  if (!isSignedIn()) {
-    return null;
-  }
-
-  const normalizedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
-  const previousProfile = currentUserProfile ? normalizeUserProfile(currentUserProfile) : null;
-  const previousStatus = normalizeWatchStatusValue(previousProfile?.watchStatus?.[titleId] || "");
-  const isSeasonKey = titleId.includes("::season-");
-  const nextWatchStatus = { ...(previousProfile?.watchStatus || {}) };
-
-  if (!normalizedNextStatus) {
-    delete nextWatchStatus[titleId];
-  } else {
-    nextWatchStatus[titleId] = normalizedNextStatus;
-  }
-
-  currentUserProfile = normalizeUserProfile({
-    ...(previousProfile || DEFAULT_USER_PROFILE),
-    watchStatus: nextWatchStatus
-  });
-
-  if (currentUser?.uid) {
-    userProfilesCache.set(currentUser.uid, currentUserProfile);
-    saveUserProfileCache(currentUser.uid, currentUserProfile);
-  }
-
-  if (!isSeasonKey) {
-    const beforeInterested = countsTowardInterested(previousStatus);
-    const afterInterested = countsTowardInterested(normalizedNextStatus);
-
-    if (beforeInterested !== afterInterested) {
-      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
-    }
-  }
-
-  return {
-    previousProfile,
-    previousStatus,
-    nextStatus: normalizedNextStatus
-  };
-}
-
-function rollbackLocalWatchStatus(snapshot, titleId) {
-  if (!snapshot) {
-    return;
-  }
-
-  if (!titleId.includes("::season-")) {
-    const beforeInterested = countsTowardInterested(snapshot.nextStatus);
-    const afterInterested = countsTowardInterested(snapshot.previousStatus);
-
-    if (beforeInterested !== afterInterested) {
-      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
-    }
-  }
-
-  currentUserProfile = snapshot.previousProfile ? normalizeUserProfile(snapshot.previousProfile) : null;
-
-  if (currentUser?.uid && currentUserProfile) {
-    userProfilesCache.set(currentUser.uid, currentUserProfile);
-    saveUserProfileCache(currentUser.uid, currentUserProfile);
-  }
-}
-
 async function syncSavedTitle(titleId) {
   if (!isSignedIn()) {
     return false;
@@ -1726,6 +1661,8 @@ async function syncWatchStatus(titleId, nextStatus) {
       );
       const watchStatus = { ...(baseProfile.watchStatus || {}) };
       const currentStatus = normalizeWatchStatusValue(watchStatus[titleId] || "");
+      const beforeInterested = !isSeasonKey && countsTowardInterested(currentStatus);
+      const afterInterested = !isSeasonKey && countsTowardInterested(resolvedNextStatus);
 
       if (!resolvedNextStatus) {
         delete watchStatus[titleId];
@@ -1748,11 +1685,33 @@ async function syncWatchStatus(titleId, nextStatus) {
         updatedAt: new Date().toISOString()
       });
 
+      let nextInterestedCount = null;
+
+      if (!isSeasonKey) {
+        const titleRef = doc(db, TITLES_COLLECTION, titleId);
+        const titleSnapshot = await transaction.get(titleRef);
+
+        if (titleSnapshot.exists()) {
+          const currentCount = Math.max(0, Number(titleSnapshot.data()?.interestedCount || 0));
+          nextInterestedCount =
+            beforeInterested === afterInterested
+              ? currentCount
+              : Math.max(0, currentCount + (afterInterested ? 1 : -1));
+
+          if (nextInterestedCount !== currentCount) {
+            transaction.update(titleRef, {
+              interestedCount: nextInterestedCount
+            });
+          }
+        }
+      }
+
       return {
         nextProfile,
         watchStatus,
         currentStatus,
-        resolvedNextStatus
+        resolvedNextStatus,
+        nextInterestedCount
       };
     }),
     "watch status update"
@@ -1764,22 +1723,15 @@ async function syncWatchStatus(titleId, nextStatus) {
   saveUserProfileCache(currentUser.uid, currentUserProfile);
 
   if (!isSeasonKey) {
-    const beforeInterested = countsTowardInterested(transactionResult.currentStatus);
-    const afterInterested = countsTowardInterested(transactionResult.resolvedNextStatus);
+    if (typeof transactionResult.nextInterestedCount === "number") {
+      setTitleCounters(titleId, { interestedCount: transactionResult.nextInterestedCount });
+    } else {
+      const beforeInterested = countsTowardInterested(transactionResult.currentStatus);
+      const afterInterested = countsTowardInterested(transactionResult.resolvedNextStatus);
 
-    if (beforeInterested !== afterInterested) {
-      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
-    }
-
-    try {
-      const exactCount = await syncInterestedAggregateExact(titleId);
-      transactionResult.nextInterestedCount = exactCount;
-    } catch (error) {
-      console.warn("Exact interested count sync failed.", error);
-      transactionResult.nextInterestedCount = Math.max(
-        0,
-        Number(getCachedTitleById(titleId)?.interestedCount || 0)
-      );
+      if (beforeInterested !== afterInterested) {
+        patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
+      }
     }
   }
 
@@ -5377,28 +5329,16 @@ async function renderDetailsPage() {
         return;
       }
 
-      const titleId = watchButton.dataset.id;
-      const nextStatus = watchButton.dataset.watchStatus;
-      const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
-      updateDetailActionUI(titleId);
-
       try {
-        setDetailWatchButtonsBusy(titleId, true);
-        syncWatchStatus(titleId, nextStatus).catch((error) => {
-          console.error(error);
-          rollbackLocalWatchStatus(localSnapshot, titleId);
-          updateDetailActionUI(titleId);
-          showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
-        }).finally(() => {
-          setDetailWatchButtonsBusy(titleId, false);
-        });
+        setDetailWatchButtonsBusy(watchButton.dataset.id, true);
+        await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
+        updateDetailActionUI(watchButton.dataset.id);
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
-        rollbackLocalWatchStatus(localSnapshot, titleId);
-        updateDetailActionUI(titleId);
-        setDetailWatchButtonsBusy(titleId, false);
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+      } finally {
+        setDetailWatchButtonsBusy(watchButton.dataset.id, false);
       }
       return;
     }
@@ -5415,15 +5355,8 @@ async function renderDetailsPage() {
 
       const seasonKey = getSeasonWatchKey(seasonWatchButton.dataset.id, seasonWatchButton.dataset.seasonNumber);
       const currentStatus = getTitleWatchStatus(seasonKey);
-      const nextSeasonStatus = currentStatus === "watched" ? "clear" : "watched";
-      const localSnapshot = applyLocalWatchStatus(seasonKey, nextSeasonStatus);
+      await syncWatchStatus(seasonKey, currentStatus === "watched" ? "clear" : "watched");
       await renderDetailsPage();
-      syncWatchStatus(seasonKey, nextSeasonStatus).catch((error) => {
-        console.error(error);
-        rollbackLocalWatchStatus(localSnapshot, seasonKey);
-        renderDetailsPage().catch((renderError) => console.error(renderError));
-        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
-      });
       showMessage("#detailVoteMessage", currentStatus === "watched" ? "Season marked as unwatched." : "Season marked as watched.");
       return;
     }
@@ -5480,28 +5413,16 @@ async function renderDetailsPage() {
         return;
       }
 
-      const titleId = watchButton.dataset.id;
-      const nextStatus = watchButton.dataset.watchStatus;
-      const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
-      updateDetailActionUI(titleId);
-
       try {
-        setDetailWatchButtonsBusy(titleId, true);
-        syncWatchStatus(titleId, nextStatus).catch((error) => {
-          console.error(error);
-          rollbackLocalWatchStatus(localSnapshot, titleId);
-          updateDetailActionUI(titleId);
-          showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
-        }).finally(() => {
-          setDetailWatchButtonsBusy(titleId, false);
-        });
+        setDetailWatchButtonsBusy(watchButton.dataset.id, true);
+        await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
+        updateDetailActionUI(watchButton.dataset.id);
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
-        rollbackLocalWatchStatus(localSnapshot, titleId);
-        updateDetailActionUI(titleId);
-        setDetailWatchButtonsBusy(titleId, false);
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+      } finally {
+        setDetailWatchButtonsBusy(watchButton.dataset.id, false);
       }
     }
     });
