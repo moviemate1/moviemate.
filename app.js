@@ -1534,10 +1534,12 @@ function clearReaction(titleId) {
   setReaction(titleId, "");
 }
 
-function applyLocalWatchStatus(titleId, nextStatus) {
+function applyLocalWatchStatus(titleId, nextStatus, options = {}) {
   if (!isSignedIn()) {
     return null;
   }
+
+  const { patchInterestedCount = true } = options;
 
   const normalizedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
   const previousProfile = currentUserProfile ? normalizeUserProfile(currentUserProfile) : normalizeUserProfile({});
@@ -1562,7 +1564,7 @@ function applyLocalWatchStatus(titleId, nextStatus) {
     saveUserProfileCache(currentUser.uid, currentUserProfile);
   }
 
-  if (!isSeasonKey) {
+  if (!isSeasonKey && patchInterestedCount) {
     const beforeInterested = countsTowardInterested(previousStatus);
     const afterInterested = countsTowardInterested(normalizedNextStatus);
 
@@ -1578,12 +1580,14 @@ function applyLocalWatchStatus(titleId, nextStatus) {
   };
 }
 
-function rollbackLocalWatchStatus(snapshot, titleId) {
+function rollbackLocalWatchStatus(snapshot, titleId, options = {}) {
   if (!snapshot) {
     return;
   }
 
-  if (!titleId.includes("::season-")) {
+  const { patchInterestedCount = true } = options;
+
+  if (!titleId.includes("::season-") && patchInterestedCount) {
     const beforeInterested = countsTowardInterested(snapshot.nextStatus);
     const afterInterested = countsTowardInterested(snapshot.previousStatus);
 
@@ -1709,7 +1713,9 @@ async function syncWatchStatus(titleId, previousStatusValue, nextStatus) {
     return false;
   }
 
-  const resolvedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
+  const rawNextStatus = typeof nextStatus === "undefined" ? previousStatusValue : nextStatus;
+  const rawPreviousStatus = typeof nextStatus === "undefined" ? "" : previousStatusValue;
+  const resolvedNextStatus = rawNextStatus === "clear" || !rawNextStatus ? "" : normalizeWatchStatusValue(rawNextStatus);
   const isSeasonKey = titleId.includes("::season-");
   const baseProfile = currentUserProfile
     ? normalizeUserProfile(currentUserProfile)
@@ -1721,7 +1727,10 @@ async function syncWatchStatus(titleId, previousStatusValue, nextStatus) {
         }
       );
   const watchStatus = { ...(baseProfile.watchStatus || {}) };
-  const previousStatus = normalizeWatchStatusValue(previousStatusValue || "");
+  const previousStatus =
+    typeof nextStatus === "undefined"
+      ? normalizeWatchStatusValue(baseProfile.watchStatus?.[titleId] || "")
+      : normalizeWatchStatusValue(rawPreviousStatus || "");
 
   if (!resolvedNextStatus) {
     delete watchStatus[titleId];
@@ -1888,13 +1897,10 @@ async function handleDetailWatchStatusClick(titleId) {
     return false;
   }
 
-  if (detailWatchRequestsInFlight.has(titleId)) {
-    return false;
-  }
-
   const previousStatus = getTitleWatchStatus(titleId);
   const nextStatus = getNextPrimaryWatchStatus(titleId);
-  detailWatchRequestsInFlight.add(titleId);
+  const localSnapshot = applyLocalWatchStatus(titleId, nextStatus, { patchInterestedCount: false });
+  updateDetailActionUI(titleId);
 
   try {
     const result = await syncWatchStatus(titleId, previousStatus, nextStatus);
@@ -1906,12 +1912,11 @@ async function handleDetailWatchStatusClick(titleId) {
     return true;
   } catch (error) {
     console.error(error);
+    rollbackLocalWatchStatus(localSnapshot, titleId, { patchInterestedCount: false });
 
     updateDetailActionUI(titleId);
     showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
     return false;
-  } finally {
-    detailWatchRequestsInFlight.delete(titleId);
   }
 }
 
