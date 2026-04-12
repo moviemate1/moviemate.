@@ -2049,6 +2049,17 @@ function getPrimaryWatchButtonState(title, status) {
   return isUpcomingTitle(title) ? getUpcomingInterestState(status) : getWatchCycleState(status);
 }
 
+function getNextPrimaryWatchStatus(titleId) {
+  const title = getCachedTitleById(titleId);
+
+  if (!title) {
+    return "interested";
+  }
+
+  const currentStatus = getTitleWatchStatus(titleId);
+  return getPrimaryWatchButtonState(title, currentStatus).nextStatus;
+}
+
 function toYouTubeSearchUrl(title) {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${title} official trailer`)}`;
 }
@@ -5409,7 +5420,7 @@ async function renderDetailsPage() {
       }
 
       const titleId = watchButton.dataset.id;
-      const nextStatus = watchButton.dataset.watchStatus;
+      const nextStatus = getNextPrimaryWatchStatus(titleId);
       await handleDetailWatchStatusClick(titleId, nextStatus);
       return;
     }
@@ -5492,7 +5503,7 @@ async function renderDetailsPage() {
       }
 
       const titleId = watchButton.dataset.id;
-      const nextStatus = watchButton.dataset.watchStatus;
+      const nextStatus = getNextPrimaryWatchStatus(titleId);
       await handleDetailWatchStatusClick(titleId, nextStatus);
     }
     });
