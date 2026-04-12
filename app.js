@@ -51,6 +51,12 @@ const REACTION_OPTIONS = {
   timepass: { label: "Timepass", className: "timepass" },
   skip: { label: "Skip", className: "skip" }
 };
+const REACTION_METER_COLORS = {
+  perfect: { solid: "#9a5cff", glow: "rgba(154, 92, 255, 0.34)" },
+  goForIt: { solid: "#18cf9b", glow: "rgba(24, 207, 155, 0.34)" },
+  timepass: { solid: "#ffbf47", glow: "rgba(255, 191, 71, 0.32)" },
+  skip: { solid: "#ff6b6b", glow: "rgba(255, 107, 107, 0.3)" }
+};
 const DEFAULT_HOMEPAGE_CONTENT = {
   heroEyebrow: "MoviemateHub picks for every mood",
   heroTitle: "Discover movies and series worth your time.",
@@ -2162,9 +2168,43 @@ function reactionMeterTemplate(title) {
   const timepassPercent = stats.timepassPercent;
   const skipPercent = stats.skipPercent;
   const recommendedPercent = stats.recommendedPercent;
+  const meterSegments = [
+    {
+      key: "skip",
+      label: "Skip",
+      className: "skip",
+      percent: skipPercent,
+      count: stats.skip,
+      color: REACTION_METER_COLORS.skip.solid
+    },
+    {
+      key: "timepass",
+      label: "Timepass",
+      className: "timepass",
+      percent: timepassPercent,
+      count: stats.timepass,
+      color: REACTION_METER_COLORS.timepass.solid
+    },
+    {
+      key: "goForIt",
+      label: "Go for it",
+      className: "go",
+      percent: goForItPercent,
+      count: stats.goForIt,
+      color: REACTION_METER_COLORS.goForIt.solid
+    },
+    {
+      key: "perfect",
+      label: "Perfection",
+      className: "perfect",
+      percent: perfectPercent,
+      count: stats.perfect,
+      color: REACTION_METER_COLORS.perfect.solid
+    }
+  ];
 
   return `
-    <article class="insight-card detail-meter-card">
+    <article class="insight-card detail-meter-card" data-meter-card="true" data-meter-title-id="${title.id}">
       <div class="insight-header">
         <div>
           <p class="eyebrow">MovieMate Meter</p>
@@ -2179,13 +2219,106 @@ function reactionMeterTemplate(title) {
         </div>
       </div>
       <div class="meter-list">
-        <div class="meter-row"><span class="meter-dot dot-perfect"></span><span>Perfection</span><strong data-meter-perfect>${perfectPercent}%</strong></div>
-        <div class="meter-row"><span class="meter-dot dot-love"></span><span>Go for it</span><strong data-meter-go>${goForItPercent}%</strong></div>
-        <div class="meter-row"><span class="meter-dot dot-timepass"></span><span>Timepass</span><strong data-meter-timepass>${timepassPercent}%</strong></div>
-        <div class="meter-row"><span class="meter-dot dot-skip"></span><span>Skip</span><strong data-meter-skip>${skipPercent}%</strong></div>
+        ${meterSegments
+          .map(
+            (segment) => `
+              <button
+                class="meter-row meter-row-action meter-row-${segment.className}"
+                type="button"
+                data-meter-segment="${segment.key}"
+                data-meter-label="${escapeHtml(segment.label)}"
+                data-meter-percent="${segment.percent}"
+                data-meter-count="${segment.count}"
+                data-meter-color="${segment.color}"
+              >
+                <span class="meter-dot dot-${segment.className}"></span>
+                <span>${escapeHtml(segment.label)}</span>
+                <strong data-meter-${segment.key === "goForIt" ? "go" : segment.key}>${segment.percent}%</strong>
+              </button>
+            `
+          )
+          .join("")}
       </div>
     </article>
   `;
+}
+
+function applyMeterDisplay(meterCard, stats, focusKey = "") {
+  if (!meterCard) {
+    return;
+  }
+
+  const total = Math.max(stats.total, 1);
+  const segments = {
+    perfect: {
+      label: "Perfection",
+      percent: stats.perfectPercent,
+      count: stats.perfect,
+      color: REACTION_METER_COLORS.perfect.solid,
+      glow: REACTION_METER_COLORS.perfect.glow,
+      className: "perfect"
+    },
+    goForIt: {
+      label: "Go for it",
+      percent: stats.goForItPercent,
+      count: stats.goForIt,
+      color: REACTION_METER_COLORS.goForIt.solid,
+      glow: REACTION_METER_COLORS.goForIt.glow,
+      className: "go"
+    },
+    timepass: {
+      label: "Timepass",
+      percent: stats.timepassPercent,
+      count: stats.timepass,
+      color: REACTION_METER_COLORS.timepass.solid,
+      glow: REACTION_METER_COLORS.timepass.glow,
+      className: "timepass"
+    },
+    skip: {
+      label: "Skip",
+      percent: stats.skipPercent,
+      count: stats.skip,
+      color: REACTION_METER_COLORS.skip.solid,
+      glow: REACTION_METER_COLORS.skip.glow,
+      className: "skip"
+    }
+  };
+  const focusSegment = segments[focusKey] || null;
+  const meterVisual = meterCard.querySelector("[data-meter-visual]");
+  const meterRecommend = meterCard.querySelector("[data-meter-recommend]");
+  const meterVotes = meterCard.querySelector("[data-meter-votes]");
+  const meterCorePercent = meterCard.querySelector("[data-meter-core-percent]");
+  const meterCoreCopy = meterCard.querySelector("[data-meter-core-copy]");
+
+  if (meterRecommend) {
+    meterRecommend.textContent = focusSegment ? focusSegment.label : `${stats.recommendedPercent}% recommend`;
+  }
+
+  if (meterVotes) {
+    meterVotes.textContent = focusSegment ? `${formatLargeNumber(focusSegment.count)} votes` : `${formatLargeNumber(total)} votes`;
+  }
+
+  if (meterCorePercent) {
+    meterCorePercent.textContent = `${focusSegment ? focusSegment.percent : stats.recommendedPercent}%`;
+    meterCorePercent.style.color = focusSegment ? focusSegment.color : "";
+  }
+
+  if (meterCoreCopy) {
+    meterCoreCopy.textContent = focusSegment
+      ? `${formatLargeNumber(focusSegment.count)}/${formatLargeNumber(total)} votes`
+      : `${stats.goForIt + stats.perfect}/${total} recommend`;
+  }
+
+  if (meterVisual) {
+    meterVisual.classList.toggle("is-focused", Boolean(focusSegment));
+    meterVisual.dataset.meterFocus = focusSegment?.className || "overall";
+    meterVisual.style.setProperty("--meter-focus-glow", focusSegment?.glow || "transparent");
+    meterVisual.style.setProperty("--meter-focus-color", focusSegment?.color || "#ffffff");
+  }
+
+  meterCard.querySelectorAll("[data-meter-segment]").forEach((row) => {
+    row.classList.toggle("active", row.getAttribute("data-meter-segment") === focusKey);
+  });
 }
 
 function vibeChartTemplate(title) {
@@ -2683,6 +2816,8 @@ function updateDetailActionUI(titleId) {
     if (meterSkip) {
       meterSkip.textContent = `${skipPercent}%`;
     }
+
+    applyMeterDisplay(meterCard, stats, meterCard.dataset.lockedSegment || "");
   }
 }
 
@@ -3025,6 +3160,7 @@ function commentTemplate(comment) {
   const viewerUid = currentUser?.uid || "";
   const canEditOwn = Boolean(viewerUid && comment.userId === viewerUid);
   const likedHelpful = Boolean(viewerUid && Array.isArray(comment.helpfulBy) && comment.helpfulBy.includes(viewerUid));
+  const reactionOption = comment.reaction && REACTION_OPTIONS[comment.reaction] ? REACTION_OPTIONS[comment.reaction] : null;
   const managementControls =
     canEditOwn
       ? `
@@ -3050,14 +3186,33 @@ function commentTemplate(comment) {
     : `<p>${escapeHtml(comment.text)}</p>`;
 
   return `
-    <article class="comment-card">
-      <div class="comment-meta">
-        <a class="comment-author-link" href="/profile.html?uid=${encodeURIComponent(comment.userId || "")}">
-          ${escapeHtml(comment.name || "Anonymous")}
-        </a>
-        <span>${escapeHtml(formatDate(comment.createdAt))}</span>
+    <article class="comment-card" id="comment-${escapeHtml(comment.id || "")}">
+      <div class="comment-header-row">
+        <div>
+          <div class="comment-meta">
+            <a class="comment-author-link" href="/profile.html?uid=${encodeURIComponent(comment.userId || "")}">
+              ${escapeHtml(comment.name || "Anonymous")}
+            </a>
+            <span>${escapeHtml(formatDate(comment.createdAt))}</span>
+          </div>
+          ${comment.spoiler ? '<span class="status-pill status-upcoming spoiler-pill">Spoiler</span>' : ""}
+        </div>
+        <div class="comment-top-actions">
+          ${
+            reactionOption
+              ? `<span class="comment-reaction-badge comment-reaction-${escapeHtml(reactionOption.className)}">${escapeHtml(reactionOption.label)}</span>`
+              : ""
+          }
+          <div class="profile-card-menu-wrap comment-menu-wrap">
+            <button class="profile-card-menu comment-menu-btn" type="button" aria-label="Comment options" data-comment-menu-toggle="true">•••</button>
+            <div class="profile-card-dropdown hidden" data-comment-menu="true">
+              <button class="profile-card-dropdown-item" type="button" data-comment-share="story" data-comment-id="${escapeHtml(comment.id || "")}">Share - Story</button>
+              <button class="profile-card-dropdown-item" type="button" data-comment-share="classic" data-comment-id="${escapeHtml(comment.id || "")}">Share - Classic</button>
+              <button class="profile-card-dropdown-item" type="button" data-comment-report="${escapeHtml(comment.id || "")}">Report</button>
+            </div>
+          </div>
+        </div>
       </div>
-      ${comment.spoiler ? '<span class="status-pill status-upcoming spoiler-pill">Spoiler</span>' : ""}
       ${spoilerBody}
       <div class="comment-footer-row">
         <button class="ghost-link comment-helpful-btn ${likedHelpful ? "active" : ""}" data-comment-helpful="${escapeHtml(comment.id || "")}" type="button">
@@ -5050,6 +5205,7 @@ async function addComment(titleId, form, options = {}) {
   const text = formData.get("comment")?.toString().trim() || "";
   const spoiler = formData.get("spoiler") === "on";
   const seasonNumber = Number(options.seasonNumber || 0);
+  const reaction = getReaction(titleId);
 
   if (!text) {
     showMessage("#commentMessage", "Please write a review or comment first.");
@@ -5062,6 +5218,7 @@ async function addComment(titleId, form, options = {}) {
     userId: currentUser?.uid || "",
     name,
     text,
+    reaction: reaction && REACTION_OPTIONS[reaction] ? reaction : "",
     spoiler,
     seasonNumber,
     helpfulCount: 0,
@@ -6393,6 +6550,131 @@ function setupCommentInteractionButtons() {
       console.error(error);
       showMessage("#commentMessage", getActionErrorMessage(error, "Could not update your review right now."));
     }
+  });
+
+  document.addEventListener("click", async (event) => {
+    const target = event.target instanceof HTMLElement ? event.target : null;
+
+    if (!target || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const toggle = target.closest("[data-comment-menu-toggle='true']");
+
+    if (toggle) {
+      const wrap = toggle.closest(".comment-menu-wrap");
+      const menu = wrap?.querySelector("[data-comment-menu='true']");
+      document.querySelectorAll("[data-comment-menu='true']").forEach((item) => {
+        if (item !== menu) {
+          item.classList.add("hidden");
+        }
+      });
+      menu?.classList.toggle("hidden");
+      return;
+    }
+
+    const shareButton = target.closest("[data-comment-share]");
+
+    if (shareButton) {
+      const params = new URLSearchParams(window.location.search);
+      const titleId = params.get("id") || "";
+      const title = titlesCache.find((entry) => entry.id === titleId);
+      const commentId = shareButton.getAttribute("data-comment-id") || "";
+      const comment = title?.comments?.find((entry) => entry.id === commentId);
+
+      if (title && comment) {
+        const shareUrl = `${window.location.origin}/details.html?id=${title.id}#comment-${comment.id}`;
+        const shareData = {
+          title: `${title.title} review on MovieMate`,
+          text: `${comment.name || "Member"}: ${String(comment.text || "").slice(0, 120)}`,
+          url: shareUrl
+        };
+
+        try {
+          if (navigator.share) {
+            await navigator.share(shareData);
+          } else {
+            await navigator.clipboard.writeText(shareUrl);
+            showMessage("#commentMessage", "Review link copied.");
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      shareButton.closest("[data-comment-menu='true']")?.classList.add("hidden");
+      return;
+    }
+
+    const reportButton = target.closest("[data-comment-report]");
+
+    if (reportButton) {
+      showMessage("#commentMessage", "Report option is ready. Owner review tools can be added next.");
+      reportButton.closest("[data-comment-menu='true']")?.classList.add("hidden");
+      return;
+    }
+
+    if (!target.closest(".comment-menu-wrap")) {
+      document.querySelectorAll("[data-comment-menu='true']").forEach((item) => item.classList.add("hidden"));
+    }
+  });
+}
+
+function setupDetailMeterInteractions() {
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!target || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = target.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title) {
+      return;
+    }
+
+    const segment = target.getAttribute("data-meter-segment") || "";
+    meterCard.dataset.lockedSegment = segment;
+    applyMeterDisplay(meterCard, getReactionStats(title), segment);
+  });
+
+  document.addEventListener("mouseover", (event) => {
+    const target = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!target || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = target.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title) {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), target.getAttribute("data-meter-segment") || "");
+  });
+
+  document.addEventListener("mouseout", (event) => {
+    const list = event.target instanceof HTMLElement ? event.target.closest(".meter-list") : null;
+
+    if (!list || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = list.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title) {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), meterCard.dataset.lockedSegment || "");
   });
 }
 
@@ -7821,6 +8103,7 @@ async function init() {
   setupDeleteButtons();
   setupCommentDeleteButtons();
   setupCommentInteractionButtons();
+  setupDetailMeterInteractions();
   setupOwnerActionButtons();
   setupOwnerMode();
   setupOwnerEditForm();

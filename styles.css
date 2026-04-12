@@ -2652,7 +2652,8 @@ button.ghost-link {
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
   cursor: pointer;
-  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+  font-weight: 700;
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease, color 180ms ease;
 }
 
 .reaction-btn:hover {
@@ -2671,26 +2672,34 @@ button.ghost-link {
 
 .reaction-btn.active.perfect,
 .reaction-btn-perfect.active {
-  background: rgba(154, 92, 255, 0.2);
-  border-color: rgba(154, 92, 255, 0.5);
+  background: linear-gradient(135deg, rgba(154, 92, 255, 0.28), rgba(193, 113, 255, 0.2));
+  border-color: rgba(175, 108, 255, 0.68);
+  box-shadow: 0 12px 28px rgba(154, 92, 255, 0.18);
+  color: #f8f1ff;
 }
 
 .reaction-btn.active.goforit,
 .reaction-btn-goforit.active {
-  background: rgba(36, 201, 111, 0.18);
-  border-color: rgba(36, 201, 111, 0.5);
+  background: linear-gradient(135deg, rgba(24, 207, 155, 0.28), rgba(84, 239, 191, 0.18));
+  border-color: rgba(63, 220, 171, 0.68);
+  box-shadow: 0 12px 28px rgba(24, 207, 155, 0.16);
+  color: #eafff8;
 }
 
 .reaction-btn.active.timepass,
 .reaction-btn-timepass.active {
-  background: rgba(255, 191, 71, 0.18);
-  border-color: rgba(255, 191, 71, 0.5);
+  background: linear-gradient(135deg, rgba(255, 191, 71, 0.28), rgba(255, 216, 125, 0.18));
+  border-color: rgba(255, 198, 86, 0.68);
+  box-shadow: 0 12px 28px rgba(255, 191, 71, 0.16);
+  color: #fff9e8;
 }
 
 .reaction-btn.active.skip,
 .reaction-btn-skip.active {
-  background: rgba(255, 99, 99, 0.18);
-  border-color: rgba(255, 99, 99, 0.5);
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.26), rgba(255, 146, 146, 0.18));
+  border-color: rgba(255, 120, 120, 0.68);
+  box-shadow: 0 12px 28px rgba(255, 107, 107, 0.16);
+  color: #fff0f0;
 }
 
 .reaction-summary {
@@ -3186,6 +3195,10 @@ button.ghost-link {
   border-radius: 50%;
 }
 
+.meter-visual {
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
 .meter-visual::after,
 .genre-chart::after {
   content: "";
@@ -3194,6 +3207,11 @@ button.ghost-link {
   border-radius: 50%;
   background: rgba(10, 10, 15, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.meter-visual.is-focused {
+  transform: scale(1.03);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 18px 44px var(--meter-focus-glow, transparent);
 }
 
 .meter-core,
@@ -3209,6 +3227,7 @@ button.ghost-link {
 .meter-core strong {
   display: block;
   font-size: 2.4rem;
+  transition: color 160ms ease;
 }
 
 .meter-core span,
@@ -3228,6 +3247,57 @@ button.ghost-link {
   gap: 10px;
   align-items: center;
   color: var(--muted);
+}
+
+.meter-row-action {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.meter-row-action:hover,
+.meter-row-action:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  outline: none;
+}
+
+.meter-row-action.active {
+  color: #fff;
+}
+
+.meter-row-action.active strong {
+  color: #fff;
+}
+
+.meter-row-go.active {
+  border-color: rgba(24, 207, 155, 0.46);
+  background: rgba(24, 207, 155, 0.12);
+  box-shadow: 0 12px 28px rgba(24, 207, 155, 0.14);
+}
+
+.meter-row-perfect.active {
+  border-color: rgba(154, 92, 255, 0.46);
+  background: rgba(154, 92, 255, 0.12);
+  box-shadow: 0 12px 28px rgba(154, 92, 255, 0.14);
+}
+
+.meter-row-timepass.active {
+  border-color: rgba(255, 191, 71, 0.46);
+  background: rgba(255, 191, 71, 0.12);
+  box-shadow: 0 12px 28px rgba(255, 191, 71, 0.14);
+}
+
+.meter-row-skip.active {
+  border-color: rgba(255, 107, 107, 0.46);
+  background: rgba(255, 107, 107, 0.12);
+  box-shadow: 0 12px 28px rgba(255, 107, 107, 0.14);
 }
 
 .meter-row strong {
@@ -3831,11 +3901,26 @@ button.ghost-link {
   box-shadow: var(--shadow);
 }
 
+.comment-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
 .comment-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 0;
+}
+
+.comment-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .comment-footer-row {
@@ -3845,6 +3930,57 @@ button.ghost-link {
   gap: 14px;
   flex-wrap: wrap;
   margin-top: 14px;
+}
+
+.comment-reaction-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
+.comment-reaction-perfect {
+  background: rgba(154, 92, 255, 0.18);
+  border-color: rgba(154, 92, 255, 0.36);
+  color: #f5eaff;
+}
+
+.comment-reaction-goforit {
+  background: rgba(24, 207, 155, 0.16);
+  border-color: rgba(24, 207, 155, 0.34);
+  color: #e5fff5;
+}
+
+.comment-reaction-timepass {
+  background: rgba(255, 191, 71, 0.18);
+  border-color: rgba(255, 191, 71, 0.34);
+  color: #fff6dc;
+}
+
+.comment-reaction-skip {
+  background: rgba(255, 107, 107, 0.16);
+  border-color: rgba(255, 107, 107, 0.34);
+  color: #ffeaea;
+}
+
+.comment-menu-btn {
+  min-width: 38px;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  cursor: pointer;
+}
+
+.comment-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .comment-edit-btn {
@@ -3872,8 +4008,7 @@ button.ghost-link {
 }
 
 .comment-meta {
-  justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   color: var(--muted);
   font-size: 0.9rem;
 }
@@ -3882,6 +4017,17 @@ button.ghost-link {
   margin: 0;
   line-height: 1.7;
   color: var(--text);
+}
+
+@media (max-width: 720px) {
+  .comment-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .comment-top-actions {
+    justify-content: space-between;
+  }
 }
 
 .site-footer {
