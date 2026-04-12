@@ -1654,6 +1654,25 @@ button.ghost-link {
   display: flex;
   justify-content: center;
   margin-top: 24px;
+  padding-top: 6px;
+}
+
+#loadMoreBtn {
+  width: min(100%, 320px);
+  min-height: 56px;
+  padding: 16px 24px;
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+#loadMoreBtn:hover {
+  border-color: rgba(126, 70, 255, 0.4);
+  background: linear-gradient(180deg, rgba(126, 70, 255, 0.18), rgba(255, 255, 255, 0.05));
 }
 
 .scroll-controls {
@@ -4166,6 +4185,17 @@ button.ghost-link {
   .explore-actions-right {
     display: inline-flex;
     margin-left: auto;
+  }
+
+  .load-more-wrap {
+    margin-top: 18px;
+  }
+
+  #loadMoreBtn {
+    width: 100%;
+    max-width: none;
+    min-height: 54px;
+    font-size: 0.95rem;
   }
 
   body[data-page="details"] .topbar.compact {
