@@ -203,6 +203,7 @@ let detailTitleRealtime = {
   unsubscribe: null
 };
 const detailWatchRequestsInFlight = new Set();
+const detailOptimisticInterestedCounts = new Map();
 let pendingNotificationState = {
   count: null,
   unsubscribe: null
@@ -1854,10 +1855,17 @@ async function handleDetailWatchStatusClick(titleId) {
   const nextStatus = getNextPrimaryWatchStatus(titleId);
   detailWatchRequestsInFlight.add(titleId);
   const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
+  const optimisticTitle = getCachedTitleById(titleId);
+  if (optimisticTitle) {
+    detailOptimisticInterestedCounts.set(titleId, getInterestedCount(optimisticTitle));
+  }
   updateDetailActionUI(titleId);
 
   try {
-    await syncWatchStatus(titleId, nextStatus);
+    const result = await syncWatchStatus(titleId, nextStatus);
+    if (typeof result?.interestedCount === "number") {
+      detailOptimisticInterestedCounts.set(titleId, Math.max(0, Number(result.interestedCount || 0)));
+    }
     updateDetailActionUI(titleId);
     showMessage("#detailVoteMessage", "Watch status updated.");
     return true;
@@ -1877,6 +1885,10 @@ async function handleDetailWatchStatusClick(titleId) {
     showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
     return false;
   } finally {
+    window.setTimeout(() => {
+      detailOptimisticInterestedCounts.delete(titleId);
+      updateDetailActionUI(titleId);
+    }, 600);
     detailWatchRequestsInFlight.delete(titleId);
   }
 }
@@ -2501,7 +2513,11 @@ function getHeroLaunchLabel(title) {
 }
 
 function getInterestedCount(title) {
-  const storedCount = Math.max(0, Number(title.interestedCount || 0));
+  const optimisticCount = detailOptimisticInterestedCounts.get(title.id);
+  const storedCount =
+    typeof optimisticCount === "number"
+      ? Math.max(0, optimisticCount)
+      : Math.max(0, Number(title.interestedCount || 0));
   const currentStatus = getTitleWatchStatus(title.id);
 
   if (countsTowardInterested(currentStatus)) {
