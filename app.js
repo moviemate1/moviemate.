@@ -1544,6 +1544,72 @@ function clearReaction(titleId) {
   setReaction(titleId, "");
 }
 
+function applyLocalWatchStatus(titleId, nextStatus) {
+  if (!isSignedIn()) {
+    return null;
+  }
+
+  const normalizedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
+  const previousProfile = currentUserProfile ? normalizeUserProfile(currentUserProfile) : normalizeUserProfile({});
+  const previousStatus = normalizeWatchStatusValue(previousProfile.watchStatus?.[titleId] || "");
+  const isSeasonKey = titleId.includes("::season-");
+  const nextWatchStatus = { ...(previousProfile.watchStatus || {}) };
+
+  if (!normalizedNextStatus) {
+    delete nextWatchStatus[titleId];
+  } else {
+    nextWatchStatus[titleId] = normalizedNextStatus;
+  }
+
+  currentUserProfile = normalizeUserProfile({
+    ...previousProfile,
+    watchStatus: nextWatchStatus,
+    updatedAt: new Date().toISOString()
+  });
+
+  if (currentUser?.uid) {
+    userProfilesCache.set(currentUser.uid, currentUserProfile);
+    saveUserProfileCache(currentUser.uid, currentUserProfile);
+  }
+
+  if (!isSeasonKey) {
+    const beforeInterested = countsTowardInterested(previousStatus);
+    const afterInterested = countsTowardInterested(normalizedNextStatus);
+
+    if (beforeInterested !== afterInterested) {
+      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
+    }
+  }
+
+  return {
+    previousProfile,
+    previousStatus,
+    nextStatus: normalizedNextStatus
+  };
+}
+
+function rollbackLocalWatchStatus(snapshot, titleId) {
+  if (!snapshot) {
+    return;
+  }
+
+  if (!titleId.includes("::season-")) {
+    const beforeInterested = countsTowardInterested(snapshot.nextStatus);
+    const afterInterested = countsTowardInterested(snapshot.previousStatus);
+
+    if (beforeInterested !== afterInterested) {
+      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
+    }
+  }
+
+  currentUserProfile = normalizeUserProfile(snapshot.previousProfile || {});
+
+  if (currentUser?.uid) {
+    userProfilesCache.set(currentUser.uid, currentUserProfile);
+    saveUserProfileCache(currentUser.uid, currentUserProfile);
+  }
+}
+
 async function syncSavedTitle(titleId) {
   if (!isSignedIn()) {
     return false;
@@ -5329,16 +5395,24 @@ async function renderDetailsPage() {
         return;
       }
 
+      const titleId = watchButton.dataset.id;
+      const nextStatus = watchButton.dataset.watchStatus;
+      const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
+      updateDetailActionUI(titleId);
+
       try {
-        setDetailWatchButtonsBusy(watchButton.dataset.id, true);
-        await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
-        updateDetailActionUI(watchButton.dataset.id);
+        syncWatchStatus(titleId, nextStatus).catch((error) => {
+          console.error(error);
+          rollbackLocalWatchStatus(localSnapshot, titleId);
+          updateDetailActionUI(titleId);
+          showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+        });
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
+        rollbackLocalWatchStatus(localSnapshot, titleId);
+        updateDetailActionUI(titleId);
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
-      } finally {
-        setDetailWatchButtonsBusy(watchButton.dataset.id, false);
       }
       return;
     }
@@ -5355,8 +5429,15 @@ async function renderDetailsPage() {
 
       const seasonKey = getSeasonWatchKey(seasonWatchButton.dataset.id, seasonWatchButton.dataset.seasonNumber);
       const currentStatus = getTitleWatchStatus(seasonKey);
-      await syncWatchStatus(seasonKey, currentStatus === "watched" ? "clear" : "watched");
+      const nextSeasonStatus = currentStatus === "watched" ? "clear" : "watched";
+      const localSnapshot = applyLocalWatchStatus(seasonKey, nextSeasonStatus);
       await renderDetailsPage();
+      syncWatchStatus(seasonKey, nextSeasonStatus).catch((error) => {
+        console.error(error);
+        rollbackLocalWatchStatus(localSnapshot, seasonKey);
+        renderDetailsPage().catch((renderError) => console.error(renderError));
+        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+      });
       showMessage("#detailVoteMessage", currentStatus === "watched" ? "Season marked as unwatched." : "Season marked as watched.");
       return;
     }
@@ -5413,16 +5494,24 @@ async function renderDetailsPage() {
         return;
       }
 
+      const titleId = watchButton.dataset.id;
+      const nextStatus = watchButton.dataset.watchStatus;
+      const localSnapshot = applyLocalWatchStatus(titleId, nextStatus);
+      updateDetailActionUI(titleId);
+
       try {
-        setDetailWatchButtonsBusy(watchButton.dataset.id, true);
-        await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
-        updateDetailActionUI(watchButton.dataset.id);
+        syncWatchStatus(titleId, nextStatus).catch((error) => {
+          console.error(error);
+          rollbackLocalWatchStatus(localSnapshot, titleId);
+          updateDetailActionUI(titleId);
+          showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+        });
         showMessage("#detailVoteMessage", "Watch status updated.");
       } catch (error) {
         console.error(error);
+        rollbackLocalWatchStatus(localSnapshot, titleId);
+        updateDetailActionUI(titleId);
         showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
-      } finally {
-        setDetailWatchButtonsBusy(watchButton.dataset.id, false);
       }
     }
     });
