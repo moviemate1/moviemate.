@@ -4808,12 +4808,21 @@ function setupTopSearch() {
   button.addEventListener("click", () => {
     const searchInput = document.querySelector("#searchInput");
     const browseSection = document.querySelector("#browse");
+    const browseHeading = document.querySelector("#browseHeadingText");
+
+    if (!searchInput) {
+      browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
 
     browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+    searchInput.focus({ preventScroll: true });
+    searchInput.select();
+    searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
 
-    window.setTimeout(() => {
-      searchInput?.focus();
-    }, 220);
+    if (browseHeading instanceof HTMLElement) {
+      browseHeading.setAttribute("tabindex", "-1");
+    }
   });
 
   document.addEventListener("click", (event) => {
