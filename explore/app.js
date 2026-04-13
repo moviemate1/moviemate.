@@ -34,7 +34,7 @@ const OWNER_MODE_KEY = "moviemate_owner_mode";
 const USER_NOTIFICATIONS_SEEN_KEY = "moviemate_notifications_seen_at";
 const TITLES_CACHE_KEY = "moviemate_titles_cache_v1";
 const HOMEPAGE_CONTENT_CACHE_KEY = "moviemate_homepage_content_cache_v1";
-const INSTALL_BANNER_DISMISSED_KEY = "moviemate_install_banner_dismissed_v2";
+const INSTALL_BANNER_DISMISSED_KEY = "moviemate_install_banner_dismissed_v3";
 const SEARCH_PAGE_SIZE = 24;
 const OWNER_PASSCODE = "1A2b3456@";
 const OWNER_NOTIFICATION_TOAST_MS = 3200;
@@ -5621,7 +5621,12 @@ function isMobileInstallEligible() {
 
 function hideInstallBanner() {
   const banner = document.querySelector("#installBanner");
-  banner?.classList.remove("visible");
+  if (!banner) {
+    return;
+  }
+
+  banner.classList.remove("visible");
+  banner.classList.add("hidden");
 }
 
 function showInstallBanner() {
@@ -5634,7 +5639,12 @@ function showInstallBanner() {
   }
 
   const banner = document.querySelector("#installBanner");
-  banner?.classList.add("visible");
+  if (!banner) {
+    return;
+  }
+
+  banner.classList.remove("hidden");
+  banner.classList.add("visible");
 }
 
 function dismissInstallBanner() {
@@ -5697,7 +5707,7 @@ function setupInstallBanner() {
       return;
     }
 
-    if (deferredInstallPrompt && localStorage.getItem(INSTALL_BANNER_DISMISSED_KEY) !== "true") {
+    if (localStorage.getItem(INSTALL_BANNER_DISMISSED_KEY) !== "true") {
       showInstallBanner();
     }
   });
