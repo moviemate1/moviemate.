@@ -4786,7 +4786,8 @@ button.ghost-link {
   }
 
   .detail-summary-header {
-    grid-template-columns: 1fr;
+    grid-template-columns: 132px minmax(0, 1fr);
+    align-items: start;
   }
 
   .detail-hero-card {
@@ -4827,13 +4828,18 @@ button.ghost-link {
   }
 
   .detail-poster {
-    width: min(165px, 42vw);
+    width: 132px;
     max-width: 100%;
+    align-self: start;
   }
 
   .detail-copy h1 {
     font-size: clamp(2rem, 8.5vw, 3rem);
     line-height: 0.96;
+  }
+
+  .detail-copy {
+    min-width: 0;
   }
 
   .detail-facts-grid {
@@ -4861,6 +4867,7 @@ button.ghost-link {
   .detail-cta-stack {
     margin-top: 6px;
     align-self: stretch;
+    grid-column: 1 / -1;
   }
 
   .detail-cta-stack .watch-status-btn,
@@ -4960,8 +4967,26 @@ button.ghost-link {
     padding: 16px;
   }
 
+  .detail-summary-header {
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 14px;
+  }
+
   .detail-poster {
-    width: min(150px, 46vw);
+    width: 110px;
+  }
+
+  .detail-copy h1 {
+    font-size: clamp(1.8rem, 9vw, 2.55rem);
+  }
+
+  .detail-facts-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .detail-fact {
+    min-height: 88px;
   }
 
   .hero-interest-card {
