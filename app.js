@@ -6824,6 +6824,81 @@ function setupDetailMeterInteractions() {
     return "skip";
   };
 
+  const previewMeterRowSelection = (row) => {
+    const meterCard = row?.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+    const segmentKey = row?.getAttribute("data-meter-segment") || "";
+
+    if (!meterCard || !title || !segmentKey) {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), segmentKey);
+  };
+
+  const restoreMeterPreview = (row) => {
+    const meterCard = row?.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title) {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), meterCard.dataset.lockedSegment || "");
+  };
+
+  document.addEventListener("touchstart", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    previewMeterRowSelection(row);
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    previewMeterRowSelection(row);
+  }, { passive: true });
+
+  document.addEventListener("touchend", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    restoreMeterPreview(row);
+  }, { passive: true });
+
+  document.addEventListener("mouseover", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    previewMeterRowSelection(row);
+  });
+
+  document.addEventListener("mouseout", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    restoreMeterPreview(row);
+  });
+
   document.addEventListener("click", (event) => {
     const meterVisual = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
 

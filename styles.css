@@ -3351,25 +3351,25 @@ button.ghost-link {
   padding: 10px 12px;
   border: 1px solid transparent;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.02);
+  background: transparent;
   text-align: left;
   cursor: default;
-  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  transition: color 160ms ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  pointer-events: none;
 }
 
 .meter-row-action:hover,
 .meter-row-action:focus-visible {
-  transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.05);
   outline: none;
 }
 
 .meter-row-action.active {
   color: #fff;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
 }
 
 .meter-row-action.active strong {
@@ -3377,27 +3377,15 @@ button.ghost-link {
 }
 
 .meter-row-go.active {
-  border-color: rgba(57, 226, 164, 0.52);
-  background: rgba(57, 226, 164, 0.14);
-  box-shadow: 0 14px 32px rgba(57, 226, 164, 0.24);
 }
 
 .meter-row-perfect.active {
-  border-color: rgba(176, 108, 255, 0.52);
-  background: rgba(176, 108, 255, 0.14);
-  box-shadow: 0 14px 32px rgba(176, 108, 255, 0.24);
 }
 
 .meter-row-timepass.active {
-  border-color: rgba(255, 191, 71, 0.46);
-  background: rgba(255, 191, 71, 0.12);
-  box-shadow: 0 14px 32px rgba(255, 191, 71, 0.2);
 }
 
 .meter-row-skip.active {
-  border-color: rgba(255, 107, 107, 0.46);
-  background: rgba(255, 107, 107, 0.12);
-  box-shadow: 0 14px 32px rgba(255, 107, 107, 0.2);
 }
 
 .meter-row strong {
