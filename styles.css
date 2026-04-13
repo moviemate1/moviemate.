@@ -4600,7 +4600,7 @@ button.ghost-link {
   }
 
   body[data-page="details"] .page-shell {
-    width: calc(100% - 12px);
+    width: calc(100% - 10px);
     padding-inline: 0;
   }
 
@@ -4639,24 +4639,76 @@ button.ghost-link {
   }
 
   body[data-page="details"] .topbar.compact {
-    align-items: stretch;
-    gap: 10px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: nowrap;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    background: rgba(6, 6, 8, 0.92);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
   }
 
   body[data-page="details"] .topbar.compact .brand {
-    font-size: 1.55rem;
+    gap: 6px;
+    font-size: 0.92rem;
+    flex: 0 0 auto;
+  }
+
+  body[data-page="details"] .topbar.compact .brand-mark {
+    width: 22px;
+    height: 16px;
+  }
+
+  body[data-page="details"] .topbar.compact .brand-mark::before,
+  body[data-page="details"] .topbar.compact .brand-mark::after {
+    top: 4px;
+    width: 7px;
+    height: 6px;
+  }
+
+  body[data-page="details"] .topbar.compact .brand-mark::before {
+    left: 4px;
+  }
+
+  body[data-page="details"] .topbar.compact .brand-mark::after {
+    right: 4px;
+  }
+
+  body[data-page="details"] .topbar.compact .brand-text {
+    letter-spacing: 0.03em;
   }
 
   body[data-page="details"] .topbar.compact .topbar-actions {
-    width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 6px;
+    flex-wrap: nowrap;
   }
 
   body[data-page="details"] .topbar.compact .ghost-link,
   body[data-page="details"] .topbar.compact .account-top-link {
-    padding: 9px 12px;
-    font-size: 0.88rem;
+    min-height: 30px;
+    padding: 6px 9px;
+    font-size: 0.62rem;
+    line-height: 1;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  body[data-page="details"] .topbar.compact .account-top-link {
+    gap: 6px;
+    padding-inline: 10px;
+    background: linear-gradient(135deg, rgba(126, 70, 255, 0.22), rgba(229, 9, 20, 0.2));
+    border-color: rgba(160, 130, 255, 0.28);
+  }
+
+  body[data-page="details"] .topbar.compact [data-account-avatar] {
+    width: 18px;
+    height: 18px;
+    font-size: 0.52rem;
   }
 
   .trend-grid {
@@ -4953,14 +5005,26 @@ button.ghost-link {
   }
 
   body[data-page="details"] .topbar.compact .topbar-actions {
-    justify-content: stretch;
+    justify-content: flex-end;
   }
 
   body[data-page="details"] .topbar.compact .ghost-link,
   body[data-page="details"] .topbar.compact .account-top-link {
-    flex: 1 1 calc(50% - 8px);
+    flex: 0 1 auto;
     justify-content: center;
     min-width: 0;
+    padding: 5px 8px;
+    font-size: 0.58rem;
+  }
+
+  body[data-page="details"] .topbar.compact .brand {
+    font-size: 0.84rem;
+  }
+
+  body[data-page="details"] .topbar.compact .ghost-link:not(.account-top-link) {
+    max-width: 68px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .detail-summary {
