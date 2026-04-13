@@ -4627,6 +4627,50 @@ button.ghost-link {
     margin-left: auto;
   }
 
+  body[data-page="profile"] .explore-topbar,
+  body[data-page="account"] .explore-topbar {
+    padding: 7px 8px;
+    gap: 6px;
+    border-radius: 16px;
+  }
+
+  body[data-page="profile"] .explore-topbar-left,
+  body[data-page="account"] .explore-topbar-left,
+  body[data-page="profile"] .explore-actions-right,
+  body[data-page="account"] .explore-actions-right {
+    gap: 6px;
+  }
+
+  body[data-page="profile"] .brand-compact,
+  body[data-page="account"] .brand-compact {
+    font-size: 1rem;
+  }
+
+  body[data-page="profile"] .brand-mark,
+  body[data-page="account"] .brand-mark {
+    width: 42px;
+    height: 30px;
+  }
+
+  body[data-page="profile"] .home-chip,
+  body[data-page="account"] .home-chip,
+  body[data-page="profile"] .avatar-chip,
+  body[data-page="account"] .avatar-chip {
+    width: 34px;
+    height: 34px;
+  }
+
+  body[data-page="profile"] .ghost-link,
+  body[data-page="account"] .ghost-link {
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .load-more-wrap {
     margin-top: 18px;
   }
@@ -4705,6 +4749,13 @@ button.ghost-link {
     padding-inline: 7px;
     background: linear-gradient(135deg, rgba(126, 70, 255, 0.28), rgba(229, 9, 20, 0.26));
     border-color: rgba(170, 135, 255, 0.34);
+  }
+
+  body[data-page="details"] .topbar.compact .ghost-link:not(.account-top-link) {
+    width: 56px;
+    justify-content: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   body[data-page="details"] .topbar.compact [data-account-avatar] {
@@ -4989,7 +5040,65 @@ button.ghost-link {
   }
 
   .seasons-grid {
-    grid-template-columns: 1fr;
+    grid-auto-columns: minmax(238px, 238px);
+    gap: 12px;
+    padding-bottom: 6px;
+  }
+
+  .seasons-toolbar {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .season-sequence-filter {
+    padding: 7px 10px;
+    gap: 6px;
+  }
+
+  .season-sequence-filter span {
+    display: none;
+  }
+
+  .season-sequence-filter select {
+    min-width: 84px;
+    font-size: 0.82rem;
+  }
+
+  .season-nav-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
+  }
+
+  .season-card {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+    min-height: 136px;
+    border-radius: 18px;
+  }
+
+  .season-poster {
+    border-radius: 12px;
+  }
+
+  .season-copy {
+    gap: 8px;
+  }
+
+  .season-copy h3 {
+    font-size: 0.92rem;
+  }
+
+  .season-card-meta {
+    gap: 4px;
+  }
+
+  .season-card-meta p,
+  .season-card-meta small {
+    font-size: 0.76rem;
+    line-height: 1.2;
   }
 
   .comment-meta {
@@ -5078,6 +5187,31 @@ button.ghost-link {
     text-overflow: ellipsis;
   }
 
+  body[data-page="profile"] .explore-topbar,
+  body[data-page="account"] .explore-topbar {
+    padding: 6px 7px;
+    gap: 5px;
+    border-radius: 14px;
+  }
+
+  body[data-page="profile"] .brand-compact,
+  body[data-page="account"] .brand-compact {
+    font-size: 0.9rem;
+  }
+
+  body[data-page="profile"] .brand-mark,
+  body[data-page="account"] .brand-mark {
+    width: 36px;
+    height: 26px;
+  }
+
+  body[data-page="profile"] .ghost-link,
+  body[data-page="account"] .ghost-link {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 0.7rem;
+  }
+
   .detail-summary {
     padding: 10px;
   }
@@ -5136,6 +5270,27 @@ button.ghost-link {
     margin: 12px 12px 0;
     padding: 14px 16px;
     border-radius: 20px;
+  }
+
+  .seasons-grid {
+    grid-auto-columns: minmax(214px, 214px);
+    gap: 10px;
+  }
+
+  .season-card {
+    grid-template-columns: 66px minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px;
+    min-height: 126px;
+  }
+
+  .season-copy h3 {
+    font-size: 0.86rem;
+  }
+
+  .season-card-meta p,
+  .season-card-meta small {
+    font-size: 0.7rem;
   }
   .movie-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
