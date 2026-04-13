@@ -3668,6 +3668,24 @@ button.ghost-link {
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #fff;
   font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.detail-tag:hover,
+.detail-tag:focus-visible {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.detail-tag.active {
+  border-color: color-mix(in srgb, var(--meter-focus-ring, #8a63ff) 42%, rgba(255, 255, 255, 0.14));
+  background: color-mix(in srgb, var(--meter-focus-ring, #8a63ff) 18%, rgba(255, 255, 255, 0.04));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--meter-focus-ring, #8a63ff) 24%, transparent);
 }
 
 .people-block {
