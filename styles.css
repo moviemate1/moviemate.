@@ -3356,7 +3356,11 @@ button.ghost-link {
   cursor: default;
   transition: color 160ms ease;
   -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
   touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .meter-row-action:hover,
@@ -3374,6 +3378,16 @@ button.ghost-link {
 
 .meter-row-action.active strong {
   color: #fff;
+}
+
+.meter-row-action:active,
+.meter-row-action:focus,
+.meter-row-action:focus-visible {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+  outline: none;
 }
 
 .meter-row-go.active {
