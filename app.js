@@ -7026,6 +7026,51 @@ function setupDetailMeterInteractions() {
     applyVibeDisplay(vibeCard, vibeCard.dataset.lockedVibeSegment || "", Boolean(vibeCard.dataset.lockedVibeSegment));
   }, true);
 
+  const handleVibeRowSelection = (row, shouldLock = false) => {
+    const vibeCard = row?.closest("[data-vibe-card='true']");
+    const segmentLabel = row?.getAttribute("data-vibe-segment") || "";
+
+    if (!vibeCard || !segmentLabel) {
+      return;
+    }
+
+    if (shouldLock) {
+      vibeCard.dataset.lockedVibeSegment = segmentLabel;
+    }
+
+    applyVibeDisplay(vibeCard, segmentLabel, true);
+  };
+
+  document.addEventListener("touchstart", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    handleVibeRowSelection(row, true);
+  }, { passive: true });
+
+  document.addEventListener("click", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    handleVibeRowSelection(row, true);
+  });
+
+  document.addEventListener("mouseover", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    handleVibeRowSelection(row, false);
+  });
+
 }
 
 function updateOwnerToggle() {
