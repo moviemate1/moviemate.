@@ -6858,15 +6858,6 @@ function setupDetailMeterInteractions() {
     applyMeterSelection(meterCard, getMeterSegmentKeyFromPointer(meterCard, event));
   }, { passive: true });
 
-  const applyVibeSelection = (vibeCard, segmentLabel) => {
-    if (!vibeCard) {
-      return;
-    }
-
-    vibeCard.dataset.lockedVibeSegment = segmentLabel || "";
-    applyVibeDisplay(vibeCard, segmentLabel || "", Boolean(segmentLabel));
-  };
-
   const getVibeSegmentLabelFromPointer = (vibeCard, event) => {
     const vibeChart = vibeCard?.querySelector("[data-vibe-chart]");
     const titleId = vibeCard?.getAttribute("data-vibe-title-id") || "";
@@ -6910,16 +6901,22 @@ function setupDetailMeterInteractions() {
     return segments[segments.length - 1]?.label || "";
   };
 
-  document.addEventListener("click", (event) => {
-    const vibeChart = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-chart]") : null;
-
-    if (!vibeChart || document.body.dataset.page !== "details") {
+  const previewVibeSelection = (vibeCard, event, shouldLock = false) => {
+    if (!vibeCard) {
       return;
     }
 
-    const vibeCard = vibeChart.closest("[data-vibe-card='true']");
-    applyVibeSelection(vibeCard, getVibeSegmentLabelFromPointer(vibeCard, event));
-  });
+    const segmentLabel = getVibeSegmentLabelFromPointer(vibeCard, event);
+    if (!segmentLabel) {
+      return;
+    }
+
+    if (shouldLock) {
+      vibeCard.dataset.lockedVibeSegment = segmentLabel;
+    }
+
+    applyVibeDisplay(vibeCard, segmentLabel, true);
+  };
 
   document.addEventListener("touchstart", (event) => {
     const vibeChart = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-chart]") : null;
@@ -6929,8 +6926,41 @@ function setupDetailMeterInteractions() {
     }
 
     const vibeCard = vibeChart.closest("[data-vibe-card='true']");
-    applyVibeSelection(vibeCard, getVibeSegmentLabelFromPointer(vibeCard, event));
+    previewVibeSelection(vibeCard, event, true);
   }, { passive: true });
+
+  document.addEventListener("touchmove", (event) => {
+    const vibeChart = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-chart]") : null;
+
+    if (!vibeChart || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const vibeCard = vibeChart.closest("[data-vibe-card='true']");
+    previewVibeSelection(vibeCard, event, true);
+  }, { passive: true });
+
+  document.addEventListener("mousemove", (event) => {
+    const vibeChart = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-chart]") : null;
+
+    if (!vibeChart || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const vibeCard = vibeChart.closest("[data-vibe-card='true']");
+    previewVibeSelection(vibeCard, event, false);
+  });
+
+  document.addEventListener("mouseleave", (event) => {
+    const vibeChart = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-chart]") : null;
+    const vibeCard = vibeChart?.closest("[data-vibe-card='true']");
+
+    if (!vibeCard || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    applyVibeDisplay(vibeCard, vibeCard.dataset.lockedVibeSegment || "", Boolean(vibeCard.dataset.lockedVibeSegment));
+  }, true);
 }
 
 function updateOwnerToggle() {
