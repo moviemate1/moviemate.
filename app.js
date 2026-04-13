@@ -2331,6 +2331,7 @@ function applyMeterDisplay(meterCard, stats, focusKey = "") {
 
 function vibeChartTemplate(title) {
   const segments = buildGenreSegments(title);
+  const defaultSegment = segments[0] || null;
 
   return `
     <article class="insight-card" data-vibe-card="true" data-vibe-title-id="${title.id}">
@@ -2342,21 +2343,20 @@ function vibeChartTemplate(title) {
       </div>
       <div class="genre-chart" data-vibe-chart="true" style="${genreChartStyle(segments)}">
         <div class="genre-chart-core">
-          <strong data-vibe-core-label>${segments[0]?.label || "Story mix"}</strong>
-          <span data-vibe-core-copy>${segments[0] ? `${segments[0].percent}% vibe` : `${segments.length} moods`}</span>
+          <strong data-vibe-core-label>${defaultSegment?.label || "Story mix"}</strong>
+          <span data-vibe-core-copy>${defaultSegment ? `${defaultSegment.percent}%` : `${segments.length} moods`}</span>
         </div>
       </div>
-      <div class="meter-list">
+      <div class="meter-list vibe-list">
         ${segments
           .map(
             (segment) =>
-              `<button
-                class="meter-row meter-row-action"
-                type="button"
+              `<div
+                class="meter-row vibe-row"
                 data-vibe-segment="${escapeHtml(segment.label)}"
                 data-vibe-percent="${segment.percent}"
                 data-vibe-color="${segment.color}"
-              ><span class="meter-dot" style="background:${segment.color}"></span><span>${escapeHtml(segment.label)}</span><strong>${segment.percent}%</strong></button>`
+              ><span class="meter-dot" style="background:${segment.color}"></span><span>${escapeHtml(segment.label)}</span><strong>${segment.percent}%</strong></div>`
           )
           .join("")}
       </div>
@@ -2364,7 +2364,7 @@ function vibeChartTemplate(title) {
   `;
 }
 
-function applyVibeDisplay(vibeCard, segmentLabel = "") {
+function applyVibeDisplay(vibeCard, segmentLabel = "", isFocused = false) {
   if (!vibeCard) {
     return;
   }
@@ -2378,9 +2378,7 @@ function applyVibeDisplay(vibeCard, segmentLabel = "") {
     rows[0] ||
     null;
 
-  rows.forEach((row) => {
-    row.classList.toggle("active", row === activeRow);
-  });
+  rows.forEach((row) => row.classList.toggle("active", Boolean(isFocused) && row === activeRow));
 
   if (!activeRow) {
     return;
@@ -2396,11 +2394,11 @@ function applyVibeDisplay(vibeCard, segmentLabel = "") {
   }
 
   if (vibeCoreCopy) {
-    vibeCoreCopy.textContent = `${percent}% vibe`;
+    vibeCoreCopy.textContent = `${percent}%`;
   }
 
   if (vibeChart) {
-    vibeChart.classList.add("is-focused");
+    vibeChart.classList.toggle("is-focused", Boolean(isFocused));
     vibeChart.style.setProperty("--meter-focus-glow", color);
     vibeChart.style.setProperty("--meter-focus-ring", color);
   }
@@ -5720,7 +5718,7 @@ async function renderDetailsPage() {
   `;
 
     target.querySelectorAll("[data-vibe-card='true']").forEach((vibeCard) => {
-      applyVibeDisplay(vibeCard, vibeCard.dataset.lockedVibeSegment || "");
+      applyVibeDisplay(vibeCard, vibeCard.dataset.lockedVibeSegment || "", false);
     });
 
     const detailActions = target.querySelector(".detail-actions");
@@ -6866,41 +6864,73 @@ function setupDetailMeterInteractions() {
     }
 
     vibeCard.dataset.lockedVibeSegment = segmentLabel || "";
-    applyVibeDisplay(vibeCard, segmentLabel || "");
+    applyVibeDisplay(vibeCard, segmentLabel || "", Boolean(segmentLabel));
+  };
+
+  const getVibeSegmentLabelFromPointer = (vibeCard, event) => {
+    const vibeChart = vibeCard?.querySelector("[data-vibe-chart]");
+    const titleId = vibeCard?.getAttribute("data-vibe-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!vibeChart || !title) {
+      return "";
+    }
+
+    const segments = buildGenreSegments(title);
+    if (!segments.length) {
+      return "";
+    }
+
+    const rect = vibeChart.getBoundingClientRect();
+    const point = "touches" in event && event.touches?.length ? event.touches[0] : event;
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = point.clientX - centerX;
+    const dy = point.clientY - centerY;
+    const radius = rect.width / 2;
+    const innerRadius = radius - 20;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance < innerRadius || distance > radius) {
+      return "";
+    }
+
+    let angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    angle = (angle + 90 + 360) % 360;
+    const percent = (angle / 360) * 100;
+    let end = 0;
+
+    for (const segment of segments) {
+      end += segment.percent;
+      if (percent <= end) {
+        return segment.label;
+      }
+    }
+
+    return segments[segments.length - 1]?.label || "";
   };
 
   document.addEventListener("click", (event) => {
-    const target = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+    const vibeChart = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-chart]") : null;
 
-    if (!target || document.body.dataset.page !== "details") {
+    if (!vibeChart || document.body.dataset.page !== "details") {
       return;
     }
 
-    const vibeCard = target.closest("[data-vibe-card='true']");
-    applyVibeSelection(vibeCard, target.getAttribute("data-vibe-segment") || "");
+    const vibeCard = vibeChart.closest("[data-vibe-card='true']");
+    applyVibeSelection(vibeCard, getVibeSegmentLabelFromPointer(vibeCard, event));
   });
 
-  document.addEventListener("mouseover", (event) => {
-    const target = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+  document.addEventListener("touchstart", (event) => {
+    const vibeChart = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-chart]") : null;
 
-    if (!target || document.body.dataset.page !== "details") {
+    if (!vibeChart || document.body.dataset.page !== "details") {
       return;
     }
 
-    const vibeCard = target.closest("[data-vibe-card='true']");
-    applyVibeDisplay(vibeCard, target.getAttribute("data-vibe-segment") || "");
-  });
-
-  document.addEventListener("mouseout", (event) => {
-    const list = event.target instanceof HTMLElement ? event.target.closest(".meter-list") : null;
-    const vibeCard = list?.closest("[data-vibe-card='true']");
-
-    if (!vibeCard || document.body.dataset.page !== "details") {
-      return;
-    }
-
-    applyVibeDisplay(vibeCard, vibeCard.dataset.lockedVibeSegment || "");
-  });
+    const vibeCard = vibeChart.closest("[data-vibe-card='true']");
+    applyVibeSelection(vibeCard, getVibeSegmentLabelFromPointer(vibeCard, event));
+  }, { passive: true });
 }
 
 function updateOwnerToggle() {

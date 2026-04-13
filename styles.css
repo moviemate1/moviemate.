@@ -3309,6 +3309,10 @@ button.ghost-link {
   transition: color 160ms ease, text-shadow 160ms ease, transform 160ms ease;
 }
 
+.genre-chart.is-focused .genre-chart-core strong {
+  text-shadow: 0 0 18px color-mix(in srgb, var(--meter-focus-ring) 42%, transparent);
+}
+
 .meter-core span,
 .genre-chart-core span {
   color: var(--muted);
@@ -3381,6 +3385,25 @@ button.ghost-link {
 
 .meter-row strong {
   color: var(--text);
+}
+
+.vibe-list {
+  gap: 12px;
+}
+
+.vibe-row {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #e8e8ed;
+}
+
+.vibe-row.active {
+  color: #fff;
+}
+
+.vibe-row.active strong {
+  color: #fff;
 }
 
 .meter-dot {
