@@ -3260,6 +3260,20 @@ button.ghost-link {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--meter-focus-ring) 22%, transparent);
 }
 
+.genre-chart.is-focused {
+  transform: scale(1.04);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 22px 54px color-mix(in srgb, var(--meter-focus-glow) 78%, transparent);
+}
+
+.genre-chart.is-focused::after {
+  border-color: color-mix(in srgb, var(--meter-focus-ring) 38%, rgba(255, 255, 255, 0.08));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--meter-focus-ring) 22%, transparent),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
 .genre-chart {
   --meter-focus-glow: rgba(128, 94, 255, 0.2);
   --meter-focus-ring: rgba(128, 94, 255, 0.5);
