@@ -2535,16 +2535,6 @@ function peopleSectionTemplate(title) {
 
   return `
     <section class="people-section">
-      <div class="detail-tag-row">
-        ${String(title.genre || "")
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean)
-          .map(
-            (tag) => `<button class="detail-tag" type="button" data-vibe-control="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`
-          )
-          .join("")}
-      </div>
       ${
         mainPeople.length
           ? `
