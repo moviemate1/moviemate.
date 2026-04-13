@@ -1894,7 +1894,23 @@ function formatPlatforms(platforms = [], limit = 3) {
 async function shareTitle(title) {
   const shareUrl = new URL("/details.html", window.location.origin);
   shareUrl.searchParams.set("id", title.id);
-  await navigator.clipboard.writeText(shareUrl.toString());
+  const cleanUrl = shareUrl.toString();
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: title.title,
+        url: cleanUrl
+      });
+      return true;
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        console.error(error);
+      }
+    }
+  }
+
+  await navigator.clipboard.writeText(cleanUrl);
   return true;
 }
 
@@ -6809,7 +6825,7 @@ function setupDetailMeterInteractions() {
     return "skip";
   };
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener("touchstart", (event) => {
     const target = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
 
     if (!target || document.body.dataset.page !== "details") {
@@ -6817,8 +6833,33 @@ function setupDetailMeterInteractions() {
     }
 
     const meterCard = target.closest("[data-meter-card='true']");
-    applyMeterSelection(meterCard, target.getAttribute("data-meter-segment") || "");
-  });
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title) {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), target.getAttribute("data-meter-segment") || "");
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (event) => {
+    const target = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!target || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = target.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title) {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), target.getAttribute("data-meter-segment") || "");
+  }, { passive: true });
 
   document.addEventListener("mouseover", (event) => {
     const target = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
@@ -6837,6 +6878,24 @@ function setupDetailMeterInteractions() {
 
     applyMeterDisplay(meterCard, getReactionStats(title), target.getAttribute("data-meter-segment") || "");
   });
+
+  document.addEventListener("touchend", (event) => {
+    const target = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!target || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = target.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title) {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), meterCard.dataset.lockedSegment || "");
+  }, { passive: true });
 
   document.addEventListener("mouseout", (event) => {
     const list = event.target instanceof HTMLElement ? event.target.closest(".meter-list") : null;
@@ -6886,7 +6945,20 @@ function setupDetailMeterInteractions() {
     }
 
     const meterCard = meterVisual.closest("[data-meter-card='true']");
-    previewMeterSelection(meterCard, event, true);
+    previewMeterSelection(meterCard, event, false);
+  }, { passive: true });
+
+  document.addEventListener("touchend", (event) => {
+    const meterVisual = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+    const meterCard = meterVisual?.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), meterCard.dataset.lockedSegment || "");
   }, { passive: true });
 
   document.addEventListener("mousemove", (event) => {
