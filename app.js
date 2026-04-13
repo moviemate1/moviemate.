@@ -2396,10 +2396,6 @@ function applyVibeDisplay(vibeCard, segmentLabel = "", isFocused = false) {
   const color = activeRow.getAttribute("data-vibe-color") || "#8a63ff";
   const defaultHeading = vibeCard.getAttribute("data-vibe-default-heading") || "Story mix";
 
-  vibeCard.querySelectorAll("[data-vibe-control]").forEach((control) => {
-    control.classList.toggle("active", Boolean(isFocused) && control.getAttribute("data-vibe-control") === label);
-  });
-
   if (vibeHeading) {
     vibeHeading.textContent = isFocused ? label : defaultHeading;
   }
@@ -7030,37 +7026,6 @@ function setupDetailMeterInteractions() {
     applyVibeDisplay(vibeCard, vibeCard.dataset.lockedVibeSegment || "", Boolean(vibeCard.dataset.lockedVibeSegment));
   }, true);
 
-  const handleVibeControlSelection = (control) => {
-    const segmentLabel = control?.getAttribute("data-vibe-control") || "";
-    const vibeCard = document.querySelector("[data-vibe-card='true']");
-
-    if (!segmentLabel || !vibeCard) {
-      return;
-    }
-
-    vibeCard.dataset.lockedVibeSegment = segmentLabel;
-    applyVibeDisplay(vibeCard, segmentLabel, true);
-  };
-
-  document.addEventListener("touchstart", (event) => {
-    const control = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-control]") : null;
-
-    if (!control || document.body.dataset.page !== "details") {
-      return;
-    }
-
-    handleVibeControlSelection(control);
-  }, { passive: true });
-
-  document.addEventListener("click", (event) => {
-    const control = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-control]") : null;
-
-    if (!control || document.body.dataset.page !== "details") {
-      return;
-    }
-
-    handleVibeControlSelection(control);
-  });
 }
 
 function updateOwnerToggle() {
