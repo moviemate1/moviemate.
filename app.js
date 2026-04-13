@@ -6741,6 +6741,31 @@ function setupDetailMeterInteractions() {
     applyMeterDisplay(meterCard, getReactionStats(title), segment || "");
   };
 
+  const previewMeterSelection = (meterCard, event, shouldLock = false) => {
+    if (!meterCard) {
+      return;
+    }
+
+    const segmentKey = getMeterSegmentKeyFromPointer(meterCard, event);
+
+    if (!segmentKey) {
+      return;
+    }
+
+    const titleId = meterCard.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!title) {
+      return;
+    }
+
+    if (shouldLock) {
+      meterCard.dataset.lockedSegment = segmentKey;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), segmentKey);
+  };
+
   const getMeterSegmentKeyFromPointer = (meterCard, event) => {
     const meterVisual = meterCard?.querySelector("[data-meter-visual]");
 
@@ -6857,6 +6882,41 @@ function setupDetailMeterInteractions() {
     const meterCard = touchTarget.closest("[data-meter-card='true']");
     applyMeterSelection(meterCard, getMeterSegmentKeyFromPointer(meterCard, event));
   }, { passive: true });
+
+  document.addEventListener("touchmove", (event) => {
+    const meterVisual = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+
+    if (!meterVisual || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = meterVisual.closest("[data-meter-card='true']");
+    previewMeterSelection(meterCard, event, true);
+  }, { passive: true });
+
+  document.addEventListener("mousemove", (event) => {
+    const meterVisual = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+
+    if (!meterVisual || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = meterVisual.closest("[data-meter-card='true']");
+    previewMeterSelection(meterCard, event, false);
+  });
+
+  document.addEventListener("mouseleave", (event) => {
+    const meterVisual = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+    const meterCard = meterVisual?.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), meterCard.dataset.lockedSegment || "");
+  }, true);
 
   const getVibeSegmentLabelFromPointer = (vibeCard, event) => {
     const vibeChart = vibeCard?.querySelector("[data-vibe-chart]");
