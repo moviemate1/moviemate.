@@ -2237,9 +2237,8 @@ function reactionMeterTemplate(title) {
         ${meterSegments
           .map(
             (segment) => `
-              <button
+              <div
                 class="meter-row meter-row-action meter-row-${segment.className}"
-                type="button"
                 data-meter-segment="${segment.key}"
                 data-meter-label="${escapeHtml(segment.label)}"
                 data-meter-percent="${segment.percent}"
@@ -2249,7 +2248,7 @@ function reactionMeterTemplate(title) {
                 <span class="meter-dot dot-${segment.className}"></span>
                 <span>${escapeHtml(segment.label)}</span>
                 <strong data-meter-${segment.key === "goForIt" ? "go" : segment.key}>${segment.percent}%</strong>
-              </button>
+              </div>
             `
           )
           .join("")}

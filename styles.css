@@ -3353,8 +3353,10 @@ button.ghost-link {
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.02);
   text-align: left;
-  cursor: pointer;
+  cursor: default;
   transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .meter-row-action:hover,
