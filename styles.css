@@ -3348,9 +3348,9 @@ button.ghost-link {
 
 .meter-row-action {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid transparent;
-  border-radius: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
   background: transparent;
   text-align: left;
   cursor: default;
@@ -3370,7 +3370,6 @@ button.ghost-link {
 
 .meter-row-action.active {
   color: #fff;
-  border-color: transparent;
   background: transparent;
   box-shadow: none;
   transform: none;
@@ -3384,7 +3383,6 @@ button.ghost-link {
 .meter-row-action:focus,
 .meter-row-action:focus-visible {
   background: transparent;
-  border-color: transparent;
   box-shadow: none;
   transform: none;
   outline: none;
