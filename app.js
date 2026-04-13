@@ -7032,6 +7032,17 @@ function setupDetailMeterInteractions() {
     applyVibeDisplay(vibeCard, segmentLabel, true);
   };
 
+  const restoreVibePreview = (row) => {
+    const vibeCard = row?.closest("[data-vibe-card='true']");
+
+    if (!vibeCard) {
+      return;
+    }
+
+    const lockedSegment = vibeCard.dataset.lockedVibeSegment || "";
+    applyVibeDisplay(vibeCard, lockedSegment, Boolean(lockedSegment));
+  };
+
   document.addEventListener("touchstart", (event) => {
     const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
 
@@ -7039,18 +7050,28 @@ function setupDetailMeterInteractions() {
       return;
     }
 
-    handleVibeRowSelection(row, true);
+    handleVibeRowSelection(row, false);
   }, { passive: true });
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener("touchmove", (event) => {
     const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
 
     if (!row || document.body.dataset.page !== "details") {
       return;
     }
 
-    handleVibeRowSelection(row, true);
-  });
+    handleVibeRowSelection(row, false);
+  }, { passive: true });
+
+  document.addEventListener("touchend", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    restoreVibePreview(row);
+  }, { passive: true });
 
   document.addEventListener("mouseover", (event) => {
     const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
@@ -7060,6 +7081,16 @@ function setupDetailMeterInteractions() {
     }
 
     handleVibeRowSelection(row, false);
+  });
+
+  document.addEventListener("mouseout", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    restoreVibePreview(row);
   });
 
 }
