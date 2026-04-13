@@ -1892,18 +1892,9 @@ function formatPlatforms(platforms = [], limit = 3) {
 }
 
 async function shareTitle(title) {
-  const shareData = {
-    title: title.title,
-    text: `${title.title} on MovieMate`,
-    url: `${window.location.origin}/details.html?id=${title.id}`
-  };
-
-  if (navigator.share) {
-    await navigator.share(shareData);
-    return true;
-  }
-
-  await navigator.clipboard.writeText(shareData.url);
+  const shareUrl = new URL("/details.html", window.location.origin);
+  shareUrl.searchParams.set("id", title.id);
+  await navigator.clipboard.writeText(shareUrl.toString());
   return true;
 }
 
