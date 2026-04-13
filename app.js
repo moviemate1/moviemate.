@@ -2332,13 +2332,19 @@ function applyMeterDisplay(meterCard, stats, focusKey = "") {
 function vibeChartTemplate(title) {
   const segments = buildGenreSegments(title);
   const defaultSegment = segments[0] || null;
+  const defaultHeading = title.genre || "Story mix";
 
   return `
-    <article class="insight-card" data-vibe-card="true" data-vibe-title-id="${title.id}">
+    <article
+      class="insight-card"
+      data-vibe-card="true"
+      data-vibe-title-id="${title.id}"
+      data-vibe-default-heading="${escapeHtml(defaultHeading)}"
+    >
       <div class="insight-header">
         <div>
           <p class="eyebrow">Vibe Chart</p>
-          <h3>${escapeHtml(title.genre || "Story mix")}</h3>
+          <h3 data-vibe-heading>${escapeHtml(defaultHeading)}</h3>
         </div>
       </div>
       <div class="genre-chart" data-vibe-chart="true" style="${genreChartStyle(segments)}">
@@ -2370,6 +2376,7 @@ function applyVibeDisplay(vibeCard, segmentLabel = "", isFocused = false) {
   }
 
   const vibeChart = vibeCard.querySelector("[data-vibe-chart]");
+  const vibeHeading = vibeCard.querySelector("[data-vibe-heading]");
   const vibeCoreLabel = vibeCard.querySelector("[data-vibe-core-label]");
   const vibeCoreCopy = vibeCard.querySelector("[data-vibe-core-copy]");
   const rows = Array.from(vibeCard.querySelectorAll("[data-vibe-segment]"));
@@ -2387,6 +2394,11 @@ function applyVibeDisplay(vibeCard, segmentLabel = "", isFocused = false) {
   const label = activeRow.getAttribute("data-vibe-segment") || "Story mix";
   const percent = activeRow.getAttribute("data-vibe-percent") || "0";
   const color = activeRow.getAttribute("data-vibe-color") || "#8a63ff";
+  const defaultHeading = vibeCard.getAttribute("data-vibe-default-heading") || "Story mix";
+
+  if (vibeHeading) {
+    vibeHeading.textContent = isFocused ? label : defaultHeading;
+  }
 
   if (vibeCoreLabel) {
     vibeCoreLabel.textContent = label;

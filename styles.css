@@ -3396,10 +3396,18 @@ button.ghost-link {
   border: 0;
   background: transparent;
   color: #e8e8ed;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .vibe-row.active {
   color: #fff;
+}
+
+.genre-chart,
+.genre-chart-core {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .vibe-row.active strong {
