@@ -1806,16 +1806,57 @@ async function syncWatchStatus(titleId, previousStatusValue, nextStatus) {
 }
 
 function getReactionStats(title) {
-  const perfect = Number(title.votePerfect || 0);
-  const goForIt = Number(title.voteGoForIt || 0);
-  const timepass = Number(title.voteTimepass || 0);
-  const skip = Number(title.voteSkip || 0);
+  const perfect = Math.max(0, Number(title.votePerfect || 0));
+  const goForIt = Math.max(0, Number(title.voteGoForIt || 0));
+  const timepass = Math.max(0, Number(title.voteTimepass || 0));
+  const skip = Math.max(0, Number(title.voteSkip || 0));
   const total = perfect + goForIt + timepass + skip;
-  const perfectPercent = total ? Math.round((perfect / total) * 100) : 0;
-  const goForItPercent = total ? Math.round((goForIt / total) * 100) : 0;
-  const timepassPercent = total ? Math.round((timepass / total) * 100) : 0;
-  const skipPercent = total ? Math.round((skip / total) * 100) : 0;
-  const recommendedPercent = perfectPercent + goForItPercent;
+
+  if (!total) {
+    return {
+      perfect,
+      goForIt,
+      timepass,
+      skip,
+      total,
+      perfectPercent: 0,
+      goForItPercent: 0,
+      timepassPercent: 0,
+      skipPercent: 0,
+      recommendedPercent: 0
+    };
+  }
+
+  const entries = [
+    { key: "perfectPercent", count: perfect },
+    { key: "goForItPercent", count: goForIt },
+    { key: "timepassPercent", count: timepass },
+    { key: "skipPercent", count: skip }
+  ].map((entry) => {
+    const exact = (entry.count / total) * 100;
+    return {
+      ...entry,
+      exact,
+      value: Math.floor(exact),
+      remainder: exact - Math.floor(exact)
+    };
+  });
+
+  let remaining = 100 - entries.reduce((sum, entry) => sum + entry.value, 0);
+  entries
+    .slice()
+    .sort((left, right) => right.remainder - left.remainder)
+    .forEach((entry, index, sorted) => {
+      if (remaining <= 0) {
+        return;
+      }
+
+      entry.value += 1;
+      remaining -= 1;
+    });
+
+  const percentMap = Object.fromEntries(entries.map((entry) => [entry.key, entry.value]));
+  const recommendedPercent = percentMap.perfectPercent + percentMap.goForItPercent;
 
   return {
     perfect,
@@ -1823,10 +1864,10 @@ function getReactionStats(title) {
     timepass,
     skip,
     total,
-    perfectPercent,
-    goForItPercent,
-    timepassPercent,
-    skipPercent,
+    perfectPercent: percentMap.perfectPercent,
+    goForItPercent: percentMap.goForItPercent,
+    timepassPercent: percentMap.timepassPercent,
+    skipPercent: percentMap.skipPercent,
     recommendedPercent
   };
 }
@@ -2262,7 +2303,7 @@ function applyMeterDisplay(meterCard, stats, focusKey = "") {
     return;
   }
 
-  const total = Math.max(stats.total, 1);
+  const total = stats.total;
   const segments = {
     perfect: {
       label: "Perfection",
