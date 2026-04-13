@@ -3357,6 +3357,7 @@ button.ghost-link {
   transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  pointer-events: none;
 }
 
 .meter-row-action:hover,
