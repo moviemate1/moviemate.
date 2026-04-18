@@ -4757,6 +4757,8 @@ button.ghost-link {
     transform: none;
     justify-content: center;
     text-align: center;
+    border-width: 1px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
   }
 
   body[data-page="details"] .topbar.compact .account-top-link {
@@ -4764,6 +4766,11 @@ button.ghost-link {
     padding-inline: 8px;
     background: linear-gradient(135deg, rgba(126, 70, 255, 0.28), rgba(229, 9, 20, 0.26));
     border-color: rgba(170, 135, 255, 0.34);
+  }
+
+  body[data-page="details"] .topbar.compact .ghost-link:not(.account-top-link) {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   body[data-page="details"] .topbar.compact .account-top-link.account-chip {
@@ -5230,6 +5237,10 @@ button.ghost-link {
     min-height: 30px;
     padding: 0 6px;
     font-size: 0.5rem;
+  }
+
+  body[data-page="details"] .topbar.compact .topbar-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   body[data-page="details"] .topbar.compact .topbar-actions {
