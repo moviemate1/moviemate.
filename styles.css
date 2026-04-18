@@ -4745,17 +4745,30 @@ button.ghost-link {
     align-items: stretch;
   }
 
+  body[data-page="details"] .topbar.compact .topbar-actions > * {
+    min-width: 0;
+  }
+
+  body[data-page="details"] .topbar.compact .account-menu-wrap {
+    width: 100%;
+    min-width: 0;
+  }
+
   body[data-page="details"] .topbar.compact .ghost-link,
   body[data-page="details"] .topbar.compact .account-top-link {
+    display: inline-flex;
+    align-items: center;
     width: 100%;
-    min-height: 32px;
-    padding: 0 8px;
-    font-size: 0.56rem;
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0.6rem;
+    font-weight: 600;
     line-height: 1;
     border-radius: 12px;
     white-space: nowrap;
     transform: none;
     justify-content: center;
+    vertical-align: middle;
     text-align: center;
     border-width: 1px;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
@@ -4779,15 +4792,17 @@ button.ghost-link {
     justify-content: center;
     width: 100%;
     min-width: 0;
+    min-height: 34px;
     gap: 5px;
-    padding-inline: 8px;
+    padding-inline: 10px;
   }
 
   body[data-page="details"] .topbar.compact .account-top-link.account-chip.signed-in {
     width: 100%;
     min-width: 0;
+    min-height: 34px;
     height: auto;
-    padding: 0 8px;
+    padding: 0 10px;
     gap: 5px;
     border-radius: 12px;
     border: 1px solid rgba(170, 135, 255, 0.34);
@@ -4798,6 +4813,7 @@ button.ghost-link {
   body[data-page="details"] .topbar.compact .account-top-link .account-chip-label {
     display: block !important;
     min-width: 0;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -5234,9 +5250,9 @@ button.ghost-link {
   body[data-page="details"] .topbar.compact .ghost-link,
   body[data-page="details"] .topbar.compact .account-top-link {
     min-width: 0;
-    min-height: 30px;
+    min-height: 32px;
     padding: 0 6px;
-    font-size: 0.5rem;
+    font-size: 0.55rem;
   }
 
   body[data-page="details"] .topbar.compact .topbar-actions {
