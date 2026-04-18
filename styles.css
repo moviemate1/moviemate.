@@ -4766,6 +4766,38 @@ button.ghost-link {
     border-color: rgba(170, 135, 255, 0.34);
   }
 
+  body[data-page="details"] .topbar.compact .account-top-link.account-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    gap: 5px;
+    padding-inline: 8px;
+  }
+
+  body[data-page="details"] .topbar.compact .account-top-link.account-chip.signed-in {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    padding: 0 8px;
+    gap: 5px;
+    border-radius: 12px;
+    border: 1px solid rgba(170, 135, 255, 0.34);
+    background: linear-gradient(135deg, rgba(126, 70, 255, 0.28), rgba(229, 9, 20, 0.26));
+    box-shadow: none;
+  }
+
+  body[data-page="details"] .topbar.compact .account-top-link .account-chip-label {
+    display: block !important;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: inherit;
+    font-weight: 700;
+  }
+
   body[data-page="details"] .topbar.compact .ghost-link:not(.account-top-link) {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4775,6 +4807,7 @@ button.ghost-link {
     width: 18px;
     height: 18px;
     font-size: 0.5rem;
+    flex: 0 0 auto;
   }
 
   .trend-grid {
@@ -5197,6 +5230,16 @@ button.ghost-link {
     min-height: 30px;
     padding: 0 6px;
     font-size: 0.5rem;
+  }
+
+  body[data-page="details"] .topbar.compact .topbar-actions {
+    gap: 5px;
+  }
+
+  body[data-page="details"] .topbar.compact .account-top-link.account-chip,
+  body[data-page="details"] .topbar.compact .account-top-link.account-chip.signed-in {
+    padding-inline: 6px;
+    gap: 4px;
   }
 
   body[data-page="details"] .topbar.compact .brand {
