@@ -4692,66 +4692,71 @@ button.ghost-link {
   }
 
   body[data-page="details"] .topbar.compact {
-    align-items: center;
-    gap: 5px;
+    align-items: stretch;
+    gap: 7px;
     margin-bottom: 10px;
-    flex-wrap: nowrap;
-    min-height: 42px;
-    padding: 6px 8px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 14px;
+    flex-wrap: wrap;
+    min-height: 0;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
     background: rgba(10, 9, 12, 0.96);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
   }
 
   body[data-page="details"] .topbar.compact .brand {
-    gap: 5px;
-    font-size: 0.72rem;
-    flex: 0 0 auto;
+    gap: 7px;
+    font-size: 0.82rem;
+    flex: 1 1 100%;
+    min-height: 34px;
   }
 
   body[data-page="details"] .topbar.compact .brand-mark {
-    width: 17px;
-    height: 12px;
-    border-radius: 8px;
+    width: 38px;
+    height: 24px;
+    border-radius: 12px;
   }
 
   body[data-page="details"] .topbar.compact .brand-mark::before,
   body[data-page="details"] .topbar.compact .brand-mark::after {
-    top: 3px;
-    width: 6px;
-    height: 5px;
+    top: 6px;
+    width: 12px;
+    height: 10px;
   }
 
   body[data-page="details"] .topbar.compact .brand-mark::before {
-    left: 3px;
+    left: 6px;
   }
 
   body[data-page="details"] .topbar.compact .brand-mark::after {
-    right: 3px;
+    right: 6px;
   }
 
   body[data-page="details"] .topbar.compact .brand-text {
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
   }
 
   body[data-page="details"] .topbar.compact .topbar-actions {
     min-width: 0;
-    flex: 1 1 auto;
-    justify-content: flex-end;
-    gap: 4px;
-    flex-wrap: nowrap;
+    flex: 1 1 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    align-items: stretch;
   }
 
   body[data-page="details"] .topbar.compact .ghost-link,
   body[data-page="details"] .topbar.compact .account-top-link {
-    min-height: 26px;
-    padding: 4px 7px;
-    font-size: 0.48rem;
+    width: 100%;
+    min-height: 32px;
+    padding: 0 8px;
+    font-size: 0.56rem;
     line-height: 1;
-    border-radius: 11px;
+    border-radius: 12px;
     white-space: nowrap;
     transform: none;
+    justify-content: center;
+    text-align: center;
   }
 
   body[data-page="details"] .topbar.compact .account-top-link {
@@ -4762,16 +4767,14 @@ button.ghost-link {
   }
 
   body[data-page="details"] .topbar.compact .ghost-link:not(.account-top-link) {
-    width: 58px;
-    justify-content: center;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   body[data-page="details"] .topbar.compact [data-account-avatar] {
-    width: 14px;
-    height: 14px;
-    font-size: 0.42rem;
+    width: 18px;
+    height: 18px;
+    font-size: 0.5rem;
   }
 
   .trend-grid {
@@ -5188,25 +5191,19 @@ button.ghost-link {
     width: calc(100% - 2px);
   }
 
-  body[data-page="details"] .topbar.compact .topbar-actions {
-    justify-content: flex-end;
-  }
-
   body[data-page="details"] .topbar.compact .ghost-link,
   body[data-page="details"] .topbar.compact .account-top-link {
-    flex: 0 1 auto;
-    justify-content: center;
     min-width: 0;
-    padding: 4px 5px;
-    font-size: 0.41rem;
+    min-height: 30px;
+    padding: 0 6px;
+    font-size: 0.5rem;
   }
 
   body[data-page="details"] .topbar.compact .brand {
-    font-size: 0.66rem;
+    font-size: 0.74rem;
   }
 
   body[data-page="details"] .topbar.compact .ghost-link:not(.account-top-link) {
-    max-width: 48px;
     overflow: hidden;
     text-overflow: ellipsis;
   }
