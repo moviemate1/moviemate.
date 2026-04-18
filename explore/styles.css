@@ -3485,8 +3485,12 @@ button.ghost-link {
   backdrop-filter: blur(16px);
 }
 
+.install-banner.hidden {
+  display: none !important;
+}
+
 .install-banner.visible {
-  display: flex;
+  display: flex !important;
 }
 
 .install-banner-action {
@@ -3857,15 +3861,16 @@ button.ghost-link {
   }
 
   .explore-topbar {
-    padding: 10px 12px;
+    min-height: 50px;
+    padding: 8px 10px;
     gap: 8px;
     border-radius: 18px;
   }
 
   .explore-topbar-left {
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
-    flex: 1;
+    flex: 1 1 auto;
   }
 
   .topbar,
@@ -3880,7 +3885,8 @@ button.ghost-link {
   .explore-actions-right {
     display: inline-flex;
     margin-left: auto;
-    gap: 8px;
+    gap: 6px;
+    flex: 0 0 auto;
   }
 
   .trend-grid {
@@ -3938,11 +3944,11 @@ button.ghost-link {
   }
 
   body[data-page="home"] {
-    padding-bottom: 150px;
+    padding-bottom: 156px;
   }
 
   .install-banner.visible {
-    display: flex;
+    display: flex !important;
   }
 
   .people-rail {
@@ -4001,13 +4007,13 @@ button.ghost-link {
   .home-chip,
   .icon-chip,
   .avatar-chip {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
   }
 
   .account-chip {
     width: auto;
-    min-width: 38px;
+    min-width: 34px;
     padding: 0;
   }
 
@@ -4016,7 +4022,7 @@ button.ghost-link {
   }
 
   .brand-compact {
-    font-size: 1.2rem;
+    font-size: 1.08rem;
   }
 
   .beta-chip {
@@ -4053,13 +4059,13 @@ button.ghost-link {
   }
 
   .install-banner {
-    bottom: 82px;
-    width: calc(100% - 14px);
-    padding: 8px 10px 9px;
+    bottom: 80px;
+    width: calc(100% - 12px);
+    padding: 9px 10px 10px;
   }
 
   .install-banner-action {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
   }
 
   .install-banner-close {
@@ -4147,25 +4153,41 @@ button.ghost-link {
   }
 
   .explore-topbar {
-    padding: 8px 10px;
+    min-height: 44px;
+    padding: 7px 8px;
   }
 
   .brand-compact .brand-text {
-    max-width: 92px;
+    max-width: 84px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .explore-actions-right {
-    gap: 6px;
+    gap: 5px;
   }
 
   .icon-chip,
   .home-chip,
   .avatar-chip {
-    width: 34px;
-    height: 34px;
+    width: 31px;
+    height: 31px;
+  }
+
+  .install-banner {
+    width: calc(100% - 10px);
+    bottom: 76px;
+    padding: 7px 9px 8px;
+  }
+
+  .install-banner-action {
+    font-size: 0.84rem;
+  }
+
+  .install-banner-close {
+    width: 22px;
+    height: 22px;
   }
 
   .featured-grid,
