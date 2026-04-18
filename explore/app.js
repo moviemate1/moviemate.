@@ -14,11 +14,13 @@ import {
   updateDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import {
+  browserLocalPersistence,
   createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -32,6 +34,8 @@ const REACTIONS_STORAGE_KEY = "moviemate_reactions";
 const SAVED_TITLES_STORAGE_KEY = "moviemate_saved_titles";
 const OWNER_MODE_KEY = "moviemate_owner_mode";
 const USER_NOTIFICATIONS_SEEN_KEY = "moviemate_notifications_seen_at";
+const LAST_AUTH_UID_KEY = "moviemate_last_auth_uid";
+const USER_PROFILE_CACHE_PREFIX = "moviemate_user_profile_cache_";
 const TITLES_CACHE_KEY = "moviemate_titles_cache_v1";
 const HOMEPAGE_CONTENT_CACHE_KEY = "moviemate_homepage_content_cache_v1";
 const INSTALL_BANNER_DISMISSED_KEY = "moviemate_install_banner_dismissed_v3";
@@ -185,6 +189,7 @@ let homepageContentCache = { ...DEFAULT_HOMEPAGE_CONTENT };
 let homepageContentPromise = null;
 let currentUser = null;
 let currentUserProfile = null;
+let hasResolvedAuthState = false;
 let browseVisibleCount = SEARCH_PAGE_SIZE;
 let deferredInstallPrompt = null;
 let pendingNotificationState = {
@@ -215,6 +220,74 @@ const DEFAULT_USER_PROFILE = {
 
 function isOwnerMode() {
   return localStorage.getItem(OWNER_MODE_KEY) === "true";
+}
+
+function getProfileCacheKey(uid) {
+  return uid ? `${USER_PROFILE_CACHE_PREFIX}${uid}` : "";
+}
+
+function rememberSignedInUid(uid) {
+  try {
+    if (uid) {
+      localStorage.setItem(LAST_AUTH_UID_KEY, uid);
+    } else {
+      localStorage.removeItem(LAST_AUTH_UID_KEY);
+    }
+  } catch (error) {
+    console.warn("Could not update auth uid cache", error);
+  }
+}
+
+function getRememberedSignedInUid() {
+  try {
+    return localStorage.getItem(LAST_AUTH_UID_KEY) || "";
+  } catch (error) {
+    console.warn("Could not read auth uid cache", error);
+    return "";
+  }
+}
+
+function saveUserProfileCache(uid, profile) {
+  const key = getProfileCacheKey(uid);
+
+  if (!key || !profile) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(key, JSON.stringify(profile));
+    rememberSignedInUid(uid);
+  } catch (error) {
+    console.warn("Could not store profile cache", error);
+  }
+}
+
+function loadUserProfileCache(uid) {
+  const key = getProfileCacheKey(uid);
+
+  if (!key) {
+    return null;
+  }
+
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? normalizeUserProfile(JSON.parse(raw)) : null;
+  } catch (error) {
+    console.warn("Could not read profile cache", error);
+    return null;
+  }
+}
+
+function clearUserProfileCache(uid) {
+  const key = getProfileCacheKey(uid);
+
+  try {
+    if (key) {
+      localStorage.removeItem(key);
+    }
+  } catch (error) {
+    console.warn("Could not clear profile cache", error);
+  }
 }
 
 function saveTitlesCacheToStorage(titles) {
@@ -433,10 +506,14 @@ async function ensureUserProfile(user) {
 
     await setDoc(ref, profile, { merge: true });
     currentUserProfile = normalizeUserProfile(profile);
+    saveUserProfileCache(user.uid, currentUserProfile);
+    rememberSignedInUid(user.uid);
     return currentUserProfile;
   }
 
   currentUserProfile = normalizeUserProfile(snapshot.data());
+  saveUserProfileCache(user.uid, currentUserProfile);
+  rememberSignedInUid(user.uid);
   return currentUserProfile;
 }
 
@@ -454,6 +531,7 @@ async function persistUserProfile(partial) {
   });
 
   currentUserProfile = nextProfile;
+  saveUserProfileCache(currentUser.uid, nextProfile);
   await setDoc(ref, nextProfile, { merge: true });
 }
 
@@ -3358,7 +3436,39 @@ function setAuthMode(mode) {
   signupTab?.classList.toggle("active", mode === "signup");
 }
 
+function getCachedAuthUiState() {
+  if (hasResolvedAuthState || isSignedIn()) {
+    return null;
+  }
+
+  const cachedUid = getRememberedSignedInUid();
+
+  if (!cachedUid) {
+    return null;
+  }
+
+  const cachedProfile = currentUserProfile || loadUserProfileCache(cachedUid);
+
+  if (!cachedProfile) {
+    return null;
+  }
+
+  return {
+    uid: cachedUid,
+    profile: cachedProfile
+  };
+}
+
 function updateAuthUI() {
+  const cachedAuthUiState = getCachedAuthUiState();
+  const signedInForUi = isSignedIn() || Boolean(cachedAuthUiState);
+  const uiProfile = isSignedIn() ? currentUserProfile : cachedAuthUiState?.profile || null;
+  const uiUser = isSignedIn()
+    ? currentUser
+    : cachedAuthUiState
+      ? { uid: cachedAuthUiState.uid, email: "", displayName: cachedAuthUiState.profile?.displayName || "" }
+      : null;
+
   document.querySelectorAll("[data-auth-toggle]").forEach((button) => {
     if (!(button instanceof HTMLElement)) {
       return;
@@ -3366,9 +3476,9 @@ function updateAuthUI() {
 
     const avatar = button.querySelector("[data-account-avatar]");
     const label = button.querySelector("[data-account-label]");
-    const avatarData = getProfileAvatar();
+    const avatarData = getProfileAvatar(uiProfile, uiUser);
 
-    if (isSignedIn()) {
+    if (signedInForUi) {
       button.classList.add("signed-in");
       if (avatar) {
         if (avatarData.image) {
@@ -3378,7 +3488,7 @@ function updateAuthUI() {
           avatar.style.backgroundPosition = "center";
           avatar.style.backgroundRepeat = "no-repeat";
         } else {
-          avatar.textContent = getProfileInitials();
+          avatar.textContent = getProfileInitials(uiProfile, uiUser);
           avatar.style.backgroundImage = "";
           avatar.style.backgroundSize = "";
           avatar.style.backgroundPosition = "";
@@ -3387,9 +3497,9 @@ function updateAuthUI() {
         avatar.classList.remove("hidden");
       }
       if (label) {
-        label.textContent = getProfileDisplayName();
+        label.textContent = getProfileDisplayName(uiProfile, uiUser);
       } else {
-        button.textContent = getProfileDisplayName();
+        button.textContent = getProfileDisplayName(uiProfile, uiUser);
       }
     } else {
       button.classList.remove("signed-in");
@@ -3410,11 +3520,11 @@ function updateAuthUI() {
   });
 
   document.querySelectorAll("[data-account-only]").forEach((element) => {
-    element.classList.toggle("hidden", !isSignedIn());
+    element.classList.toggle("hidden", !signedInForUi);
   });
 
   document.querySelectorAll("[data-signed-out-only]").forEach((element) => {
-    element.classList.toggle("hidden", isSignedIn());
+    element.classList.toggle("hidden", signedInForUi);
   });
 
   document.querySelectorAll("[data-profile-link]").forEach((link) => {
@@ -3432,8 +3542,8 @@ function updateAuthUI() {
   const authHint = document.querySelector("#authHint");
 
   if (authHint) {
-    authHint.textContent = isSignedIn()
-      ? `Signed in as ${currentUser?.email || "MovieMate member"}`
+    authHint.textContent = signedInForUi
+      ? `Signed in as ${currentUser?.email || uiProfile?.displayName || "MovieMate member"}`
       : "Sign in to keep collections, member reactions, and your watch progress across devices.";
   }
 }
@@ -3449,6 +3559,8 @@ async function handleAuthSubmit(form) {
     showMessage("#authMessage", "Enter email and password first.");
     return;
   }
+
+  await setPersistence(auth, browserLocalPersistence);
 
   if (mode === "signup") {
     const credentials = await createUserWithEmailAndPassword(auth, email, password);
@@ -3519,7 +3631,10 @@ function setupAuthModal() {
   document.querySelectorAll("[data-signout-action]").forEach((button) => {
     button.addEventListener("click", async () => {
       closeAccountMenus();
+      const uidToClear = currentUser?.uid || getRememberedSignedInUid();
       await signOut(auth);
+      clearUserProfileCache(uidToClear);
+      rememberSignedInUid("");
     });
   });
 
@@ -5811,6 +5926,11 @@ function setupOwnerNotificationsRealtime() {
 
 async function init() {
   let hasHandledInitialAuthState = false;
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch (error) {
+    console.warn("Could not set auth persistence.", error);
+  }
   hydrateStartupCaches();
   setupLikeButtons();
   setupSaveButtons();
@@ -5879,6 +5999,7 @@ async function init() {
     } else {
       currentUserProfile = null;
     }
+    hasResolvedAuthState = true;
 
     updateAuthUI();
 
