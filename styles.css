@@ -4605,12 +4605,16 @@ button.ghost-link {
   }
 
   .explore-topbar {
-    padding: 10px 12px;
-    gap: 10px;
+    min-height: 50px;
+    padding: 8px 10px;
+    gap: 8px;
+    border-radius: 18px;
   }
 
   .explore-topbar-left {
-    gap: 10px;
+    gap: 8px;
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .topbar,
@@ -4625,10 +4629,13 @@ button.ghost-link {
   .explore-actions-right {
     display: inline-flex;
     margin-left: auto;
+    gap: 6px;
+    flex: 0 0 auto;
   }
 
   body[data-page="profile"] .explore-topbar,
   body[data-page="account"] .explore-topbar {
+    min-height: 46px;
     padding: 7px 8px;
     gap: 6px;
     border-radius: 16px;
@@ -4643,7 +4650,8 @@ button.ghost-link {
 
   body[data-page="profile"] .brand-compact,
   body[data-page="account"] .brand-compact {
-    font-size: 1rem;
+    font-size: 0.98rem;
+    min-width: 0;
   }
 
   body[data-page="profile"] .brand-mark,
@@ -4663,12 +4671,13 @@ button.ghost-link {
   body[data-page="profile"] .ghost-link,
   body[data-page="account"] .ghost-link {
     min-height: 34px;
-    padding: 0 12px;
+    padding: 0 11px;
     border-radius: 12px;
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    white-space: nowrap;
   }
 
   .load-more-wrap {
@@ -4684,12 +4693,13 @@ button.ghost-link {
 
   body[data-page="details"] .topbar.compact {
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     margin-bottom: 10px;
     flex-wrap: nowrap;
-    padding: 5px 7px;
+    min-height: 42px;
+    padding: 6px 8px;
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
+    border-radius: 14px;
     background: rgba(10, 9, 12, 0.96);
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
   }
@@ -4729,30 +4739,30 @@ button.ghost-link {
     min-width: 0;
     flex: 1 1 auto;
     justify-content: flex-end;
-    gap: 3px;
+    gap: 4px;
     flex-wrap: nowrap;
   }
 
   body[data-page="details"] .topbar.compact .ghost-link,
   body[data-page="details"] .topbar.compact .account-top-link {
-    min-height: 22px;
-    padding: 4px 6px;
-    font-size: 0.46rem;
+    min-height: 26px;
+    padding: 4px 7px;
+    font-size: 0.48rem;
     line-height: 1;
-    border-radius: 10px;
+    border-radius: 11px;
     white-space: nowrap;
     transform: none;
   }
 
   body[data-page="details"] .topbar.compact .account-top-link {
     gap: 4px;
-    padding-inline: 7px;
+    padding-inline: 8px;
     background: linear-gradient(135deg, rgba(126, 70, 255, 0.28), rgba(229, 9, 20, 0.26));
     border-color: rgba(170, 135, 255, 0.34);
   }
 
   body[data-page="details"] .topbar.compact .ghost-link:not(.account-top-link) {
-    width: 56px;
+    width: 58px;
     justify-content: center;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4992,7 +5002,7 @@ button.ghost-link {
     margin-top: 6px;
     align-self: start;
     grid-column: 2;
-    gap: 8px;
+    gap: 6px;
   }
 
   .detail-cta-stack .watch-status-btn,
@@ -5008,23 +5018,27 @@ button.ghost-link {
   }
 
   .detail-action-strip {
-    margin-top: 10px;
+    margin-top: 8px;
   }
 
   .detail-action-strip .detail-actions {
-    padding: 12px;
-    gap: 10px;
-    border-radius: 16px;
+    padding: 10px;
+    gap: 8px;
+    border-radius: 18px;
   }
 
   .reaction-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
   }
 
   .reaction-btn {
     min-height: 28px;
-    padding: 6px 10px;
-    font-size: 0.62rem;
+    padding: 6px 8px;
+    font-size: 0.6rem;
+    width: 100%;
+    justify-content: center;
   }
 
   .detail-action-strip .detail-actions,
@@ -5040,7 +5054,7 @@ button.ghost-link {
   }
 
   .seasons-grid {
-    grid-auto-columns: minmax(238px, 238px);
+    grid-auto-columns: minmax(224px, 224px);
     gap: 12px;
     padding-bottom: 6px;
   }
@@ -5048,12 +5062,14 @@ button.ghost-link {
   .seasons-toolbar {
     width: 100%;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
+    align-items: center;
   }
 
   .season-sequence-filter {
-    padding: 7px 10px;
-    gap: 6px;
+    min-width: 0;
+    padding: 6px 8px;
+    gap: 5px;
   }
 
   .season-sequence-filter span {
@@ -5061,22 +5077,22 @@ button.ghost-link {
   }
 
   .season-sequence-filter select {
-    min-width: 84px;
-    font-size: 0.82rem;
+    min-width: 74px;
+    font-size: 0.78rem;
   }
 
   .season-nav-btn {
-    width: 30px;
-    height: 30px;
-    font-size: 1rem;
+    width: 28px;
+    height: 28px;
+    font-size: 0.92rem;
   }
 
   .season-card {
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: 10px;
-    padding: 12px;
-    min-height: 136px;
-    border-radius: 18px;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px;
+    min-height: 126px;
+    border-radius: 16px;
   }
 
   .season-poster {
@@ -5111,7 +5127,6 @@ button.ghost-link {
   }
 
   .owner-actions,
-  .reaction-buttons,
   .comment-actions,
   .notification-card {
     flex-direction: column;
@@ -5119,7 +5134,6 @@ button.ghost-link {
   }
 
   .owner-actions > *,
-  .reaction-buttons > *,
   .comment-actions > * {
     width: 100%;
   }
@@ -5173,8 +5187,8 @@ button.ghost-link {
     flex: 0 1 auto;
     justify-content: center;
     min-width: 0;
-    padding: 3px 5px;
-    font-size: 0.42rem;
+    padding: 4px 6px;
+    font-size: 0.44rem;
   }
 
   body[data-page="details"] .topbar.compact .brand {
@@ -5189,6 +5203,7 @@ button.ghost-link {
 
   body[data-page="profile"] .explore-topbar,
   body[data-page="account"] .explore-topbar {
+    min-height: 42px;
     padding: 6px 7px;
     gap: 5px;
     border-radius: 14px;
@@ -5208,8 +5223,8 @@ button.ghost-link {
   body[data-page="profile"] .ghost-link,
   body[data-page="account"] .ghost-link {
     min-height: 30px;
-    padding: 0 10px;
-    font-size: 0.7rem;
+    padding: 0 9px;
+    font-size: 0.66rem;
   }
 
   .detail-summary {
@@ -5262,8 +5277,8 @@ button.ghost-link {
 
   .reaction-btn {
     min-height: 26px;
-    padding: 5px 9px;
-    font-size: 0.58rem;
+    padding: 5px 6px;
+    font-size: 0.54rem;
   }
 
   .hero-interest-card {
@@ -5273,15 +5288,15 @@ button.ghost-link {
   }
 
   .seasons-grid {
-    grid-auto-columns: minmax(214px, 214px);
+    grid-auto-columns: minmax(202px, 202px);
     gap: 10px;
   }
 
   .season-card {
-    grid-template-columns: 66px minmax(0, 1fr);
-    gap: 8px;
-    padding: 10px;
-    min-height: 126px;
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 7px;
+    padding: 9px;
+    min-height: 116px;
   }
 
   .season-copy h3 {
