@@ -8124,6 +8124,7 @@ function renderAccountPage() {
                 ? '<span class="profile-reaction-badge">Verified</span>'
                 : '<button class="primary-btn health-action-btn" id="resendVerificationBtn" type="button">Send verification email</button>'
             }
+            <p class="form-message health-help-copy" id="accountHealthMessage" aria-live="polite"></p>
           </div>
           <div class="health-card">
             <h3>Active Strikes (${activeStrikes})</h3>
@@ -8296,6 +8297,9 @@ function setupAccountSettingsForm() {
   const form = document.querySelector("#profileSettingsForm");
   const resetPasswordButton = document.querySelector("#resetPasswordBtn");
   const resendVerificationButton = document.querySelector("#resendVerificationBtn");
+  const accountHealthMessageSelector = document.querySelector("#accountHealthMessage")
+    ? "#accountHealthMessage"
+    : "#profileSettingsMessage";
   const avatarUploadTrigger = document.querySelector("#avatarUploadTrigger");
   const avatarUploadInput = document.querySelector("#avatarUploadInput");
   const avatarGenerateButton = document.querySelector("#avatarGenerateBtn");
@@ -8399,16 +8403,27 @@ function setupAccountSettingsForm() {
 
   resendVerificationButton?.addEventListener("click", async () => {
     if (!currentUser) {
+      showMessage(accountHealthMessageSelector, "Please sign in again, then try sending the verification email.");
+      return;
+    }
+
+    if (!currentUser.email) {
+      showMessage(accountHealthMessageSelector, "No email address was found on this account.");
       return;
     }
 
     try {
-      showMessage("#profileSettingsMessage", "Sending verification email...");
+      showMessage(accountHealthMessageSelector, "Sending verification email...");
+      await currentUser.reload();
+      currentUser = auth.currentUser || currentUser;
       await sendVerificationEmailSafely(currentUser);
-      showMessage("#profileSettingsMessage", "Verification email sent. Check inbox, spam, and promotions.");
+      showMessage(
+        accountHealthMessageSelector,
+        "Verification email sent. Check inbox, spam, promotions, and all mail. If it does not arrive in 5 minutes, try again after signing in once more."
+      );
     } catch (error) {
       console.error(error);
-      showMessage("#profileSettingsMessage", getVerificationEmailErrorMessage(error));
+      showMessage(accountHealthMessageSelector, getVerificationEmailErrorMessage(error));
     }
   });
 
