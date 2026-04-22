@@ -418,6 +418,45 @@ function buildAuthActionSettings() {
   };
 }
 
+function getVerificationEmailErrorMessage(error) {
+  const code = error?.code || "";
+  if (code === "auth/too-many-requests") {
+    return "Too many tries just now. Please wait a bit and try again.";
+  }
+  if (code === "auth/user-token-expired" || code === "auth/requires-recent-login") {
+    return "Please sign in again, then send the verification email.";
+  }
+  if (
+    code === "auth/unauthorized-continue-uri" ||
+    code === "auth/invalid-continue-uri" ||
+    code === "auth/missing-continue-uri"
+  ) {
+    return "Verification email could not be prepared for this website URL. Check Firebase authorized domains.";
+  }
+  return "Could not send verification email right now.";
+}
+
+async function sendVerificationEmailSafely(user) {
+  try {
+    await sendEmailVerification(user, buildAuthActionSettings());
+    return;
+  } catch (error) {
+    const code = error?.code || "";
+    const shouldFallback =
+      code === "auth/unauthorized-continue-uri" ||
+      code === "auth/invalid-continue-uri" ||
+      code === "auth/missing-continue-uri";
+
+    if (!shouldFallback) {
+      throw error;
+    }
+
+    console.warn("Verification with action settings failed, retrying with Firebase default flow.", error);
+  }
+
+  await sendEmailVerification(user);
+}
+
 function createGeneratedAvatarDataUrl(source = getProfileInitials()) {
   const initials = String(source || "MM")
     .trim()
@@ -4901,7 +4940,7 @@ async function handleAuthSubmit(form) {
     await persistUserProfile({
       displayName: name || email
     });
-    await sendEmailVerification(credentials.user, buildAuthActionSettings());
+    await sendVerificationEmailSafely(credentials.user);
     showMessage(
       "#authMessage",
       "Account created. Verification email sent. Check inbox, spam, and promotions."
@@ -8364,11 +8403,12 @@ function setupAccountSettingsForm() {
     }
 
     try {
-      await sendEmailVerification(currentUser, buildAuthActionSettings());
+      showMessage("#profileSettingsMessage", "Sending verification email...");
+      await sendVerificationEmailSafely(currentUser);
       showMessage("#profileSettingsMessage", "Verification email sent. Check inbox, spam, and promotions.");
     } catch (error) {
       console.error(error);
-      showMessage("#profileSettingsMessage", "Could not send verification email right now.");
+      showMessage("#profileSettingsMessage", getVerificationEmailErrorMessage(error));
     }
   });
 
