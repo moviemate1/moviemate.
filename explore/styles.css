@@ -30,8 +30,10 @@ body {
   color: var(--text);
   background:
     radial-gradient(circle at top right, rgba(229, 9, 20, 0.22), transparent 26%),
+    radial-gradient(circle at 16% 14%, rgba(123, 89, 255, 0.14), transparent 20%),
+    radial-gradient(circle at 82% 22%, rgba(92, 208, 255, 0.08), transparent 16%),
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 20%),
-    linear-gradient(180deg, #121212 0%, #090909 50%, #050505 100%);
+    linear-gradient(180deg, #131116 0%, #0a0a0d 46%, #050505 100%);
 }
 
 img {
@@ -441,6 +443,15 @@ button.ghost-link {
 .explore-main {
   display: grid;
   gap: 22px;
+}
+
+.explore-showcase,
+.explore-row-section,
+.schedule-section,
+.collections-section,
+.sidebar-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 560px;
 }
 
 .explore-layout {
@@ -1761,8 +1772,11 @@ button.ghost-link {
 }
 
 .featured-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(20, 20, 28, 0.96), rgba(11, 11, 16, 0.88)),
+    radial-gradient(circle at top left, rgba(126, 70, 255, 0.12), transparent 34%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .featured-poster {
@@ -1777,11 +1791,14 @@ button.ghost-link {
 .featured-feed-card {
   display: grid;
   grid-template-rows: auto minmax(116px, auto);
-  background: transparent;
-  border: 0;
+  background:
+    linear-gradient(180deg, rgba(18, 18, 24, 0.84), rgba(10, 10, 15, 0.58));
+  border: 1px solid rgba(255, 255, 255, 0.08);
   align-content: start;
   min-height: 100%;
   height: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.32);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
 }
 
 .featured-feed-card .featured-copy h3 {
@@ -1801,14 +1818,15 @@ button.ghost-link {
   border-radius: 14px;
   box-shadow: 0 14px 24px rgba(0, 0, 0, 0.3);
   object-fit: cover;
+  transition: transform 280ms ease, filter 280ms ease;
 }
 
 .featured-feed-card .featured-copy {
-  padding: 10px 2px 0;
+  padding: 12px 12px 14px;
   display: grid;
   grid-template-rows: minmax(2.3em, auto) minmax(1.2em, auto) minmax(1.2em, auto);
   align-content: start;
-  gap: 6px;
+  gap: 7px;
   min-height: 116px;
 }
 
@@ -2007,26 +2025,42 @@ button.ghost-link {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  background:
+    linear-gradient(180deg, rgba(18, 18, 24, 0.96), rgba(10, 10, 15, 0.8)),
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.04), transparent 28%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
 }
 
 .movie-card:hover {
-  transform: translateY(-6px);
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.38);
+  transform: translateY(-8px);
+  border-color: rgba(181, 149, 255, 0.26);
+  box-shadow: 0 26px 56px rgba(0, 0, 0, 0.4);
 }
 
 .movie-card-link {
   display: block;
+  position: relative;
+  isolation: isolate;
+}
+
+.movie-card-link::after,
+.featured-feed-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 42%;
+  background: linear-gradient(180deg, transparent, rgba(7, 7, 11, 0.14) 35%, rgba(7, 7, 11, 0.72));
+  pointer-events: none;
+  z-index: 0;
 }
 
 .movie-poster {
   width: 100%;
   aspect-ratio: 4 / 5;
   object-fit: cover;
+  transition: transform 280ms ease, filter 280ms ease;
 }
 
 .movie-content {
@@ -2034,7 +2068,9 @@ button.ghost-link {
   flex: 1;
   flex-direction: column;
   gap: 14px;
-  padding: 10px 2px 0;
+  padding: 12px 12px 14px;
+  position: relative;
+  z-index: 1;
 }
 
 .movie-card-compact {
@@ -2048,6 +2084,12 @@ button.ghost-link {
 .movie-card-compact .movie-poster {
   aspect-ratio: 2 / 3;
   object-fit: cover;
+}
+
+.movie-card:hover .movie-poster,
+.featured-feed-card:hover .featured-poster {
+  transform: scale(1.045);
+  filter: saturate(1.04) contrast(1.03);
 }
 
 .movie-card-compact .movie-header {
@@ -2099,6 +2141,81 @@ button.ghost-link {
 .movie-meta {
   font-size: 0.83rem;
   min-height: 1.2em;
+}
+
+.media-skeleton-card {
+  display: grid;
+  gap: 12px;
+  min-height: 100%;
+  padding: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(18, 18, 24, 0.92), rgba(11, 11, 15, 0.82));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+}
+
+.skeleton-copy {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.14), transparent);
+  animation: moviemateShimmer 1.25s ease-in-out infinite;
+}
+
+.skeleton-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 999px;
+}
+
+.skeleton-line-title {
+  height: 16px;
+  width: 78%;
+}
+
+.skeleton-line-short {
+  width: 44%;
+}
+
+.interest-item-skeleton {
+  pointer-events: none;
+}
+
+.skeleton-rank {
+  width: 22px;
+  height: 18px;
+  border-radius: 999px;
+}
+
+.skeleton-thumb {
+  width: 56px;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+}
+
+@keyframes moviemateShimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .movie-description {
