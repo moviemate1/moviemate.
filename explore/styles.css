@@ -2160,6 +2160,38 @@ button.ghost-link {
   min-height: 0.95em;
 }
 
+.movie-grid .movie-card {
+  border-radius: 18px;
+}
+
+.movie-grid .movie-card-compact {
+  grid-template-rows: auto minmax(116px, auto) auto auto;
+}
+
+.movie-grid .movie-content {
+  gap: 5px;
+  padding: 10px 10px 11px;
+}
+
+.movie-grid .movie-card-summary,
+.movie-grid .movie-card-summary-feed,
+.movie-grid .movie-header-feed > div,
+.movie-grid .movie-card-compact .movie-header {
+  gap: 5px;
+}
+
+.movie-grid .movie-card-compact .movie-header h3 {
+  min-height: 2.15em;
+  font-size: 0.9rem;
+  line-height: 1.18;
+}
+
+.movie-grid .movie-meta,
+.movie-grid .movie-header-feed .movie-meta {
+  font-size: 0.75rem;
+  min-height: 1.05em;
+}
+
 .media-skeleton-card {
   display: grid;
   gap: 12px;
