@@ -1749,6 +1749,18 @@ button.ghost-link {
 .movie-grid {
   display: grid;
   gap: 20px;
+  align-items: start;
+}
+
+.featured-grid,
+.trend-grid,
+.explore-feed-grid,
+.movie-grid {
+  --home-card-copy-height: 82px;
+  --home-card-title-size: 0.84rem;
+  --home-card-title-min-height: 1.98em;
+  --home-card-meta-size: 0.68rem;
+  --home-card-meta-min-height: 0.98em;
 }
 
 .trend-grid {
@@ -1793,7 +1805,7 @@ button.ghost-link {
 
 .featured-feed-card {
   display: grid;
-  grid-template-rows: auto minmax(104px, auto);
+  grid-template-rows: auto minmax(var(--home-card-copy-height), auto);
   background:
     linear-gradient(180deg, rgba(18, 18, 24, 0.84), rgba(10, 10, 15, 0.58));
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1806,13 +1818,13 @@ button.ghost-link {
 
 .featured-feed-card .featured-copy h3 {
   margin-bottom: 4px;
-  font-size: 0.84rem;
+  font-size: var(--home-card-title-size);
   line-height: 1.14;
   display: -webkit-box;
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  min-height: 1.98em;
+  min-height: var(--home-card-title-min-height);
 }
 
 .featured-feed-card .featured-poster {
@@ -1827,15 +1839,18 @@ button.ghost-link {
 .featured-feed-card .featured-copy {
   padding: 9px 9px 10px;
   display: grid;
-  grid-template-rows: minmax(1.98em, auto) minmax(0.98em, auto) minmax(0.98em, auto);
+  grid-template-rows:
+    minmax(var(--home-card-title-min-height), auto)
+    minmax(var(--home-card-meta-min-height), auto)
+    minmax(var(--home-card-meta-min-height), auto);
   align-content: start;
   gap: 4px;
-  min-height: 82px;
+  min-height: var(--home-card-copy-height);
 }
 
 .featured-feed-card .movie-meta {
-  font-size: 0.68rem;
-  min-height: 0.98em;
+  font-size: var(--home-card-meta-size);
+  min-height: var(--home-card-meta-min-height);
 }
 
 .featured-feed-card .status-pill {
@@ -2021,6 +2036,7 @@ button.ghost-link {
 .movie-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
+  grid-auto-rows: 1fr;
 }
 
 .movie-card {
@@ -2197,7 +2213,7 @@ button.ghost-link {
 
 .movie-grid .movie-card-link {
   display: grid;
-  grid-template-rows: auto minmax(82px, auto);
+  grid-template-rows: auto minmax(var(--home-card-copy-height), auto);
   position: relative;
   isolation: isolate;
   height: 100%;
@@ -2233,7 +2249,7 @@ button.ghost-link {
   padding: 9px 9px 10px;
   position: relative;
   z-index: 1;
-  min-height: 82px;
+  min-height: var(--home-card-copy-height);
 }
 
 .movie-grid .movie-card-summary {
@@ -2260,16 +2276,16 @@ button.ghost-link {
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  min-height: 1.98em;
-  font-size: 0.84rem;
+  min-height: var(--home-card-title-min-height);
+  font-size: var(--home-card-title-size);
   line-height: 1.14;
   margin: 0;
 }
 
 .movie-grid .movie-meta,
 .movie-grid .movie-header-feed .movie-meta {
-  font-size: 0.68rem;
-  min-height: 0.98em;
+  font-size: var(--home-card-meta-size);
+  min-height: var(--home-card-meta-min-height);
   margin: 0;
 }
 
