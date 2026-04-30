@@ -2037,6 +2037,11 @@ button.ghost-link {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
   grid-auto-rows: 1fr;
+  --home-card-copy-height: 72px;
+  --home-card-title-size: 0.79rem;
+  --home-card-title-min-height: 1.9em;
+  --home-card-meta-size: 0.62rem;
+  --home-card-meta-min-height: 0.9em;
 }
 
 .movie-card {
@@ -2231,7 +2236,7 @@ button.ghost-link {
 
 .movie-grid .movie-poster {
   width: 100%;
-  aspect-ratio: 2 / 3;
+  aspect-ratio: 5 / 7;
   object-fit: cover;
   transition: transform 280ms ease, filter 280ms ease;
 }
@@ -2245,8 +2250,8 @@ button.ghost-link {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 4px;
-  padding: 9px 9px 10px;
+  gap: 3px;
+  padding: 8px 8px 9px;
   position: relative;
   z-index: 1;
   min-height: var(--home-card-copy-height);
@@ -2254,11 +2259,11 @@ button.ghost-link {
 
 .movie-grid .movie-card-summary {
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .movie-grid .movie-card-summary-feed {
-  gap: 2px;
+  gap: 1px;
 }
 
 .movie-grid .movie-header-feed {
@@ -2268,7 +2273,7 @@ button.ghost-link {
 .movie-grid .movie-header-feed > div,
 .movie-grid .movie-card-compact .movie-header {
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .movie-grid .movie-card-compact .movie-header h3 {
@@ -2278,7 +2283,7 @@ button.ghost-link {
   -webkit-box-orient: vertical;
   min-height: var(--home-card-title-min-height);
   font-size: var(--home-card-title-size);
-  line-height: 1.14;
+  line-height: 1.12;
   margin: 0;
 }
 
