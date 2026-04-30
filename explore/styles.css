@@ -1752,17 +1752,6 @@ button.ghost-link {
   align-items: start;
 }
 
-.featured-grid,
-.trend-grid,
-.explore-feed-grid,
-.movie-grid {
-  --home-card-copy-height: 82px;
-  --home-card-title-size: 0.84rem;
-  --home-card-title-min-height: 1.98em;
-  --home-card-meta-size: 0.68rem;
-  --home-card-meta-min-height: 0.98em;
-}
-
 .trend-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
@@ -1805,7 +1794,7 @@ button.ghost-link {
 
 .featured-feed-card {
   display: grid;
-  grid-template-rows: auto minmax(var(--home-card-copy-height), auto);
+  grid-template-rows: auto minmax(104px, auto);
   background:
     linear-gradient(180deg, rgba(18, 18, 24, 0.84), rgba(10, 10, 15, 0.58));
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1818,13 +1807,13 @@ button.ghost-link {
 
 .featured-feed-card .featured-copy h3 {
   margin-bottom: 4px;
-  font-size: var(--home-card-title-size);
+  font-size: 0.84rem;
   line-height: 1.14;
   display: -webkit-box;
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  min-height: var(--home-card-title-min-height);
+  min-height: 1.98em;
 }
 
 .featured-feed-card .featured-poster {
@@ -1839,18 +1828,15 @@ button.ghost-link {
 .featured-feed-card .featured-copy {
   padding: 9px 9px 10px;
   display: grid;
-  grid-template-rows:
-    minmax(var(--home-card-title-min-height), auto)
-    minmax(var(--home-card-meta-min-height), auto)
-    minmax(var(--home-card-meta-min-height), auto);
+  grid-template-rows: minmax(1.98em, auto) minmax(0.98em, auto) minmax(0.98em, auto);
   align-content: start;
   gap: 4px;
-  min-height: var(--home-card-copy-height);
+  min-height: 82px;
 }
 
 .featured-feed-card .movie-meta {
-  font-size: var(--home-card-meta-size);
-  min-height: var(--home-card-meta-min-height);
+  font-size: 0.68rem;
+  min-height: 0.98em;
 }
 
 .featured-feed-card .status-pill {
@@ -2037,11 +2023,6 @@ button.ghost-link {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
   grid-auto-rows: 1fr;
-  --home-card-copy-height: 72px;
-  --home-card-title-size: 0.79rem;
-  --home-card-title-min-height: 1.9em;
-  --home-card-meta-size: 0.62rem;
-  --home-card-meta-min-height: 0.9em;
 }
 
 .movie-card {
@@ -2218,7 +2199,7 @@ button.ghost-link {
 
 .movie-grid .movie-card-link {
   display: grid;
-  grid-template-rows: auto minmax(var(--home-card-copy-height), auto);
+  grid-template-rows: auto minmax(82px, auto);
   position: relative;
   isolation: isolate;
   height: 100%;
@@ -2236,7 +2217,7 @@ button.ghost-link {
 
 .movie-grid .movie-poster {
   width: 100%;
-  aspect-ratio: 5 / 7;
+  aspect-ratio: 2 / 3;
   object-fit: cover;
   transition: transform 280ms ease, filter 280ms ease;
 }
@@ -2250,20 +2231,20 @@ button.ghost-link {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 3px;
-  padding: 8px 8px 9px;
+  gap: 5px;
+  padding: 11px 11px 12px;
   position: relative;
   z-index: 1;
-  min-height: var(--home-card-copy-height);
+  min-height: 82px;
 }
 
 .movie-grid .movie-card-summary {
   display: grid;
-  gap: 3px;
+  gap: 5px;
 }
 
 .movie-grid .movie-card-summary-feed {
-  gap: 1px;
+  gap: 3px;
 }
 
 .movie-grid .movie-header-feed {
@@ -2273,7 +2254,7 @@ button.ghost-link {
 .movie-grid .movie-header-feed > div,
 .movie-grid .movie-card-compact .movie-header {
   display: grid;
-  gap: 3px;
+  gap: 5px;
 }
 
 .movie-grid .movie-card-compact .movie-header h3 {
@@ -2281,17 +2262,27 @@ button.ghost-link {
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  min-height: var(--home-card-title-min-height);
-  font-size: var(--home-card-title-size);
-  line-height: 1.12;
+  min-height: 1.98em;
+  font-size: 0.94rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
   margin: 0;
+  color: #f5f1ff;
 }
 
 .movie-grid .movie-meta,
 .movie-grid .movie-header-feed .movie-meta {
-  font-size: var(--home-card-meta-size);
-  min-height: var(--home-card-meta-min-height);
+  font-size: 0.74rem;
+  min-height: 1.05em;
+  line-height: 1.28;
   margin: 0;
+  color: rgba(222, 220, 232, 0.88);
+}
+
+.movie-grid .movie-meta.subtle-line,
+.movie-grid .movie-header-feed .movie-meta.subtle-line {
+  color: rgba(156, 153, 172, 0.92);
 }
 
 .media-skeleton-card {
