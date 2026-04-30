@@ -2162,15 +2162,27 @@ button.ghost-link {
 
 .movie-grid .movie-card {
   border-radius: 18px;
+  display: block;
+  min-height: 0;
 }
 
-.movie-grid .movie-card-compact {
-  grid-template-rows: auto minmax(116px, auto) auto auto;
+.movie-grid .movie-card-link {
+  display: grid;
+  grid-template-rows: auto minmax(94px, auto);
+  height: 100%;
+  align-content: start;
+}
+
+.movie-grid .movie-poster {
+  aspect-ratio: 2 / 3;
+  border-radius: 14px;
 }
 
 .movie-grid .movie-content {
   gap: 5px;
   padding: 10px 10px 11px;
+  min-height: 94px;
+  align-content: start;
 }
 
 .movie-grid .movie-card-summary,
