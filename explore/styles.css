@@ -13,6 +13,9 @@
   --radius-lg: 28px;
   --radius-md: 20px;
   --radius-sm: 14px;
+  --mobile-dock-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  --install-banner-gap: 12px;
+  --install-banner-bottom: calc(var(--mobile-dock-bottom) + 74px + var(--install-banner-gap));
 }
 
 * {
@@ -3576,7 +3579,7 @@ button.ghost-link {
 .mobile-dock {
   position: fixed;
   left: 50%;
-  bottom: 14px;
+  bottom: var(--mobile-dock-bottom);
   transform: translateX(-50%);
   z-index: 45;
   display: none;
@@ -3592,7 +3595,7 @@ button.ghost-link {
 .install-banner {
   position: fixed;
   left: 50%;
-  bottom: 92px;
+  bottom: var(--install-banner-bottom);
   transform: translateX(-50%);
   z-index: 46;
   display: none;
@@ -4070,7 +4073,7 @@ button.ghost-link {
   }
 
   body[data-page="home"] {
-    padding-bottom: 156px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 172px);
   }
 
   .install-banner.visible {
@@ -4205,7 +4208,7 @@ button.ghost-link {
   }
 
   .install-banner {
-    bottom: 80px;
+    bottom: calc(var(--mobile-dock-bottom) + 72px + var(--install-banner-gap));
     width: calc(100% - 12px);
     padding: 9px 10px 10px;
   }
@@ -4332,7 +4335,7 @@ button.ghost-link {
 
   .install-banner {
     width: calc(100% - 10px);
-    bottom: 76px;
+    bottom: calc(var(--mobile-dock-bottom) + 68px + 8px);
     padding: 7px 9px 8px;
   }
 
@@ -4378,6 +4381,6 @@ button.ghost-link {
   }
 
   .scroll-controls {
-    bottom: 88px;
+    bottom: calc(var(--install-banner-bottom) + 64px);
   }
 }
