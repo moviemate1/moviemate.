@@ -4176,6 +4176,7 @@ button.ghost-link {
     gap: 8px;
     min-width: 0;
     width: 100%;
+    flex: 1 1 auto;
   }
 
   .explore-nav-center {
@@ -4195,11 +4196,12 @@ button.ghost-link {
     grid-area: right;
     display: flex;
     align-items: center;
-    margin-left: 0;
-    gap: 4px;
+    margin-left: auto;
+    gap: 6px;
     justify-content: flex-end;
-    min-width: 0;
+    min-width: max-content;
     width: auto;
+    flex-wrap: nowrap;
   }
 
   .explore-nav-link {
@@ -4402,7 +4404,24 @@ button.ghost-link {
   }
 
   #ownerToggle {
-    display: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 14px;
+    font-size: 0.68rem;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  #topSearchBtn {
+    display: grid;
+    flex: 0 0 auto;
+  }
+
+  .account-menu-wrap {
+    flex: 0 0 auto;
   }
 
   .section-heading {
@@ -4544,7 +4563,7 @@ button.ghost-link {
   }
 
   .explore-actions-right {
-    gap: 3px;
+    gap: 4px;
   }
 
   .explore-nav-center {
@@ -4568,6 +4587,13 @@ button.ghost-link {
     height: 30px;
   }
 
+  #topSearchBtn,
+  #topNotificationsBtn {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+  }
+
   body[data-page="home"] .account-chip:not(.signed-in) {
     min-width: 66px;
     padding: 0 8px;
@@ -4578,6 +4604,12 @@ button.ghost-link {
     min-width: 66px;
     padding: 0 8px;
     font-size: 0.66rem;
+  }
+
+  #ownerToggle {
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 0.62rem;
   }
 
   .account-chip-label {
