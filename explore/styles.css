@@ -4119,6 +4119,16 @@ button.ghost-link {
     padding-top: 12px;
   }
 
+  .explore-header {
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+  }
+
+  .explore-header::-webkit-scrollbar {
+    display: none;
+  }
+
   .explore-topbar {
     display: flex;
     min-height: 46px;
@@ -4127,15 +4137,10 @@ button.ghost-link {
     border-radius: 18px;
     align-items: center;
     justify-content: flex-start;
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
     box-sizing: border-box;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-  }
-
-  .explore-topbar::-webkit-scrollbar {
-    display: none;
+    overflow: visible;
   }
 
   .explore-topbar-left {
@@ -4150,7 +4155,7 @@ button.ghost-link {
     width: auto;
     min-width: max-content;
     flex: 0 0 auto;
-    gap: 6px;
+    gap: 8px;
     margin-top: 0;
     justify-content: flex-start;
     flex-wrap: nowrap;
@@ -4169,12 +4174,12 @@ button.ghost-link {
   .explore-nav-link {
     min-height: 32px;
     width: auto;
-    padding: 5px 8px 7px;
+    padding: 5px 7px 7px;
     border-radius: 0;
     border: 0;
     background: transparent;
     box-shadow: none;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     gap: 5px;
     white-space: nowrap;
     justify-content: center;
@@ -4333,7 +4338,7 @@ button.ghost-link {
   }
 
   .brand-compact {
-    font-size: 1.02rem;
+    font-size: 0.94rem;
   }
 
   .beta-chip {
@@ -4344,9 +4349,9 @@ button.ghost-link {
 
   #ownerToggle {
     min-height: 34px;
-    padding: 0 12px;
+    padding: 0 10px;
     border-radius: 16px;
-    font-size: 0.76rem;
+    font-size: 0.72rem;
   }
 
   .section-heading {
@@ -4478,10 +4483,7 @@ button.ghost-link {
   }
 
   .brand-compact .brand-text {
-    max-width: 86px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    max-width: none;
   }
 
   .explore-actions-right {
@@ -4494,12 +4496,12 @@ button.ghost-link {
 
   .explore-nav-link {
     min-height: 30px;
-    padding: 4px 6px 6px;
-    font-size: 0.66rem;
+    padding: 4px 5px 6px;
+    font-size: 0.62rem;
   }
 
   .explore-nav-link span {
-    font-size: 0.66rem;
+    font-size: 0.62rem;
   }
 
   .icon-chip,
@@ -4511,12 +4513,12 @@ button.ghost-link {
 
   body[data-page="home"] .account-chip:not(.signed-in) {
     min-width: 66px;
-    padding: 0 9px;
+    padding: 0 8px;
   }
 
   body[data-page="home"] .account-chip:not(.signed-in) .account-chip-label,
   .account-chip-label {
-    font-size: 0.64rem;
+    font-size: 0.6rem;
   }
 
   .install-banner {
