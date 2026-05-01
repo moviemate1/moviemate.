@@ -4115,7 +4115,7 @@ button.ghost-link {
 
 @media (max-width: 720px) {
   .page-shell {
-    width: min(100% - 20px, 1240px);
+    width: min(100% - 12px, 1240px);
     padding-top: 12px;
   }
 
@@ -4465,12 +4465,12 @@ button.ghost-link {
 
 @media (max-width: 560px) {
   .page-shell {
-    width: calc(100% - 14px);
+    width: calc(100% - 8px);
   }
 
   .explore-topbar {
     min-height: 42px;
-    padding: 7px 8px;
+    padding: 7px 9px;
   }
 
   .explore-topbar-left {
