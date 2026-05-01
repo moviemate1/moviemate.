@@ -4120,7 +4120,10 @@ button.ghost-link {
   }
 
   .explore-header {
+    display: block;
     width: 100%;
+    min-width: 100%;
+    max-width: 100%;
     margin: 0 0 18px;
     padding: 0;
     border: 0;
@@ -4147,8 +4150,9 @@ button.ghost-link {
     gap: 8px;
     align-items: center;
     justify-content: stretch;
-    width: 100%;
-    min-width: 100%;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 18px;
