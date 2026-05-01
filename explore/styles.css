@@ -4121,15 +4121,18 @@ button.ghost-link {
 
   .explore-topbar {
     min-height: 50px;
-    padding: 8px 10px;
+    padding: 9px 10px 10px;
     gap: 8px;
     border-radius: 18px;
+    flex-wrap: wrap;
+    align-items: center;
   }
 
   .explore-topbar-left {
     gap: 8px;
     min-width: 0;
     flex: 1 1 auto;
+    order: 1;
   }
 
   .topbar,
@@ -4138,7 +4141,12 @@ button.ghost-link {
   }
 
   .explore-nav-center {
-    display: none;
+    display: grid;
+    order: 3;
+    width: 100%;
+    flex: 0 0 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .explore-actions-right {
@@ -4146,6 +4154,28 @@ button.ghost-link {
     margin-left: auto;
     gap: 6px;
     flex: 0 0 auto;
+    order: 2;
+  }
+
+  .explore-actions-right #ownerToggle {
+    display: none;
+  }
+
+  .explore-nav-link {
+    min-height: 36px;
+    padding: 8px 8px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.035);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.82rem;
+    gap: 6px;
+  }
+
+  .explore-nav-link.active,
+  .explore-nav-link:hover {
+    border-color: rgba(126, 70, 255, 0.34);
+    background: rgba(126, 70, 255, 0.12);
   }
 
   .trend-grid {
@@ -4195,19 +4225,20 @@ button.ghost-link {
     gap: 18px;
   }
 
-  .mobile-dock {
-    display: flex;
-    gap: 6px;
-    padding: 8px;
-    border-radius: 18px;
-  }
-
   body[data-page="home"] {
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 172px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
   }
 
-  .install-banner.visible {
-    display: flex !important;
+  .mobile-dock {
+    display: none !important;
+  }
+
+  .install-banner {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  }
+
+  .scroll-controls {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 78px);
   }
 
   .people-rail {
@@ -4447,6 +4478,20 @@ button.ghost-link {
     gap: 5px;
   }
 
+  .explore-nav-center {
+    gap: 6px;
+  }
+
+  .explore-nav-link {
+    min-height: 34px;
+    padding: 7px 6px;
+    font-size: 0.76rem;
+  }
+
+  .explore-nav-link span {
+    font-size: 0.78rem;
+  }
+
   .icon-chip,
   .home-chip,
   .avatar-chip {
@@ -4465,7 +4510,7 @@ button.ghost-link {
 
   .install-banner {
     width: calc(100% - 10px);
-    bottom: calc(var(--mobile-dock-bottom) + 68px + 8px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
     padding: 7px 9px 8px;
   }
 
@@ -4505,12 +4550,7 @@ button.ghost-link {
     min-height: 1.3em;
   }
 
-  .mobile-dock-link {
-    padding: 8px 4px;
-    font-size: 0.82rem;
-  }
-
   .scroll-controls {
-    bottom: calc(var(--install-banner-bottom) + 64px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
   }
 }
