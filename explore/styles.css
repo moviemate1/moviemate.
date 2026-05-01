@@ -4120,12 +4120,7 @@ button.ghost-link {
   }
 
   .explore-header {
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100vw;
-    min-width: 100vw;
-    max-width: 100vw;
+    width: 100%;
     margin: 0 0 18px;
     padding: 0;
     border: 0;
@@ -4133,7 +4128,8 @@ button.ghost-link {
     background: transparent;
     box-shadow: none;
     box-sizing: border-box;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none;
   }
 
@@ -4142,20 +4138,20 @@ button.ghost-link {
   }
 
   .explore-topbar {
-    display: inline-flex;
+    display: flex;
     min-height: 34px;
     padding: 8px 10px;
     gap: 10px;
     align-items: center;
-    justify-content: flex-start;
-    width: calc(100vw - 8px);
-    min-width: calc(100vw - 8px);
+    justify-content: space-between;
+    width: max-content;
+    min-width: 100%;
     box-sizing: border-box;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 18px;
     background: rgba(6, 6, 8, 0.92);
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
-    overflow-x: auto;
+    overflow-x: visible;
     overflow-y: hidden;
     scrollbar-width: none;
   }
@@ -4166,16 +4162,16 @@ button.ghost-link {
 
   .explore-topbar-left {
     gap: 8px;
-    min-width: 0;
+    min-width: max-content;
     flex: 0 0 auto;
     width: auto;
   }
 
   .explore-nav-center {
-    display: inline-flex;
+    display: flex;
     width: auto;
-    min-width: 0;
-    flex: 1 1 auto;
+    min-width: max-content;
+    flex: 0 0 auto;
     gap: 6px;
     margin-top: 0;
     justify-content: center;
@@ -4184,12 +4180,12 @@ button.ghost-link {
   }
 
   .explore-actions-right {
-    display: inline-flex;
-    margin-left: auto;
+    display: flex;
+    margin-left: 0;
     gap: 6px;
     flex: 0 0 auto;
     justify-content: flex-end;
-    min-width: 0;
+    min-width: max-content;
   }
 
   .explore-nav-link {
@@ -4493,15 +4489,8 @@ button.ghost-link {
     width: calc(100% - 8px);
   }
 
-  .explore-header {
-    padding: 0;
-    border-radius: 0;
-  }
-
   .explore-topbar {
     min-height: 32px;
-    width: calc(100vw - 4px);
-    min-width: calc(100vw - 4px);
     padding: 7px 8px;
     border-radius: 16px;
   }
