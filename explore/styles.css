@@ -4121,8 +4121,14 @@ button.ghost-link {
 
   .explore-header {
     width: 100%;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(6, 6, 8, 0.92);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+    box-sizing: border-box;
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: hidden;
     scrollbar-width: none;
   }
 
@@ -4131,17 +4137,20 @@ button.ghost-link {
   }
 
   .explore-topbar {
-    display: flex;
-    min-height: 46px;
-    padding: 8px 12px;
+    display: inline-flex;
+    min-height: 34px;
+    padding: 0;
     gap: 10px;
-    border-radius: 18px;
     align-items: center;
     justify-content: flex-start;
-    width: 100%;
-    min-width: 100%;
+    width: max-content;
+    min-width: max-content;
     box-sizing: border-box;
-    overflow-x: auto;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow-x: visible;
     overflow-y: hidden;
     scrollbar-width: none;
   }
@@ -4479,9 +4488,13 @@ button.ghost-link {
     width: calc(100% - 8px);
   }
 
+  .explore-header {
+    padding: 7px 8px;
+    border-radius: 16px;
+  }
+
   .explore-topbar {
-    min-height: 42px;
-    padding: 7px 9px;
+    min-height: 32px;
   }
 
   .explore-topbar-left {
