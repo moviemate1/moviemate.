@@ -4120,6 +4120,7 @@ button.ghost-link {
   }
 
   .explore-header {
+    width: 100%;
     overflow-x: auto;
     overflow-y: visible;
     scrollbar-width: none;
@@ -4137,15 +4138,21 @@ button.ghost-link {
     border-radius: 18px;
     align-items: center;
     justify-content: flex-start;
-    width: max-content;
+    width: 100%;
     min-width: 100%;
     box-sizing: border-box;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .explore-topbar::-webkit-scrollbar {
+    display: none;
   }
 
   .explore-topbar-left {
     gap: 8px;
-    min-width: max-content;
+    min-width: 0;
     flex: 0 0 auto;
     width: auto;
   }
@@ -4153,11 +4160,11 @@ button.ghost-link {
   .explore-nav-center {
     display: inline-flex;
     width: auto;
-    min-width: max-content;
-    flex: 0 0 auto;
-    gap: 8px;
+    min-width: 0;
+    flex: 1 1 auto;
+    gap: 6px;
     margin-top: 0;
-    justify-content: flex-start;
+    justify-content: center;
     flex-wrap: nowrap;
     overflow: visible;
   }
@@ -4168,7 +4175,7 @@ button.ghost-link {
     gap: 6px;
     flex: 0 0 auto;
     justify-content: flex-end;
-    min-width: max-content;
+    min-width: 0;
   }
 
   .explore-nav-link {
