@@ -4120,7 +4120,10 @@ button.ghost-link {
   }
 
   .explore-header {
+    display: block;
     width: 100%;
+    min-width: 100%;
+    max-width: 100%;
     margin: 0 0 18px;
     padding: 0;
     border: 0;
@@ -4147,8 +4150,9 @@ button.ghost-link {
     gap: 8px;
     align-items: center;
     justify-content: stretch;
-    width: 100%;
-    min-width: 100%;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 18px;
@@ -4164,6 +4168,9 @@ button.ghost-link {
 
   .explore-topbar-left {
     grid-area: left;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     gap: 8px;
     min-width: 0;
     width: 100%;
@@ -4185,6 +4192,7 @@ button.ghost-link {
   .explore-actions-right {
     grid-area: right;
     display: flex;
+    align-items: center;
     margin-left: 0;
     gap: 4px;
     justify-content: flex-end;
@@ -4388,9 +4396,7 @@ button.ghost-link {
   }
 
   .beta-chip {
-    display: inline-flex;
-    padding: 4px 8px;
-    font-size: 0.62rem;
+    display: none;
   }
 
   #ownerToggle {
@@ -4521,7 +4527,6 @@ button.ghost-link {
   }
 
   .explore-topbar-left {
-    width: auto;
     gap: 6px;
   }
 
@@ -4580,8 +4585,7 @@ button.ghost-link {
   }
 
   .beta-chip {
-    padding: 4px 7px;
-    font-size: 0.56rem;
+    display: none;
   }
 
   body[data-page="home"] .account-chip:not(.signed-in) .account-chip-label,
