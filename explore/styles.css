@@ -96,7 +96,16 @@ select {
 }
 
 .explore-header {
+  display: block;
+  width: 100%;
   margin-bottom: 18px;
+  padding: 12px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  background: rgba(6, 6, 8, 0.92);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .explore-topbar {
@@ -104,11 +113,11 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 22px;
-  background: rgba(6, 6, 8, 0.92);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   flex-wrap: nowrap;
 }
 
@@ -4120,20 +4129,13 @@ button.ghost-link {
   }
 
   .explore-header {
-    display: block;
-    width: calc(100vw - 8px);
-    min-width: calc(100vw - 8px);
-    max-width: calc(100vw - 8px);
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
     margin: 0 0 18px;
     padding: 10px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 18px;
-    background: rgba(6, 6, 8, 0.92);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
     box-sizing: border-box;
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
     overflow: hidden;
     scrollbar-width: none;
   }
@@ -4153,18 +4155,11 @@ button.ghost-link {
     gap: 8px;
     align-items: center;
     justify-content: stretch;
-    position: static;
-    left: auto;
-    transform: none;
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box;
     z-index: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
     overflow: visible;
     scrollbar-width: none;
   }
@@ -4529,9 +4524,9 @@ button.ghost-link {
   }
 
   .explore-header {
-    width: calc(100vw - 4px);
-    min-width: calc(100vw - 4px);
-    max-width: calc(100vw - 4px);
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
     padding: 8px 9px;
     border-radius: 16px;
   }
