@@ -4126,6 +4126,8 @@ button.ghost-link {
     border-radius: 18px;
     flex-wrap: wrap;
     align-items: center;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .explore-topbar-left {
@@ -4133,6 +4135,7 @@ button.ghost-link {
     min-width: 0;
     flex: 1 1 auto;
     order: 1;
+    width: calc(100% - 116px);
   }
 
   .topbar,
@@ -4147,6 +4150,7 @@ button.ghost-link {
     flex: 0 0 100%;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
+    margin-top: 2px;
   }
 
   .explore-actions-right {
@@ -4155,6 +4159,7 @@ button.ghost-link {
     gap: 6px;
     flex: 0 0 auto;
     order: 2;
+    justify-content: flex-end;
   }
 
   .explore-actions-right #ownerToggle {
@@ -4163,6 +4168,7 @@ button.ghost-link {
 
   .explore-nav-link {
     min-height: 36px;
+    width: 100%;
     padding: 8px 8px;
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -4231,14 +4237,6 @@ button.ghost-link {
 
   .mobile-dock {
     display: none !important;
-  }
-
-  .install-banner {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
-  }
-
-  .scroll-controls {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 78px);
   }
 
   .people-rail {
@@ -4369,7 +4367,7 @@ button.ghost-link {
   }
 
   .install-banner {
-    bottom: calc(var(--mobile-dock-bottom) + 72px + var(--install-banner-gap));
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
     width: calc(100% - 12px);
     padding: 9px 10px 10px;
   }
@@ -4447,7 +4445,7 @@ button.ghost-link {
 
   .scroll-controls {
     right: 12px;
-    bottom: 94px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 78px);
   }
 
 .scroll-control-btn {
@@ -4465,6 +4463,10 @@ button.ghost-link {
   .explore-topbar {
     min-height: 44px;
     padding: 7px 8px;
+  }
+
+  .explore-topbar-left {
+    width: calc(100% - 106px);
   }
 
   .brand-compact .brand-text {
