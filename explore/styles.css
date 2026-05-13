@@ -122,7 +122,12 @@ select {
 }
 
 .explore-topbar-main {
-  display: contents;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .explore-topbar-left,
@@ -133,10 +138,22 @@ select {
   gap: 14px;
 }
 
+.explore-topbar-left {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
 .explore-nav-center {
   justify-content: center;
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   flex-wrap: wrap;
+}
+
+.explore-actions-right {
+  flex: 0 0 auto;
+  margin-left: auto;
+  min-width: 0;
 }
 
 .home-chip {
