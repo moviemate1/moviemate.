@@ -3192,7 +3192,7 @@ function buildUserNotifications(titles) {
 function renderUserNotifications(titles) {
   const list = document.querySelector("#userNotificationsList");
   const emptyState = document.querySelector("#userNotificationsEmpty");
-  const dot = document.querySelector("#topNotificationDot");
+  const dots = document.querySelectorAll("[data-top-notification-dot]");
 
   if (!list || !emptyState) {
     return;
@@ -3205,9 +3205,9 @@ function renderUserNotifications(titles) {
   list.innerHTML = items.map(userNotificationTemplate).join("");
   emptyState.classList.toggle("hidden", items.length > 0);
 
-  if (dot) {
+  dots.forEach((dot) => {
     dot.classList.toggle("visible", unseenCount > 0);
-  }
+  });
 }
 
 function filterTitles(titles) {
@@ -4807,7 +4807,7 @@ function updateOwnerToggle() {
   const pendingCount =
     pendingNotificationState.count ?? getPendingTitles(titlesCache).length;
 
-  document.querySelectorAll("#ownerToggle").forEach((button) => {
+  document.querySelectorAll("[data-owner-toggle]").forEach((button) => {
     button.classList.toggle("active", active);
     button.textContent = active
       ? pendingCount
@@ -4824,7 +4824,7 @@ function updateOwnerToggle() {
 }
 
 function setupOwnerMode() {
-  const buttons = document.querySelectorAll("#ownerToggle, #ownerDockToggle");
+  const buttons = document.querySelectorAll("[data-owner-toggle], #ownerDockToggle");
 
   if (!buttons.length) {
     return;
@@ -5008,30 +5008,32 @@ function closeNotificationsModal() {
 }
 
 function setupTopSearch() {
-  const button = document.querySelector("#topSearchBtn");
+  const buttons = document.querySelectorAll("[data-top-search]");
 
-  if (!button) {
+  if (!buttons.length) {
     return;
   }
 
-  button.addEventListener("click", () => {
-    const searchInput = document.querySelector("#searchInput");
-    const browseSection = document.querySelector("#browse");
-    const browseHeading = document.querySelector("#browseHeadingText");
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const searchInput = document.querySelector("#searchInput");
+      const browseSection = document.querySelector("#browse");
+      const browseHeading = document.querySelector("#browseHeadingText");
 
-    if (!searchInput) {
+      if (!searchInput) {
+        browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+
       browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
+      searchInput.focus({ preventScroll: true });
+      searchInput.select();
+      searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
 
-    browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-    searchInput.focus({ preventScroll: true });
-    searchInput.select();
-    searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
-
-    if (browseHeading instanceof HTMLElement) {
-      browseHeading.setAttribute("tabindex", "-1");
-    }
+      if (browseHeading instanceof HTMLElement) {
+        browseHeading.setAttribute("tabindex", "-1");
+      }
+    });
   });
 
   document.addEventListener("click", (event) => {
@@ -5768,10 +5770,10 @@ async function trackTitleView(titleId) {
 }
 
 function setupUserNotificationsModal() {
-  const openButton = document.querySelector("#topNotificationsBtn");
+  const openButtons = document.querySelectorAll("[data-top-notifications]");
   const closeButton = document.querySelector("#notificationsClose");
 
-  openButton?.addEventListener("click", openNotificationsModal);
+  openButtons.forEach((button) => button.addEventListener("click", openNotificationsModal));
   closeButton?.addEventListener("click", closeNotificationsModal);
 
   document.addEventListener("click", (event) => {

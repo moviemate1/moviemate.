@@ -108,6 +108,14 @@ select {
   overflow: hidden;
 }
 
+.explore-header-desktop {
+  display: block;
+}
+
+.explore-header-mobile {
+  display: none;
+}
+
 .explore-topbar {
   display: block;
   padding: 0;
@@ -150,6 +158,11 @@ select {
   flex: 0 0 auto;
   margin-left: auto;
   min-width: 0;
+}
+
+.explore-mobile-toprow,
+.explore-mobile-nav {
+  display: none;
 }
 
 .home-chip {
@@ -4141,142 +4154,111 @@ button.ghost-link {
 
 @media (max-width: 720px) {
   .page-shell {
-    width: 100%;
+    width: min(100% - 12px, 1240px);
     padding-top: 12px;
-    padding-left: 0;
-    padding-right: 0;
     overflow: visible;
   }
 
   .explore-main {
-    padding-left: 6px;
-    padding-right: 6px;
+    padding-left: 0;
+    padding-right: 0;
   }
 
-  .explore-header {
-    position: static;
-    left: auto;
-    transform: none;
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 0 18px;
-    padding: 12px max(14px, env(safe-area-inset-right, 0px)) 12px max(14px, env(safe-area-inset-left, 0px));
-    border: 0;
-    border-radius: 0;
-    background: rgba(6, 6, 8, 0.96) !important;
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
-    box-sizing: border-box;
-    overflow: visible;
-    scrollbar-width: none;
-    z-index: 0;
-  }
-
-  .explore-header::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    width: 100vw;
-    transform: translateX(-50%);
-    background: rgba(6, 6, 8, 0.96);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
-    z-index: -1;
-    pointer-events: none;
-  }
-
-  .explore-header::-webkit-scrollbar {
+  .explore-header-desktop {
     display: none;
   }
 
-  .explore-topbar {
+  .explore-header-mobile {
     display: block;
-    min-height: 0;
-    padding: 0;
-    gap: 10px;
-    border: 0;
-    border-radius: 0;
-    background: transparent !important;
-    box-shadow: none !important;
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box;
+    width: 100%;
+    margin: 0 0 18px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    background: rgba(6, 6, 8, 0.96);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
   }
 
-  .explore-topbar-left {
+  .explore-mobile-toprow {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
     gap: 8px;
     min-width: 0;
-    width: auto;
+  }
+
+  .explore-mobile-brand {
     flex: 1 1 auto;
-  }
-
-  .explore-topbar-main {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "left actions"
-      "nav nav";
-    align-items: center;
-    justify-content: stretch;
-    gap: 8px;
     min-width: 0;
-    width: 100%;
-    background: transparent !important;
+    gap: 10px;
   }
 
-  .explore-topbar-left {
-    grid-area: left;
+  .explore-mobile-brand .brand-text {
+    font-size: 1rem;
+    white-space: nowrap;
   }
 
-  .explore-nav-center {
-    grid-area: nav;
+  .explore-mobile-toprow .brand-mark {
+    width: 46px;
+    height: 32px;
+  }
+
+  .explore-mobile-toprow .home-chip,
+  .explore-mobile-toprow .icon-chip,
+  .explore-mobile-toprow .avatar-chip {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+  }
+
+  .explore-mobile-owner {
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 0.84rem;
+    border-radius: 16px;
+    flex: 0 0 auto;
+  }
+
+  .explore-mobile-toprow .account-chip {
+    min-height: 38px;
+    min-width: 94px;
+    padding: 0 16px;
+    border-radius: 16px;
+    flex: 0 0 auto;
+  }
+
+  .explore-mobile-toprow .account-chip-label {
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+
+  .explore-mobile-nav {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    width: 100%;
-    min-width: 0;
     gap: 8px;
     margin-top: 10px;
-    justify-content: stretch;
   }
 
-  .explore-actions-right {
-    grid-area: actions;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-left: auto;
-    min-width: max-content;
-    width: auto;
-    flex-wrap: nowrap;
-  }
-
-  .explore-nav-link {
-    min-height: 42px;
+  .explore-mobile-nav .explore-nav-link {
+    min-height: 44px;
     width: 100%;
     padding: 0 12px;
-    border-radius: 15px;
+    border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.07);
     background: rgba(255, 255, 255, 0.03);
     box-shadow: none;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     gap: 6px;
     white-space: nowrap;
     justify-content: center;
     color: rgba(255, 255, 255, 0.78);
   }
 
-  .explore-nav-link span {
+  .explore-mobile-nav .explore-nav-link span {
     font-size: 0.68rem;
   }
 
-  .explore-nav-link.active,
-  .explore-nav-link:hover {
+  .explore-mobile-nav .explore-nav-link.active,
+  .explore-mobile-nav .explore-nav-link:hover {
     border-color: rgba(126, 70, 255, 0.28);
     background: rgba(126, 70, 255, 0.12);
     box-shadow: inset 0 -2px 0 #7e46ff;
@@ -4596,104 +4578,69 @@ button.ghost-link {
 
 @media (max-width: 560px) {
   .page-shell {
-    width: 100%;
+    width: calc(100% - 8px);
     overflow: visible;
   }
 
   .explore-main {
-    padding-left: 4px;
-    padding-right: 4px;
+    padding-left: 0;
+    padding-right: 0;
   }
 
-  .explore-header {
-    left: auto;
-    transform: none;
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
+  .explore-header-mobile {
     margin: 0 0 16px;
-    padding: 12px max(10px, env(safe-area-inset-right, 0px)) 12px max(10px, env(safe-area-inset-left, 0px));
-    border-radius: 0;
+    padding: 10px;
+    border-radius: 20px;
   }
 
-  .explore-topbar-left {
-    gap: 7px;
-  }
-
-  .brand-compact .brand-text {
-    max-width: none;
-  }
-
-  .explore-actions-right {
+  .explore-mobile-toprow {
     gap: 6px;
   }
 
-  .explore-nav-center {
-    gap: 6px;
+  .explore-mobile-brand .brand-text {
+    font-size: 0.92rem;
   }
 
-  .explore-nav-link {
-    min-height: 40px;
-    padding: 0 10px;
-    font-size: 0.76rem;
+  .explore-mobile-toprow .brand-mark {
+    width: 40px;
+    height: 28px;
   }
 
-  .explore-nav-link span {
-    font-size: 0.66rem;
-  }
-
-  .icon-chip,
-  .home-chip,
-  .avatar-chip {
+  .explore-mobile-toprow .home-chip,
+  .explore-mobile-toprow .icon-chip,
+  .explore-mobile-toprow .avatar-chip {
     width: 36px;
     height: 36px;
   }
 
-  #topSearchBtn,
-  #topNotificationsBtn {
-    width: 36px;
-    height: 36px;
-    flex: 0 0 auto;
-  }
-
-  body[data-page="home"] .account-chip:not(.signed-in) {
-    min-width: 88px;
-    padding: 0 14px;
-  }
-
-  .account-chip {
-    min-height: 36px;
-    min-width: 88px;
-    padding: 0 14px;
-    font-size: 0.76rem;
-  }
-
-  #ownerToggle {
+  .explore-mobile-owner {
     min-height: 36px;
     padding: 0 12px;
     font-size: 0.76rem;
   }
 
-  .account-chip-label {
+  .explore-mobile-toprow .account-chip {
+    min-height: 36px;
+    min-width: 88px;
+    padding: 0 14px;
+  }
+
+  .explore-mobile-toprow .account-chip-label {
     font-size: 0.76rem;
   }
 
-  .brand-compact {
-    font-size: 0.9rem;
+  .explore-mobile-nav {
+    gap: 6px;
   }
 
-  .brand-mark {
-    width: 40px;
-    height: 28px;
-  }
-
-  .beta-chip {
-    display: none;
-  }
-
-  body[data-page="home"] .account-chip:not(.signed-in) .account-chip-label,
-  .account-chip-label {
+  .explore-mobile-nav .explore-nav-link {
+    min-height: 40px;
+    padding: 0 10px;
     font-size: 0.76rem;
+  }
+
+  .explore-mobile-nav .explore-nav-link span {
+    font-size: 0.66rem;
   }
 
   .install-banner {
