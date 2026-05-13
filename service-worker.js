@@ -1,9 +1,7 @@
-const CACHE_NAME = "moviemate-shell-v1";
+const CACHE_NAME = "moviemate-shell-v2";
 const SHELL_ASSETS = [
   "/explore/",
   "/explore/index.html",
-  "/explore/styles.css?v=1",
-  "/explore/app.js?v=4",
   "/explore/firebase-config.js",
   "/manifest.webmanifest",
   "/favicon.svg"
