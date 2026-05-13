@@ -109,24 +109,20 @@ select {
 }
 
 .explore-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  display: block;
   padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  flex-wrap: nowrap;
 }
 
 .explore-topbar-main {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 16px;
-  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
 }
 
@@ -4166,27 +4162,14 @@ button.ghost-link {
   }
 
   .explore-topbar {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "main"
-      "nav";
+    display: block;
     min-height: 0;
     padding: 0;
     gap: 10px;
-    align-items: center;
-    justify-content: stretch;
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box;
-    z-index: 0;
-    overflow: visible;
-    scrollbar-width: none;
-  }
-
-  .explore-topbar::-webkit-scrollbar {
-    display: none;
   }
 
   .explore-topbar-left {
@@ -4200,14 +4183,20 @@ button.ghost-link {
   }
 
   .explore-topbar-main {
-    grid-area: main;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "left actions"
+      "nav nav";
     align-items: center;
     justify-content: stretch;
     gap: 8px;
     min-width: 0;
     width: 100%;
+  }
+
+  .explore-topbar-left {
+    grid-area: left;
   }
 
   .explore-nav-center {
@@ -4222,6 +4211,7 @@ button.ghost-link {
   }
 
   .explore-actions-right {
+    grid-area: actions;
     display: flex;
     align-items: center;
     justify-content: flex-end;
