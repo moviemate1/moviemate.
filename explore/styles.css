@@ -121,6 +121,10 @@ select {
   flex-wrap: nowrap;
 }
 
+.explore-topbar-main {
+  display: contents;
+}
+
 .explore-topbar-left,
 .explore-nav-center,
 .explore-actions-right {
@@ -4146,10 +4150,10 @@ button.ghost-link {
 
   .explore-topbar {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr;
     grid-template-areas:
-      "left . right"
-      "nav nav nav";
+      "main"
+      "nav";
     min-height: 0;
     padding: 0;
     gap: 10px;
@@ -4169,7 +4173,6 @@ button.ghost-link {
   }
 
   .explore-topbar-left {
-    grid-area: left;
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -4177,6 +4180,16 @@ button.ghost-link {
     min-width: 0;
     width: auto;
     flex: 0 1 auto;
+  }
+
+  .explore-topbar-main {
+    grid-area: main;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+    width: 100%;
   }
 
   .explore-nav-center {
@@ -4193,7 +4206,6 @@ button.ghost-link {
   }
 
   .explore-actions-right {
-    grid-area: right;
     display: flex;
     align-items: center;
     margin-left: auto;
@@ -4379,6 +4391,10 @@ button.ghost-link {
     font-size: 1.05rem;
   }
 
+  .brand-compact .brand-text {
+    white-space: nowrap;
+  }
+
   .brand-mark {
     width: 42px;
     height: 30px;
@@ -4556,6 +4572,10 @@ button.ghost-link {
 
   .explore-topbar-left {
     gap: 6px;
+  }
+
+  .explore-topbar-main {
+    gap: 8px;
   }
 
   .brand-compact .brand-text {
