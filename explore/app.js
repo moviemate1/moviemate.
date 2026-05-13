@@ -1694,6 +1694,100 @@ function getInterestedCount(title) {
   return Number(title.interestedCount || 0);
 }
 
+function getOptimizedImageUrl(image, width = 780) {
+  const source = String(image || "").trim();
+
+  if (!source) {
+    return "";
+  }
+
+  try {
+    const url = new URL(source, window.location.origin);
+
+    if (url.hostname.includes("images.unsplash.com")) {
+      url.searchParams.set("auto", "format");
+      url.searchParams.set("fit", "crop");
+      url.searchParams.set("q", "78");
+      url.searchParams.set("w", String(width));
+      return url.toString();
+    }
+
+    if (url.hostname.includes("image.tmdb.org")) {
+      return source.replace(/\/(original|w\d+)\//, width >= 780 ? "/w780/" : "/w500/");
+    }
+
+    return url.toString();
+  } catch (error) {
+    return source;
+  }
+}
+
+function mediaCardSkeletonTemplate() {
+  return `
+    <article class="media-skeleton-card" aria-hidden="true">
+      <div class="skeleton-shimmer skeleton-poster"></div>
+      <div class="skeleton-copy">
+        <span class="skeleton-shimmer skeleton-line skeleton-line-title"></span>
+        <span class="skeleton-shimmer skeleton-line"></span>
+        <span class="skeleton-shimmer skeleton-line skeleton-line-short"></span>
+      </div>
+    </article>
+  `;
+}
+
+function interestSkeletonTemplate() {
+  return `
+    <div class="interest-item interest-item-skeleton" aria-hidden="true">
+      <span class="skeleton-shimmer skeleton-rank"></span>
+      <span class="skeleton-shimmer skeleton-thumb"></span>
+      <span class="skeleton-copy">
+        <span class="skeleton-shimmer skeleton-line skeleton-line-title"></span>
+        <span class="skeleton-shimmer skeleton-line"></span>
+        <span class="skeleton-shimmer skeleton-line skeleton-line-short"></span>
+      </span>
+    </div>
+  `;
+}
+
+function renderHomepageSkeletons() {
+  const gridSkeleton = Array.from({ length: 5 }, mediaCardSkeletonTemplate).join("");
+  const compactSkeleton = Array.from({ length: 8 }, mediaCardSkeletonTemplate).join("");
+  const interestSkeleton = Array.from({ length: 5 }, interestSkeletonTemplate).join("");
+
+  [
+    "#featuredMovies",
+    "#trendingGrid",
+    "#editorsRowGrid",
+    "#bollywoodRowGrid",
+    "#southRowGrid",
+    "#netflixRowGrid",
+    "#hotstarRowGrid",
+    "#primeRowGrid",
+    "#crunchyrollRowGrid"
+  ].forEach((selector) => {
+    const target = document.querySelector(selector);
+    if (target && !target.children.length) {
+      target.innerHTML = gridSkeleton;
+    }
+  });
+
+  [
+    "#movieGrid",
+    "#scheduleGrid",
+    "#collectionsGrid"
+  ].forEach((selector) => {
+    const target = document.querySelector(selector);
+    if (target && !target.children.length) {
+      target.innerHTML = compactSkeleton;
+    }
+  });
+
+  const mostInterestedList = document.querySelector("#mostInterestedList");
+  if (mostInterestedList && !mostInterestedList.children.length) {
+    mostInterestedList.innerHTML = interestSkeleton;
+  }
+}
+
 function movieCardTemplate(title) {
   const memberReady = isSignedIn();
   const ownerControls = isOwnerMode()
@@ -1718,7 +1812,7 @@ function movieCardTemplate(title) {
   return `
     <article class="movie-card movie-card-compact">
       <a class="movie-card-link" href="${buildTitleUrl(title.id)}">
-        <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+        <img class="movie-poster" src="${getOptimizedImageUrl(title.image, 560)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
         <div class="movie-content">
           <div class="movie-card-summary movie-card-summary-feed">
             <div class="movie-header movie-header-feed">
@@ -1755,7 +1849,7 @@ function featuredCardTemplate(title) {
 
   return `
     <a class="featured-card featured-feed-card" href="${buildTitleUrl(title.id)}">
-      <img class="featured-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+      <img class="featured-poster" src="${getOptimizedImageUrl(title.image, 640)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <div class="featured-copy">
         <h3>${escapeHtml(title.title)}</h3>
         <p class="movie-meta">${escapeHtml(cardLabel)}</p>
@@ -1861,7 +1955,7 @@ function mostInterestedItemTemplate(title, index) {
   return `
     <a class="interest-item" href="${buildTitleUrl(title.id)}">
       <span class="interest-rank">${index + 1}</span>
-      <img class="interest-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+      <img class="interest-poster" src="${getOptimizedImageUrl(title.image, 260)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <div class="interest-copy">
         <h3>${escapeHtml(title.title)}</h3>
         <p>${escapeHtml(formatReleaseDate(title.releaseDate))} • ${escapeHtml(releaseLabel)}</p>
@@ -1958,7 +2052,7 @@ function upcomingCardTemplate(title) {
   return `
     <article class="movie-card movie-card-compact upcoming-card">
       <a class="movie-card-link" href="${buildTitleUrl(title.id)}">
-        <img class="movie-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+        <img class="movie-poster" src="${getOptimizedImageUrl(title.image, 560)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
         <div class="movie-content">
           <div class="movie-card-summary movie-card-summary-feed">
             <div class="movie-header movie-header-feed">
@@ -2321,7 +2415,7 @@ function renderSearchSuggestions(titles) {
     .map(
       (title) => `
         <a class="search-suggestion-item" href="${buildTitleUrl(title.id)}">
-          <img src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+          <img src="${getOptimizedImageUrl(title.image, 220)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
           <span>
             <strong>${escapeHtml(title.title)}</strong>
             <small>${escapeHtml(title.type)} • ${escapeHtml(title.genre)}</small>
@@ -2456,7 +2550,7 @@ function scheduleCardTemplate(title) {
         <span>${title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short" }).toUpperCase() : "TBD"}</span>
         <strong>${title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).toLocaleDateString("en-IN", { day: "2-digit" }) : "--"}</strong>
       </div>
-      <img class="schedule-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+      <img class="schedule-poster" src="${getOptimizedImageUrl(title.image, 300)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <div class="schedule-copy">
         <h3>${escapeHtml(title.title)}</h3>
         <p>${escapeHtml(title.type)} • ${escapeHtml(formatReleaseDate(title.releaseDate))}</p>
@@ -4914,30 +5008,32 @@ function closeNotificationsModal() {
 }
 
 function setupTopSearch() {
-  const button = document.querySelector("#topSearchBtn");
+  const buttons = document.querySelectorAll("#topSearchBtn, [data-top-search]");
 
-  if (!button) {
+  if (!buttons.length) {
     return;
   }
 
-  button.addEventListener("click", () => {
-    const searchInput = document.querySelector("#searchInput");
-    const browseSection = document.querySelector("#browse");
-    const browseHeading = document.querySelector("#browseHeadingText");
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const searchInput = document.querySelector("#searchInput");
+      const browseSection = document.querySelector("#browse");
+      const browseHeading = document.querySelector("#browseHeadingText");
 
-    if (!searchInput) {
+      if (!searchInput) {
+        browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+
       browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
+      searchInput.focus({ preventScroll: true });
+      searchInput.select();
+      searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
 
-    browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-    searchInput.focus({ preventScroll: true });
-    searchInput.select();
-    searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
-
-    if (browseHeading instanceof HTMLElement) {
-      browseHeading.setAttribute("tabindex", "-1");
-    }
+      if (browseHeading instanceof HTMLElement) {
+        browseHeading.setAttribute("tabindex", "-1");
+      }
+    });
   });
 
   document.addEventListener("click", (event) => {
@@ -5674,10 +5770,12 @@ async function trackTitleView(titleId) {
 }
 
 function setupUserNotificationsModal() {
-  const openButton = document.querySelector("#topNotificationsBtn");
+  const openButtons = document.querySelectorAll("#topNotificationsBtn, [data-top-notifications]");
   const closeButton = document.querySelector("#notificationsClose");
 
-  openButton?.addEventListener("click", openNotificationsModal);
+  openButtons.forEach((button) => {
+    button.addEventListener("click", openNotificationsModal);
+  });
   closeButton?.addEventListener("click", closeNotificationsModal);
 
   document.addEventListener("click", (event) => {
@@ -5945,6 +6043,7 @@ async function init() {
   setupSpoilerToggle();
 
   if (document.body.dataset.page === "home") {
+    renderHomepageSkeletons();
     setupInstallBanner();
     setupFilters();
     setupLoadMore();
