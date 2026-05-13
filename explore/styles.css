@@ -4146,10 +4146,10 @@ button.ghost-link {
 
   .explore-topbar {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto 1fr auto;
     grid-template-areas:
-      "left right"
-      "nav nav";
+      "left . right"
+      "nav nav nav";
     min-height: 0;
     padding: 0;
     gap: 10px;
@@ -4173,10 +4173,10 @@ button.ghost-link {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
-    width: 100%;
-    flex: 1 1 auto;
+    width: auto;
+    flex: 0 1 auto;
   }
 
   .explore-nav-center {
@@ -4197,9 +4197,9 @@ button.ghost-link {
     display: flex;
     align-items: center;
     margin-left: auto;
-    gap: 10px;
+    gap: 6px;
     justify-content: flex-end;
-    min-width: max-content;
+    min-width: 0;
     width: auto;
     flex-wrap: nowrap;
   }
@@ -4207,20 +4207,20 @@ button.ghost-link {
   .explore-nav-link {
     min-height: 48px;
     width: 100%;
-    padding: 0 14px;
+    padding: 0 12px;
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.07);
     background: rgba(255, 255, 255, 0.03);
     box-shadow: none;
-    font-size: 0.96rem;
-    gap: 8px;
+    font-size: 0.86rem;
+    gap: 6px;
     white-space: nowrap;
     justify-content: center;
     color: rgba(255, 255, 255, 0.78);
   }
 
   .explore-nav-link span {
-    font-size: 0.82rem;
+    font-size: 0.74rem;
   }
 
   .explore-nav-link.active,
@@ -4342,30 +4342,30 @@ button.ghost-link {
   .home-chip,
   .icon-chip,
   .avatar-chip {
-    width: 46px;
-    height: 46px;
+    width: 40px;
+    height: 40px;
     font-size: 1rem;
   }
 
   .account-chip {
     width: auto;
-    min-width: 106px;
-    min-height: 46px;
-    padding: 0 18px;
+    min-width: 88px;
+    min-height: 40px;
+    padding: 0 12px;
     border-radius: 18px;
   }
 
   .account-chip-label {
     display: block;
-    font-size: 1rem;
+    font-size: 0.84rem;
     font-weight: 700;
     color: #fff;
     white-space: nowrap;
   }
 
   body[data-page="home"] .account-chip:not(.signed-in) {
-    min-width: 106px;
-    padding: 0 18px;
+    min-width: 88px;
+    padding: 0 12px;
     border-radius: 18px;
     background: linear-gradient(135deg, rgba(126, 70, 255, 0.24), rgba(229, 9, 20, 0.22));
     border: 1px solid rgba(170, 135, 255, 0.3);
@@ -4376,27 +4376,27 @@ button.ghost-link {
   }
 
   .brand-compact {
-    font-size: 1.55rem;
+    font-size: 1.05rem;
   }
 
   .brand-mark {
-    width: 56px;
-    height: 40px;
+    width: 42px;
+    height: 30px;
   }
 
   .brand-mark::before,
   .brand-mark::after {
-    top: 10px;
-    width: 16px;
-    height: 14px;
+    top: 7px;
+    width: 12px;
+    height: 10px;
   }
 
   .brand-mark::before {
-    left: 8px;
+    left: 7px;
   }
 
   .brand-mark::after {
-    right: 8px;
+    right: 7px;
   }
 
   .beta-chip {
@@ -4407,10 +4407,10 @@ button.ghost-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 46px;
-    padding: 0 18px;
+    min-height: 40px;
+    padding: 0 12px;
     border-radius: 18px;
-    font-size: 0.96rem;
+    font-size: 0.8rem;
     white-space: nowrap;
     flex: 0 0 auto;
   }
@@ -4555,7 +4555,7 @@ button.ghost-link {
   }
 
   .explore-topbar-left {
-    gap: 8px;
+    gap: 6px;
   }
 
   .brand-compact .brand-text {
@@ -4563,66 +4563,66 @@ button.ghost-link {
   }
 
   .explore-actions-right {
-    gap: 8px;
+    gap: 4px;
   }
 
   .explore-nav-center {
-    gap: 8px;
+    gap: 5px;
   }
 
   .explore-nav-link {
-    min-height: 42px;
-    padding: 0 12px;
-    font-size: 0.84rem;
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: 0.74rem;
   }
 
   .explore-nav-link span {
-    font-size: 0.72rem;
+    font-size: 0.64rem;
   }
 
   .icon-chip,
   .home-chip,
   .avatar-chip {
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
   }
 
   #topSearchBtn,
   #topNotificationsBtn {
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
     flex: 0 0 auto;
   }
 
   body[data-page="home"] .account-chip:not(.signed-in) {
-    min-width: 92px;
-    padding: 0 14px;
+    min-width: 76px;
+    padding: 0 10px;
   }
 
   .account-chip {
-    min-height: 40px;
-    min-width: 92px;
-    padding: 0 14px;
-    font-size: 0.82rem;
+    min-height: 34px;
+    min-width: 76px;
+    padding: 0 10px;
+    font-size: 0.7rem;
   }
 
   #ownerToggle {
-    min-height: 40px;
-    padding: 0 14px;
-    font-size: 0.82rem;
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0.7rem;
   }
 
   .account-chip-label {
-    font-size: 0.82rem;
+    font-size: 0.7rem;
   }
 
   .brand-compact {
-    font-size: 1.25rem;
+    font-size: 0.86rem;
   }
 
   .brand-mark {
-    width: 48px;
-    height: 34px;
+    width: 36px;
+    height: 26px;
   }
 
   .beta-chip {
@@ -4631,7 +4631,7 @@ button.ghost-link {
 
   body[data-page="home"] .account-chip:not(.signed-in) .account-chip-label,
   .account-chip-label {
-    font-size: 0.82rem;
+    font-size: 0.7rem;
   }
 
   .install-banner {
