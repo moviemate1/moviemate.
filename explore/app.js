@@ -5008,32 +5008,30 @@ function closeNotificationsModal() {
 }
 
 function setupTopSearch() {
-  const buttons = document.querySelectorAll("#topSearchBtn, [data-top-search]");
+  const button = document.querySelector("#topSearchBtn");
 
-  if (!buttons.length) {
+  if (!button) {
     return;
   }
 
-  buttons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const searchInput = document.querySelector("#searchInput");
-      const browseSection = document.querySelector("#browse");
-      const browseHeading = document.querySelector("#browseHeadingText");
+  button.addEventListener("click", () => {
+    const searchInput = document.querySelector("#searchInput");
+    const browseSection = document.querySelector("#browse");
+    const browseHeading = document.querySelector("#browseHeadingText");
 
-      if (!searchInput) {
-        browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
-
+    if (!searchInput) {
       browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-      searchInput.focus({ preventScroll: true });
-      searchInput.select();
-      searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
 
-      if (browseHeading instanceof HTMLElement) {
-        browseHeading.setAttribute("tabindex", "-1");
-      }
-    });
+    browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+    searchInput.focus({ preventScroll: true });
+    searchInput.select();
+    searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    if (browseHeading instanceof HTMLElement) {
+      browseHeading.setAttribute("tabindex", "-1");
+    }
   });
 
   document.addEventListener("click", (event) => {
@@ -5770,12 +5768,10 @@ async function trackTitleView(titleId) {
 }
 
 function setupUserNotificationsModal() {
-  const openButtons = document.querySelectorAll("#topNotificationsBtn, [data-top-notifications]");
+  const openButton = document.querySelector("#topNotificationsBtn");
   const closeButton = document.querySelector("#notificationsClose");
 
-  openButtons.forEach((button) => {
-    button.addEventListener("click", openNotificationsModal);
-  });
+  openButton?.addEventListener("click", openNotificationsModal);
   closeButton?.addEventListener("click", closeNotificationsModal);
 
   document.addEventListener("click", (event) => {

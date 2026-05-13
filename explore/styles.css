@@ -108,10 +108,6 @@ select {
   overflow: hidden;
 }
 
-.explore-header-mobile {
-  display: none;
-}
-
 .explore-topbar {
   display: flex;
   align-items: center;
@@ -127,13 +123,6 @@ select {
 
 .explore-topbar-main {
   display: contents;
-}
-
-.explore-mobile-toprow,
-.explore-mobile-brand,
-.explore-mobile-actions,
-.explore-mobile-nav {
-  display: none;
 }
 
 .explore-topbar-left,
@@ -4138,14 +4127,6 @@ button.ghost-link {
 }
 
 @media (max-width: 720px) {
-  .explore-header-desktop {
-    display: none;
-  }
-
-  .explore-header-mobile {
-    display: block;
-  }
-
   .page-shell {
     width: min(100% - 12px, 1240px);
     padding-top: 12px;
@@ -4168,38 +4149,70 @@ button.ghost-link {
   }
 
   .explore-topbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "main"
+      "nav";
+    min-height: 0;
+    padding: 0;
+    gap: 10px;
+    align-items: center;
+    justify-content: stretch;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    z-index: 0;
+    overflow: visible;
+    scrollbar-width: none;
+  }
+
+  .explore-topbar::-webkit-scrollbar {
     display: none;
   }
 
-  .explore-mobile-toprow {
+  .explore-topbar-left {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    min-width: 0;
+    width: auto;
+    flex: 1 1 auto;
+  }
+
+  .explore-topbar-main {
+    grid-area: main;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 10px;
+    justify-content: stretch;
+    gap: 8px;
+    min-width: 0;
     width: 100%;
   }
 
-  .explore-mobile-brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .explore-nav-center {
+    grid-area: nav;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
     min-width: 0;
+    gap: 8px;
+    margin-top: 10px;
+    justify-content: stretch;
   }
 
-  .explore-mobile-actions {
+  .explore-actions-right {
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
+    margin-left: auto;
     min-width: max-content;
-  }
-
-  .explore-mobile-nav {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    width: 100%;
-    gap: 8px;
-    margin-top: 10px;
+    width: auto;
+    flex-wrap: nowrap;
   }
 
   .explore-nav-link {
@@ -4553,7 +4566,7 @@ button.ghost-link {
     border-radius: 16px;
   }
 
-  .explore-mobile-brand {
+  .explore-topbar-left {
     gap: 7px;
   }
 
@@ -4561,11 +4574,11 @@ button.ghost-link {
     max-width: none;
   }
 
-  .explore-mobile-actions {
+  .explore-actions-right {
     gap: 6px;
   }
 
-  .explore-mobile-nav {
+  .explore-nav-center {
     gap: 6px;
   }
 
