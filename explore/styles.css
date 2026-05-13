@@ -108,6 +108,10 @@ select {
   overflow: hidden;
 }
 
+.explore-header-mobile {
+  display: none;
+}
+
 .explore-topbar {
   display: flex;
   align-items: center;
@@ -123,6 +127,13 @@ select {
 
 .explore-topbar-main {
   display: contents;
+}
+
+.explore-mobile-toprow,
+.explore-mobile-brand,
+.explore-mobile-actions,
+.explore-mobile-nav {
+  display: none;
 }
 
 .explore-topbar-left,
@@ -4127,6 +4138,14 @@ button.ghost-link {
 }
 
 @media (max-width: 720px) {
+  .explore-header-desktop {
+    display: none;
+  }
+
+  .explore-header-mobile {
+    display: block;
+  }
+
   .page-shell {
     width: min(100% - 12px, 1240px);
     padding-top: 12px;
@@ -4149,72 +4168,38 @@ button.ghost-link {
   }
 
   .explore-topbar {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "main"
-      "nav";
-    min-height: 0;
-    padding: 0;
-    gap: 10px;
-    align-items: center;
-    justify-content: stretch;
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box;
-    z-index: 0;
-    overflow: visible;
-    scrollbar-width: none;
-  }
-
-  .explore-topbar::-webkit-scrollbar {
     display: none;
   }
 
-  .explore-topbar-left {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    min-width: 0;
-    width: auto;
-    flex: 1 1 auto;
-  }
-
-  .explore-topbar-main {
-    grid-area: main;
+  .explore-mobile-toprow {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: stretch;
     gap: 10px;
-    min-width: 0;
     width: 100%;
   }
 
-  .explore-nav-center {
-    grid-area: nav;
+  .explore-mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .explore-mobile-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: max-content;
+  }
+
+  .explore-mobile-nav {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
-    min-width: 0;
     gap: 8px;
-    margin-top: 0;
-    justify-content: stretch;
-    flex-wrap: nowrap;
-    overflow: visible;
-  }
-
-  .explore-actions-right {
-    display: flex;
-    align-items: center;
-    margin-left: auto;
-    gap: 8px;
-    justify-content: flex-end;
-    min-width: max-content;
-    width: auto;
-    flex-wrap: nowrap;
+    margin-top: 10px;
   }
 
   .explore-nav-link {
@@ -4568,27 +4553,19 @@ button.ghost-link {
     border-radius: 16px;
   }
 
-  .explore-topbar {
-    padding: 0;
-  }
-
-  .explore-topbar-left {
+  .explore-mobile-brand {
     gap: 7px;
-  }
-
-  .explore-topbar-main {
-    gap: 8px;
   }
 
   .brand-compact .brand-text {
     max-width: none;
   }
 
-  .explore-actions-right {
+  .explore-mobile-actions {
     gap: 6px;
   }
 
-  .explore-nav-center {
+  .explore-mobile-nav {
     gap: 6px;
   }
 
