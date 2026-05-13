@@ -112,6 +112,10 @@ select {
   display: block;
 }
 
+.explore-header-mobile-shell {
+  display: none;
+}
+
 .explore-header-mobile {
   display: none;
 }
@@ -4152,10 +4156,16 @@ button.ghost-link {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+
   .page-shell {
-    width: min(100% - 12px, 1240px);
-    padding-top: 12px;
+    width: 100%;
+    max-width: none;
+    padding: 12px 6px 64px;
+    box-sizing: border-box;
     overflow: visible;
   }
 
@@ -4168,42 +4178,62 @@ button.ghost-link {
     display: none;
   }
 
+  .explore-header-mobile-shell {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 12px 6px 0;
+    box-sizing: border-box;
+  }
+
   .explore-header-mobile {
     display: block;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     margin: 0 0 18px;
     padding: 12px 14px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 22px;
     background: rgba(6, 6, 8, 0.96);
     box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
-    overflow: hidden;
+    overflow: visible;
     box-sizing: border-box;
+    transform: none;
+    max-inline-size: none;
   }
 
   .explore-mobile-toprow {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 10px;
     width: 100%;
-    min-width: 100%;
+    max-width: 100%;
+    min-width: 0;
     overflow-x: auto;
     overflow-y: hidden;
     flex-wrap: nowrap;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 2px;
+    padding: 0 0 2px;
+    box-sizing: border-box;
   }
 
   .explore-mobile-toprow::-webkit-scrollbar {
     display: none;
   }
 
+  .explore-mobile-toprow > * {
+    flex: 0 0 auto;
+  }
+
   .explore-mobile-brand {
     flex: 0 0 auto;
     min-width: max-content;
     gap: 10px;
+    margin-right: auto;
   }
 
   .explore-mobile-brand .brand-text {
@@ -4223,6 +4253,7 @@ button.ghost-link {
     width: 38px;
     height: 38px;
     flex: 0 0 auto;
+    flex-shrink: 0;
   }
 
   .explore-mobile-owner {
@@ -4234,12 +4265,18 @@ button.ghost-link {
     white-space: nowrap;
   }
 
+  .explore-mobile-toprow .account-menu-wrap {
+    flex: 0 0 auto;
+    flex-shrink: 0;
+  }
+
   .explore-mobile-toprow .account-chip {
     min-height: 38px;
     min-width: 96px;
     padding: 0 16px;
     border-radius: 16px;
     flex: 0 0 auto;
+    flex-shrink: 0;
   }
 
   .explore-mobile-toprow .account-chip-label {
@@ -4253,13 +4290,15 @@ button.ghost-link {
     gap: 10px;
     margin-top: 10px;
     width: 100%;
-    min-width: 100%;
+    max-width: 100%;
+    min-width: 0;
     overflow-x: auto;
     overflow-y: hidden;
     flex-wrap: nowrap;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 2px;
+    padding: 0 0 2px;
+    box-sizing: border-box;
   }
 
   .explore-mobile-nav::-webkit-scrollbar {
@@ -4278,6 +4317,7 @@ button.ghost-link {
     gap: 6px;
     white-space: nowrap;
     flex: 0 0 auto;
+    flex-shrink: 0;
     justify-content: center;
     color: rgba(255, 255, 255, 0.78);
   }
@@ -4607,13 +4647,19 @@ button.ghost-link {
 
 @media (max-width: 560px) {
   .page-shell {
-    width: calc(100% - 8px);
+    width: 100%;
+    max-width: none;
+    padding: 10px 4px 64px;
     overflow: visible;
   }
 
   .explore-main {
     padding-left: 0;
     padding-right: 0;
+  }
+
+  .explore-header-mobile-shell {
+    padding: 10px 4px 0;
   }
 
   .explore-header-mobile {

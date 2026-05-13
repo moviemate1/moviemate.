@@ -33,9 +33,45 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=65-mobile-header-scroll" />
+    <link rel="stylesheet" href="styles.css?v=66-mobile-header-width-fix" />
   </head>
   <body data-page="home">
+    <header class="explore-header-mobile-shell" aria-label="MovieMate mobile header">
+      <div class="explore-header-mobile">
+        <div class="explore-mobile-toprow">
+          <a class="home-chip" href="/explore/#trending" aria-label="Go to explore">⌂</a>
+          <a class="brand brand-compact explore-mobile-brand" href="/explore/">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="brand-text">MovieMate</span>
+          </a>
+          <button class="icon-chip" data-top-search type="button" aria-label="Search">⌕</button>
+          <button class="icon-chip notification-trigger" data-top-notifications type="button" aria-label="Notifications">
+            <span class="notification-glyph" aria-hidden="true">🔔</span>
+            <span class="notification-dot" data-top-notification-dot></span>
+          </button>
+          <button class="ghost-link explore-mobile-owner" data-owner-toggle type="button">Owner Mode</button>
+          <div class="account-menu-wrap">
+            <button class="avatar-chip auth-chip account-chip" data-auth-toggle type="button" aria-label="MovieMate account">
+              <span class="account-chip-avatar hidden" data-account-avatar>MM</span>
+              <span class="account-chip-label" data-account-label>Sign In</span>
+            </button>
+            <div class="account-menu hidden" aria-hidden="true">
+              <a class="account-menu-link hidden" data-account-only data-profile-link href="../profile.html">My Profile</a>
+              <a class="account-menu-link hidden" data-account-only href="../my-reviews.html">My Reviews</a>
+              <a class="account-menu-link hidden" data-account-only data-account-settings-link href="../account.html">Settings</a>
+              <button class="account-menu-link hidden danger" data-account-only data-signout-action type="button">Logout</button>
+              <button class="account-menu-link" data-signed-out-only data-signin-action type="button">Sign In</button>
+            </div>
+          </div>
+        </div>
+        <div class="explore-mobile-nav">
+          <a class="explore-nav-link active" href="#trending"><span>◉</span> Explore</a>
+          <a class="explore-nav-link" href="#schedule"><span>◌</span> Schedule</a>
+          <a class="explore-nav-link" href="#collections"><span>▣</span> Collections</a>
+          <a class="explore-nav-link" href="#browse"><span>⌕</span> Browse</a>
+        </div>
+      </div>
+    </header>
     <div class="page-shell">
       <header class="explore-header explore-header-desktop">
         <nav class="explore-topbar">
@@ -77,41 +113,6 @@
             </div>
           </div>
         </nav>
-      </header>
-
-      <header class="explore-header-mobile" aria-label="MovieMate mobile header">
-        <div class="explore-mobile-toprow">
-          <a class="home-chip" href="/explore/#trending" aria-label="Go to explore">⌂</a>
-          <a class="brand brand-compact explore-mobile-brand" href="/explore/">
-            <span class="brand-mark" aria-hidden="true"></span>
-            <span class="brand-text">MovieMate</span>
-          </a>
-          <button class="icon-chip" data-top-search type="button" aria-label="Search">⌕</button>
-          <button class="icon-chip notification-trigger" data-top-notifications type="button" aria-label="Notifications">
-            <span class="notification-glyph" aria-hidden="true">🔔</span>
-            <span class="notification-dot" data-top-notification-dot></span>
-          </button>
-          <button class="ghost-link explore-mobile-owner" data-owner-toggle type="button">Owner Mode</button>
-          <div class="account-menu-wrap">
-            <button class="avatar-chip auth-chip account-chip" data-auth-toggle type="button" aria-label="MovieMate account">
-              <span class="account-chip-avatar hidden" data-account-avatar>MM</span>
-              <span class="account-chip-label" data-account-label>Sign In</span>
-            </button>
-            <div class="account-menu hidden" aria-hidden="true">
-              <a class="account-menu-link hidden" data-account-only data-profile-link href="../profile.html">My Profile</a>
-              <a class="account-menu-link hidden" data-account-only href="../my-reviews.html">My Reviews</a>
-              <a class="account-menu-link hidden" data-account-only data-account-settings-link href="../account.html">Settings</a>
-              <button class="account-menu-link hidden danger" data-account-only data-signout-action type="button">Logout</button>
-              <button class="account-menu-link" data-signed-out-only data-signin-action type="button">Sign In</button>
-            </div>
-          </div>
-        </div>
-        <div class="explore-mobile-nav">
-          <a class="explore-nav-link active" href="#trending"><span>◉</span> Explore</a>
-          <a class="explore-nav-link" href="#schedule"><span>◌</span> Schedule</a>
-          <a class="explore-nav-link" href="#collections"><span>▣</span> Collections</a>
-          <a class="explore-nav-link" href="#browse"><span>⌕</span> Browse</a>
-        </div>
       </header>
 
       <main class="explore-main">
