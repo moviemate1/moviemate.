@@ -33,11 +33,18 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=79-mobile-header-edge-to-edge" />
+    <link rel="stylesheet" href="styles.css?v=80-mobile-header-inline-fullwidth" />
   </head>
   <body data-page="home">
-    <header class="explore-header-mobile-shell" aria-label="MovieMate mobile header">
-      <div class="explore-mobile-header-bar">
+    <header
+      class="explore-header-mobile-shell"
+      aria-label="MovieMate mobile header"
+      style="display:block;width:calc(100vw - 12px);max-width:calc(100vw - 12px);margin:12px 6px 0;box-sizing:border-box;overflow:visible;"
+    >
+      <div
+        class="explore-mobile-header-bar"
+        style="display:block;width:100%;max-width:100%;min-width:0;margin:0 0 18px;padding:14px 14px 13px;border:1px solid rgba(255,255,255,0.08);border-radius:22px;background:rgba(6,6,8,0.96);box-shadow:0 14px 30px rgba(0,0,0,0.18);overflow:visible;box-sizing:border-box;"
+      >
         <div class="explore-mobile-header-row">
           <div class="explore-mobile-header-left">
             <a class="home-chip explore-mobile-home" href="/explore/#trending" aria-label="Go to explore">⌂</a>
