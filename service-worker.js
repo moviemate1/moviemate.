@@ -1,4 +1,4 @@
-const CACHE_NAME = "moviemate-shell-v2";
+const CACHE_NAME = "moviemate-shell-v4";
 const SHELL_ASSETS = [
   "/explore/",
   "/explore/index.html",
@@ -35,6 +35,27 @@ self.addEventListener("fetch", (event) => {
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).catch(() => caches.match("/explore/"))
+    );
+    return;
+  }
+
+  const shouldRefreshFromNetwork =
+    event.request.destination === "style" ||
+    event.request.destination === "script" ||
+    event.request.destination === "worker" ||
+    requestUrl.pathname.endsWith(".css") ||
+    requestUrl.pathname.endsWith(".js") ||
+    requestUrl.pathname.endsWith(".html");
+
+  if (shouldRefreshFromNetwork) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
