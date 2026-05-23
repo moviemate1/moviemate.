@@ -5139,3 +5139,53 @@ button.ghost-link {
     gap: 10px !important;
   }
 }
+
+/* Hard mobile card fit: keep two complete posters visible inside the phone viewport. */
+@media (max-width: 768px) {
+  #featuredMovies,
+  .explore-feed-grid,
+  .trend-grid,
+  .movie-grid {
+    grid-template-columns: repeat(2, calc((100vw - 58px) / 2)) !important;
+    justify-content: start !important;
+    justify-items: stretch !important;
+    column-gap: 10px !important;
+    row-gap: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  #featuredMovies > .featured-feed-card,
+  .explore-feed-grid > .featured-feed-card,
+  .trend-grid > .featured-feed-card,
+  .movie-grid > .movie-card {
+    width: calc((100vw - 58px) / 2) !important;
+    max-width: calc((100vw - 58px) / 2) !important;
+    min-width: 0 !important;
+  }
+
+  .explore-showcase,
+  .explore-row-section {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  #featuredMovies,
+  .explore-feed-grid,
+  .trend-grid,
+  .movie-grid {
+    grid-template-columns: repeat(2, calc((100vw - 52px) / 2)) !important;
+    column-gap: 8px !important;
+  }
+
+  #featuredMovies > .featured-feed-card,
+  .explore-feed-grid > .featured-feed-card,
+  .trend-grid > .featured-feed-card,
+  .movie-grid > .movie-card {
+    width: calc((100vw - 52px) / 2) !important;
+    max-width: calc((100vw - 52px) / 2) !important;
+  }
+}
