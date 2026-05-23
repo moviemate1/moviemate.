@@ -4879,166 +4879,217 @@ button.ghost-link {
   }
 }
 
-/* Mobile explore repair: prevent header squeeze and stop movie rows from overflowing. */
+/* Final mobile explore layout: one source of truth for the header and every movie row. */
 @media (max-width: 768px) {
   html,
-  body,
-  body[data-page="home"],
-  .page-shell,
-  .explore-main,
-  .explore-layout,
-  .explore-primary {
+  body {
     width: 100% !important;
     max-width: 100% !important;
-    min-width: 0 !important;
     overflow-x: hidden !important;
-    box-sizing: border-box !important;
   }
 
   body[data-page="home"] {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 112px) !important;
   }
 
-  .page-shell {
-    margin: 0 !important;
-    padding: 10px 8px 76px !important;
-  }
-
-  .explore-header-mobile-shell {
-    display: block !important;
-    position: relative !important;
-    left: auto !important;
-    right: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 0 16px !important;
-    padding: 10px 8px !important;
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    overflow: hidden !important;
-  }
-
-  .explore-mobile-header-bar {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    padding: 9px 10px !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    border-radius: 22px !important;
-    background: rgba(6, 6, 8, 0.96) !important;
-    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28) !important;
-    overflow: hidden !important;
-  }
-
-  .explore-mobile-header-row {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 6px !important;
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-
-  .explore-mobile-header-left,
-  .explore-mobile-header-right {
-    display: flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    min-width: 0 !important;
-  }
-
-  .explore-mobile-header-left {
-    flex: 0 0 auto !important;
-    overflow: visible !important;
-  }
-
-  .explore-mobile-header-right {
-    flex: 1 1 auto !important;
-    justify-content: flex-end !important;
-    margin-left: auto !important;
-    overflow: visible !important;
-  }
-
-  .explore-mobile-brand {
-    display: inline-flex !important;
-    flex: 0 0 auto !important;
-    min-width: 0 !important;
-    width: auto !important;
-    gap: 0 !important;
-    overflow: visible !important;
-  }
-
-  .explore-mobile-brand .brand-text {
-    display: none !important;
-  }
-
-  .explore-mobile-brand .brand-mark {
-    width: 40px !important;
-    height: 28px !important;
-  }
-
-  .explore-mobile-header-bar .home-chip,
-  .explore-mobile-header-bar .icon-chip,
-  .explore-mobile-header-bar .avatar-chip,
-  .explore-mobile-header-bar .explore-mobile-home {
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px !important;
-    flex: 0 0 34px !important;
-    font-size: 0.82rem !important;
-  }
-
-  .explore-mobile-owner {
-    min-height: 34px !important;
-    padding: 0 9px !important;
-    border-radius: 15px !important;
-    font-size: 0.66rem !important;
-    white-space: nowrap !important;
-    flex: 0 0 auto !important;
-  }
-
-  .explore-mobile-header-right .account-chip {
-    min-width: 68px !important;
-    min-height: 34px !important;
-    padding: 0 9px !important;
-    border-radius: 15px !important;
-    flex: 0 0 auto !important;
-  }
-
-  .explore-mobile-header-right .account-chip-label {
-    display: block !important;
-    font-size: 0.66rem !important;
-    line-height: 1 !important;
-  }
-
-  .explore-showcase,
-  .explore-row-section {
+  body[data-page="home"] .page-shell,
+  body[data-page="home"] .explore-main,
+  body[data-page="home"] .explore-layout,
+  body[data-page="home"] .explore-primary {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  body[data-page="home"] .page-shell {
+    padding: 10px 8px 96px !important;
+  }
+
+  body[data-page="home"] .explore-layout {
+    display: block !important;
+  }
+
+  body[data-page="home"] .explore-primary {
+    display: grid !important;
+    gap: 18px !important;
+  }
+
+  body[data-page="home"] .explore-header-mobile-shell {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 0 16px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
   }
 
-  .explore-showcase {
-    padding: 18px 14px 20px !important;
+  body[data-page="home"] .explore-mobile-header-bar {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 22px !important;
+    background: rgba(6, 6, 8, 0.96) !important;
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
-  .featured-grid,
-  .explore-feed-grid,
-  .trend-grid,
-  .movie-grid,
-  .explore-showcase .featured-grid,
-  .explore-showcase .explore-feed-grid,
-  .explore-row-section .featured-grid,
-  .explore-row-section .trend-grid {
+  body[data-page="home"] .explore-mobile-header-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-left,
+  body[data-page="home"] .explore-mobile-header-right {
+    display: flex !important;
+    align-items: center !important;
+    min-width: 0 !important;
+    gap: 7px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-left {
+    flex: 0 1 auto !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right {
+    flex: 0 0 auto !important;
+    justify-content: flex-end !important;
+    margin-left: auto !important;
+  }
+
+  body[data-page="home"] .explore-mobile-brand {
+    display: inline-flex !important;
+    flex: 0 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="home"] .explore-mobile-brand .brand-text {
+    display: none !important;
+  }
+
+  body[data-page="home"] .explore-mobile-brand .brand-mark {
+    width: 42px !important;
+    height: 30px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-bar .home-chip,
+  body[data-page="home"] .explore-mobile-header-bar .icon-chip,
+  body[data-page="home"] .explore-mobile-header-bar .avatar-chip,
+  body[data-page="home"] .explore-mobile-header-bar .explore-mobile-home {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    flex: 0 0 36px !important;
+    font-size: 0.82rem !important;
+  }
+
+  body[data-page="home"] .explore-mobile-owner {
+    min-height: 36px !important;
+    padding: 0 10px !important;
+    border-radius: 16px !important;
+    font-size: 0.68rem !important;
+    white-space: nowrap !important;
+    flex: 0 0 auto !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-chip {
+    min-width: 74px !important;
+    min-height: 36px !important;
+    padding: 0 10px !important;
+    border-radius: 16px !important;
+    flex: 0 0 auto !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-chip-label {
+    display: block !important;
+    font-size: 0.68rem !important;
+    line-height: 1 !important;
+  }
+
+  body[data-page="home"] .explore-showcase,
+  body[data-page="home"] .explore-row-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 18px 14px 20px !important;
+    border-radius: 24px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  body[data-page="home"] .explore-row-section {
+    background:
+      linear-gradient(180deg, rgba(12, 12, 15, 0.96), rgba(9, 9, 11, 0.9)),
+      radial-gradient(circle at top left, rgba(126, 70, 255, 0.18), transparent 32%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: var(--shadow) !important;
+  }
+
+  body[data-page="home"] .explore-showcase .section-heading,
+  body[data-page="home"] .explore-row-section .section-heading {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    align-items: start !important;
+    margin: 0 0 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  body[data-page="home"] .explore-showcase .section-heading h2,
+  body[data-page="home"] .explore-showcase .compact-section-heading h2,
+  body[data-page="home"] .explore-row-section .section-heading h2,
+  body[data-page="home"] .explore-row-section .compact-section-heading h2 {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: clamp(2rem, 9vw, 3rem) !important;
+    line-height: 0.98 !important;
+    letter-spacing: -0.04em !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body[data-page="home"] .explore-row-section .section-copy {
+    display: none !important;
+  }
+
+  body[data-page="home"] #featuredMovies,
+  body[data-page="home"] #trendingGrid,
+  body[data-page="home"] #editorsRowGrid,
+  body[data-page="home"] #bollywoodRowGrid,
+  body[data-page="home"] #southRowGrid,
+  body[data-page="home"] #netflixRowGrid,
+  body[data-page="home"] #hotstarRowGrid,
+  body[data-page="home"] #primeRowGrid,
+  body[data-page="home"] #crunchyrollRowGrid,
+  body[data-page="home"] .explore-feed-grid,
+  body[data-page="home"] .trend-grid,
+  body[data-page="home"] .movie-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-flow: row !important;
+    grid-auto-columns: initial !important;
+    justify-content: stretch !important;
+    justify-items: stretch !important;
+    align-items: start !important;
     gap: 12px !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -5047,145 +5098,119 @@ button.ghost-link {
     box-sizing: border-box !important;
   }
 
-  .featured-grid > *,
-  .explore-feed-grid > *,
-  .trend-grid > *,
-  .movie-grid > *,
-  .featured-feed-card {
+  body[data-page="home"] #featuredMovies > *,
+  body[data-page="home"] #trendingGrid > *,
+  body[data-page="home"] #editorsRowGrid > *,
+  body[data-page="home"] #bollywoodRowGrid > *,
+  body[data-page="home"] #southRowGrid > *,
+  body[data-page="home"] #netflixRowGrid > *,
+  body[data-page="home"] #hotstarRowGrid > *,
+  body[data-page="home"] #primeRowGrid > *,
+  body[data-page="home"] #crunchyrollRowGrid > *,
+  body[data-page="home"] .featured-feed-card,
+  body[data-page="home"] .movie-grid > .movie-card {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
+    inline-size: auto !important;
     box-sizing: border-box !important;
   }
 
-  .featured-feed-card {
+  body[data-page="home"] .featured-feed-card {
     border-radius: 18px !important;
-    grid-template-rows: auto minmax(84px, auto) !important;
+    grid-template-rows: auto minmax(86px, auto) !important;
+    min-height: 100% !important;
   }
 
-  .featured-feed-card .featured-poster {
+  body[data-page="home"] .featured-feed-card .featured-poster {
     width: 100% !important;
     max-width: 100% !important;
     aspect-ratio: 2 / 3 !important;
     object-fit: cover !important;
   }
 
-  .featured-feed-card .featured-copy {
+  body[data-page="home"] .featured-feed-card .featured-copy {
     padding: 9px 8px 10px !important;
-    min-height: 78px !important;
+    min-height: 82px !important;
+  }
+
+  body[data-page="home"] .featured-feed-card .featured-copy h3 {
+    font-size: 0.88rem !important;
+    line-height: 1.16 !important;
+    min-height: 2.05em !important;
+  }
+
+  body[data-page="home"] .featured-feed-card .movie-meta {
+    font-size: 0.7rem !important;
+    line-height: 1.32 !important;
   }
 }
 
 @media (max-width: 390px) {
-  .page-shell {
+  body[data-page="home"] .page-shell {
     padding-left: 6px !important;
     padding-right: 6px !important;
   }
 
-  .explore-header-mobile-shell {
-    padding-left: 6px !important;
-    padding-right: 6px !important;
+  body[data-page="home"] .explore-showcase,
+  body[data-page="home"] .explore-row-section {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
   }
 
-  .explore-mobile-header-bar {
+  body[data-page="home"] .explore-mobile-header-bar {
     padding: 8px !important;
   }
 
-  .explore-mobile-header-row,
-  .explore-mobile-header-left,
-  .explore-mobile-header-right {
+  body[data-page="home"] .explore-mobile-header-row,
+  body[data-page="home"] .explore-mobile-header-left,
+  body[data-page="home"] .explore-mobile-header-right {
     gap: 5px !important;
   }
 
-  .explore-mobile-brand .brand-mark {
+  body[data-page="home"] .explore-mobile-brand .brand-mark {
     width: 36px !important;
     height: 26px !important;
   }
 
-  .explore-mobile-header-bar .home-chip,
-  .explore-mobile-header-bar .icon-chip,
-  .explore-mobile-header-bar .avatar-chip,
-  .explore-mobile-header-bar .explore-mobile-home {
+  body[data-page="home"] .explore-mobile-header-bar .home-chip,
+  body[data-page="home"] .explore-mobile-header-bar .icon-chip,
+  body[data-page="home"] .explore-mobile-header-bar .avatar-chip,
+  body[data-page="home"] .explore-mobile-header-bar .explore-mobile-home {
     width: 32px !important;
     height: 32px !important;
     min-width: 32px !important;
     flex-basis: 32px !important;
   }
 
-  .explore-mobile-owner {
+  body[data-page="home"] .explore-mobile-owner {
     min-height: 32px !important;
     padding: 0 7px !important;
     font-size: 0.6rem !important;
   }
 
-  .explore-mobile-header-right .account-chip {
+  body[data-page="home"] .explore-mobile-header-right .account-chip {
     min-width: 62px !important;
     min-height: 32px !important;
     padding: 0 7px !important;
   }
 
-  .explore-mobile-header-right .account-chip-label {
+  body[data-page="home"] .explore-mobile-header-right .account-chip-label {
     font-size: 0.6rem !important;
   }
 
-  .explore-showcase {
-    padding: 16px 12px 18px !important;
-  }
-
-  .featured-grid,
-  .explore-feed-grid,
-  .trend-grid,
-  .movie-grid {
+  body[data-page="home"] #featuredMovies,
+  body[data-page="home"] #trendingGrid,
+  body[data-page="home"] #editorsRowGrid,
+  body[data-page="home"] #bollywoodRowGrid,
+  body[data-page="home"] #southRowGrid,
+  body[data-page="home"] #netflixRowGrid,
+  body[data-page="home"] #hotstarRowGrid,
+  body[data-page="home"] #primeRowGrid,
+  body[data-page="home"] #crunchyrollRowGrid,
+  body[data-page="home"] .explore-feed-grid,
+  body[data-page="home"] .trend-grid,
+  body[data-page="home"] .movie-grid {
     gap: 10px !important;
-  }
-}
-
-/* Hard mobile card fit: keep two complete posters visible inside the phone viewport. */
-@media (max-width: 768px) {
-  #featuredMovies,
-  .explore-feed-grid,
-  .trend-grid,
-  .movie-grid {
-    grid-template-columns: repeat(2, calc((100vw - 58px) / 2)) !important;
-    justify-content: start !important;
-    justify-items: stretch !important;
-    column-gap: 10px !important;
-    row-gap: 12px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow: hidden !important;
-  }
-
-  #featuredMovies > .featured-feed-card,
-  .explore-feed-grid > .featured-feed-card,
-  .trend-grid > .featured-feed-card,
-  .movie-grid > .movie-card {
-    width: calc((100vw - 58px) / 2) !important;
-    max-width: calc((100vw - 58px) / 2) !important;
-    min-width: 0 !important;
-  }
-
-  .explore-showcase,
-  .explore-row-section {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-  }
-}
-
-@media (max-width: 390px) {
-  #featuredMovies,
-  .explore-feed-grid,
-  .trend-grid,
-  .movie-grid {
-    grid-template-columns: repeat(2, calc((100vw - 52px) / 2)) !important;
-    column-gap: 8px !important;
-  }
-
-  #featuredMovies > .featured-feed-card,
-  .explore-feed-grid > .featured-feed-card,
-  .trend-grid > .featured-feed-card,
-  .movie-grid > .movie-card {
-    width: calc((100vw - 52px) / 2) !important;
-    max-width: calc((100vw - 52px) / 2) !important;
   }
 }
