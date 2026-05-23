@@ -33,12 +33,12 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=68-mobile-header-android-match" />
+    <link rel="stylesheet" href="styles.css?v=69-mobile-header-grid-fix" />
   </head>
   <body data-page="home">
     <header class="explore-header-mobile-shell" aria-label="MovieMate mobile header">
       <div class="explore-header-mobile">
-        <div class="explore-mobile-toprow">
+        <div class="explore-mobile-header-grid">
           <div class="explore-mobile-toprow-left">
             <a class="home-chip" href="/explore/#trending" aria-label="Go to explore">⌂</a>
             <a class="brand brand-compact explore-mobile-brand" href="/explore/">
@@ -46,6 +46,12 @@
               <span class="brand-text">MovieMate</span>
             </a>
             <span class="beta-chip explore-mobile-beta">explore</span>
+          </div>
+          <div class="explore-mobile-nav">
+            <a class="explore-nav-link active" href="#trending"><span>◉</span> Explore</a>
+            <a class="explore-nav-link" href="#schedule"><span>◌</span> Schedule</a>
+            <a class="explore-nav-link" href="#collections"><span>▣</span> Collections</a>
+            <a class="explore-nav-link" href="#browse"><span>⌕</span> Browse</a>
           </div>
           <div class="explore-mobile-toprow-right">
             <button class="icon-chip" data-top-search type="button" aria-label="Search">⌕</button>
@@ -68,12 +74,6 @@
               </div>
             </div>
           </div>
-        </div>
-        <div class="explore-mobile-nav">
-          <a class="explore-nav-link active" href="#trending"><span>◉</span> Explore</a>
-          <a class="explore-nav-link" href="#schedule"><span>◌</span> Schedule</a>
-          <a class="explore-nav-link" href="#collections"><span>▣</span> Collections</a>
-          <a class="explore-nav-link" href="#browse"><span>⌕</span> Browse</a>
         </div>
       </div>
     </header>
