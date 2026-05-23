@@ -169,6 +169,11 @@ select {
   display: none;
 }
 
+.explore-mobile-toprow-left,
+.explore-mobile-toprow-right {
+  display: contents;
+}
+
 .home-chip {
   width: 42px;
   height: 42px;
@@ -4209,59 +4214,70 @@ button.ghost-link {
   .explore-mobile-toprow {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
+    justify-content: space-between;
+    gap: 12px;
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
     padding: 0 0 2px;
     box-sizing: border-box;
   }
 
-  .explore-mobile-toprow::-webkit-scrollbar {
-    display: none;
-  }
-
-  .explore-mobile-toprow > * {
-    flex: 0 0 auto;
+  .explore-mobile-toprow-left,
+  .explore-mobile-toprow-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
   }
 
   .explore-mobile-brand {
     flex: 0 0 auto;
     min-width: max-content;
     gap: 8px;
-    margin-right: auto;
   }
 
   .explore-mobile-brand .brand-text {
-    font-size: 0.9rem;
+    font-size: 0.94rem;
     white-space: nowrap;
     letter-spacing: 0.04em;
   }
 
+  .explore-mobile-toprow-left {
+    flex: 0 1 auto;
+  }
+
+  .explore-mobile-toprow-right {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .explore-mobile-beta {
+    display: inline-flex;
+    padding: 5px 9px;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
   .explore-mobile-toprow .brand-mark {
-    width: 40px;
-    height: 28px;
+    width: 42px;
+    height: 29px;
   }
 
   .explore-mobile-toprow .home-chip,
   .explore-mobile-toprow .icon-chip,
   .explore-mobile-toprow .avatar-chip {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     flex: 0 0 auto;
     flex-shrink: 0;
   }
 
   .explore-mobile-owner {
-    min-height: 36px;
-    padding: 0 12px;
-    font-size: 0.78rem;
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 0.8rem;
     border-radius: 16px;
     flex: 0 0 auto;
     white-space: nowrap;
@@ -4273,59 +4289,49 @@ button.ghost-link {
   }
 
   .explore-mobile-toprow .account-chip {
-    min-height: 36px;
-    min-width: 84px;
-    padding: 0 14px;
+    min-height: 40px;
+    min-width: 94px;
+    padding: 0 16px;
     border-radius: 16px;
     flex: 0 0 auto;
     flex-shrink: 0;
   }
 
   .explore-mobile-toprow .account-chip-label {
-    font-size: 0.78rem;
+    font-size: 0.84rem;
     font-weight: 700;
   }
 
   .explore-mobile-nav {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     margin-top: 10px;
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
     padding: 0 0 2px;
     box-sizing: border-box;
   }
 
-  .explore-mobile-nav::-webkit-scrollbar {
-    display: none;
-  }
-
   .explore-mobile-nav .explore-nav-link {
-    min-height: 40px;
-    min-width: 108px;
+    width: 100%;
+    min-height: 42px;
+    min-width: 0;
     padding: 0 12px;
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.07);
     background: rgba(255, 255, 255, 0.03);
     box-shadow: none;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     gap: 6px;
     white-space: nowrap;
-    flex: 0 0 auto;
-    flex-shrink: 0;
     justify-content: center;
     color: rgba(255, 255, 255, 0.78);
   }
 
   .explore-mobile-nav .explore-nav-link span {
-    font-size: 0.62rem;
+    font-size: 0.64rem;
   }
 
   .explore-mobile-nav .explore-nav-link.active,
@@ -4671,48 +4677,48 @@ button.ghost-link {
   }
 
   .explore-mobile-toprow {
-    gap: 8px;
+    gap: 10px;
   }
 
   .explore-mobile-brand .brand-text {
-    font-size: 0.82rem;
+    font-size: 0.86rem;
   }
 
   .explore-mobile-toprow .brand-mark {
-    width: 36px;
-    height: 26px;
+    width: 38px;
+    height: 27px;
   }
 
   .explore-mobile-toprow .home-chip,
   .explore-mobile-toprow .icon-chip,
   .explore-mobile-toprow .avatar-chip {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
   }
 
   .explore-mobile-owner {
-    min-height: 34px;
-    padding: 0 10px;
-    font-size: 0.72rem;
+    min-height: 36px;
+    padding: 0 11px;
+    font-size: 0.74rem;
   }
 
   .explore-mobile-toprow .account-chip {
-    min-height: 34px;
-    min-width: 78px;
+    min-height: 36px;
+    min-width: 82px;
     padding: 0 12px;
   }
 
   .explore-mobile-toprow .account-chip-label {
-    font-size: 0.72rem;
+    font-size: 0.74rem;
   }
 
-  .explore-mobile-nav {
-    gap: 8px;
+  .explore-mobile-beta {
+    font-size: 0.62rem;
+    padding: 4px 8px;
   }
 
   .explore-mobile-nav .explore-nav-link {
     min-height: 38px;
-    min-width: 96px;
     padding: 0 10px;
     font-size: 0.72rem;
   }
@@ -4765,5 +4771,42 @@ button.ghost-link {
 
   .scroll-controls {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+  }
+}
+
+@media (max-width: 380px) {
+  .explore-mobile-toprow {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .explore-mobile-toprow::-webkit-scrollbar {
+    display: none;
+  }
+
+  .explore-mobile-toprow-left,
+  .explore-mobile-toprow-right {
+    flex: 0 0 auto;
+  }
+
+  .explore-mobile-nav {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .explore-mobile-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .explore-mobile-nav .explore-nav-link {
+    width: auto;
+    min-width: 96px;
+    flex: 0 0 auto;
   }
 }
