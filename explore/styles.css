@@ -4974,7 +4974,7 @@ button.ghost-link {
   }
 
   body[data-page="home"] .explore-mobile-header-left {
-    flex: 0 1 auto !important;
+    flex: 1 1 auto !important;
     overflow: hidden !important;
   }
 
@@ -5015,10 +5015,10 @@ button.ghost-link {
   body[data-page="home"] .explore-mobile-header-bar .icon-chip,
   body[data-page="home"] .explore-mobile-header-bar .avatar-chip,
   body[data-page="home"] .explore-mobile-header-bar .explore-mobile-home {
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px !important;
-    flex: 0 0 34px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    flex: 0 0 32px !important;
     font-size: 0.78rem !important;
   }
 
@@ -5373,7 +5373,7 @@ button.ghost-link {
   body[data-page="home"] .explore-mobile-brand {
     display: inline-flex !important;
     align-items: center !important;
-    flex: 0 1 auto !important;
+    flex: 1 1 auto !important;
     gap: 5px !important;
     min-width: 0 !important;
     overflow: hidden !important;
@@ -6305,10 +6305,10 @@ button.ghost-link {
 
   body[data-page="home"] .explore-mobile-brand .brand-text {
     display: inline-block !important;
-    max-width: 62px !important;
+    max-width: none !important;
     overflow: hidden !important;
     color: #fff !important;
-    font-size: 0.7rem !important;
+    font-size: 0.68rem !important;
     font-weight: 800 !important;
     letter-spacing: 0.035em !important;
     line-height: 1 !important;
@@ -6317,9 +6317,9 @@ button.ghost-link {
   }
 
   body[data-page="home"] .explore-mobile-owner {
-    min-height: 34px !important;
-    max-width: 78px !important;
-    padding: 0 9px !important;
+    min-height: 32px !important;
+    max-width: 66px !important;
+    padding: 0 7px !important;
     border-radius: 16px !important;
     font-size: 0.6rem !important;
     font-weight: 700 !important;
@@ -6329,9 +6329,9 @@ button.ghost-link {
   }
 
   body[data-page="home"] .explore-mobile-header-right .account-chip {
-    min-width: 64px !important;
-    min-height: 34px !important;
-    padding: 0 10px !important;
+    min-width: 58px !important;
+    min-height: 32px !important;
+    padding: 0 8px !important;
     border-radius: 17px !important;
   }
 
@@ -6357,20 +6357,20 @@ button.ghost-link {
   }
 
   body[data-page="home"] .explore-mobile-brand .brand-text {
-    max-width: 56px !important;
-    font-size: 0.64rem !important;
+    max-width: none !important;
+    font-size: 0.62rem !important;
   }
 
   body[data-page="home"] .explore-mobile-owner {
-    max-width: 70px !important;
-    padding-left: 7px !important;
-    padding-right: 7px !important;
-    font-size: 0.56rem !important;
+    max-width: 60px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    font-size: 0.54rem !important;
   }
 
   body[data-page="home"] .explore-mobile-header-right .account-chip {
-    min-width: 60px !important;
-    padding-left: 8px !important;
-    padding-right: 8px !important;
+    min-width: 56px !important;
+    padding-left: 7px !important;
+    padding-right: 7px !important;
   }
 }
