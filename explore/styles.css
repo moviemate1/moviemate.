@@ -4836,3 +4836,181 @@ button.ghost-link {
     font-size: 0.66rem;
   }
 }
+
+/* Final mobile header reset: keep desktop untouched, force the mobile bar to fill the viewport. */
+@media (max-width: 768px) {
+  html,
+  body {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  body[data-page="home"] > .explore-header-mobile-shell {
+    display: block !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 0 16px !important;
+    padding: 12px 8px !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  body[data-page="home"] > .explore-header-mobile-shell > .explore-mobile-header-bar {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 10px 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 22px !important;
+    background: rgba(6, 6, 8, 0.96) !important;
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28) !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-left,
+  body[data-page="home"] .explore-mobile-header-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-left {
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right {
+    flex: 0 0 auto !important;
+    margin-left: auto !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-bar .home-chip,
+  body[data-page="home"] .explore-mobile-header-bar .icon-chip,
+  body[data-page="home"] .explore-mobile-header-bar .avatar-chip,
+  body[data-page="home"] .explore-mobile-header-bar .explore-mobile-home {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    flex: 0 0 36px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-brand {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="home"] .explore-mobile-brand .brand-mark {
+    width: 42px !important;
+    height: 29px !important;
+    flex: 0 0 auto !important;
+  }
+
+  body[data-page="home"] .explore-mobile-brand .brand-text {
+    display: block !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 0.88rem !important;
+    letter-spacing: 0.03em !important;
+  }
+
+  body[data-page="home"] .explore-mobile-owner {
+    min-height: 36px !important;
+    padding: 0 10px !important;
+    border-radius: 16px !important;
+    font-size: 0.68rem !important;
+    white-space: nowrap !important;
+    flex: 0 0 auto !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-chip {
+    min-width: 74px !important;
+    min-height: 36px !important;
+    padding: 0 10px !important;
+    border-radius: 16px !important;
+    flex: 0 0 auto !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-chip-label {
+    display: block !important;
+    font-size: 0.7rem !important;
+    line-height: 1 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  body[data-page="home"] > .explore-header-mobile-shell {
+    padding: 10px 6px !important;
+  }
+
+  body[data-page="home"] > .explore-header-mobile-shell > .explore-mobile-header-bar {
+    padding: 9px 10px !important;
+    border-radius: 20px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-row,
+  body[data-page="home"] .explore-mobile-header-left,
+  body[data-page="home"] .explore-mobile-header-right {
+    gap: 6px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-bar .home-chip,
+  body[data-page="home"] .explore-mobile-header-bar .icon-chip,
+  body[data-page="home"] .explore-mobile-header-bar .avatar-chip,
+  body[data-page="home"] .explore-mobile-header-bar .explore-mobile-home {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    flex-basis: 34px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-brand .brand-mark {
+    width: 38px !important;
+    height: 27px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-brand .brand-text {
+    font-size: 0.78rem !important;
+  }
+
+  body[data-page="home"] .explore-mobile-owner {
+    min-height: 34px !important;
+    padding: 0 8px !important;
+    font-size: 0.62rem !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-chip {
+    min-width: 66px !important;
+    min-height: 34px !important;
+    padding: 0 8px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-chip-label {
+    font-size: 0.64rem !important;
+  }
+}
