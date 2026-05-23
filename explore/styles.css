@@ -4909,7 +4909,7 @@ button.ghost-link {
     width: 100vw !important;
     max-width: 100vw !important;
     margin: 0 !important;
-    padding: 10px 8px 96px !important;
+    padding: 24px 8px 96px !important;
     overflow: hidden !important;
   }
 
@@ -4947,7 +4947,7 @@ button.ghost-link {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-    padding: 10px !important;
+    padding: 9px !important;
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
     border-radius: 22px !important;
     background: rgba(6, 6, 8, 0.96) !important;
@@ -4960,7 +4960,7 @@ button.ghost-link {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    gap: 8px !important;
+    gap: 5px !important;
     width: 100% !important;
     min-width: 0 !important;
   }
@@ -4970,7 +4970,7 @@ button.ghost-link {
     display: flex !important;
     align-items: center !important;
     min-width: 0 !important;
-    gap: 7px !important;
+    gap: 5px !important;
   }
 
   body[data-page="home"] .explore-mobile-header-left {
@@ -4986,52 +4986,65 @@ button.ghost-link {
 
   body[data-page="home"] .explore-mobile-brand {
     display: inline-flex !important;
+    align-items: center !important;
     flex: 0 1 auto !important;
     width: auto !important;
     min-width: 0 !important;
     overflow: hidden !important;
+    gap: 5px !important;
   }
 
   body[data-page="home"] .explore-mobile-brand .brand-text {
-    display: none !important;
+    display: inline-block !important;
+    max-width: 54px !important;
+    overflow: hidden !important;
+    color: #fff !important;
+    font-size: 0.68rem !important;
+    line-height: 1 !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
   }
 
   body[data-page="home"] .explore-mobile-brand .brand-mark {
-    width: 42px !important;
-    height: 30px !important;
+    width: 36px !important;
+    height: 26px !important;
   }
 
   body[data-page="home"] .explore-mobile-header-bar .home-chip,
   body[data-page="home"] .explore-mobile-header-bar .icon-chip,
   body[data-page="home"] .explore-mobile-header-bar .avatar-chip,
   body[data-page="home"] .explore-mobile-header-bar .explore-mobile-home {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    flex: 0 0 36px !important;
-    font-size: 0.82rem !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    flex: 0 0 34px !important;
+    font-size: 0.78rem !important;
   }
 
   body[data-page="home"] .explore-mobile-owner {
-    min-height: 36px !important;
-    padding: 0 10px !important;
+    min-height: 32px !important;
+    max-width: 66px !important;
+    padding: 0 7px !important;
     border-radius: 16px !important;
-    font-size: 0.68rem !important;
+    font-size: 0.58rem !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
     white-space: nowrap !important;
     flex: 0 0 auto !important;
   }
 
   body[data-page="home"] .explore-mobile-header-right .account-chip {
-    min-width: 74px !important;
-    min-height: 36px !important;
-    padding: 0 10px !important;
+    min-width: 58px !important;
+    min-height: 32px !important;
+    padding: 0 7px !important;
     border-radius: 16px !important;
     flex: 0 0 auto !important;
   }
 
   body[data-page="home"] .explore-mobile-header-right .account-chip-label {
     display: block !important;
-    font-size: 0.68rem !important;
+    font-size: 0.58rem !important;
     line-height: 1 !important;
   }
 
@@ -5155,12 +5168,17 @@ button.ghost-link {
     font-size: 0.7rem !important;
     line-height: 1.32 !important;
   }
+
+  body[data-page="home"] .scroll-controls {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 108px) !important;
+  }
 }
 
 @media (max-width: 390px) {
   body[data-page="home"] .page-shell {
     padding-left: 6px !important;
     padding-right: 6px !important;
+    padding-top: 22px !important;
   }
 
   body[data-page="home"] .explore-showcase,
@@ -5182,34 +5200,40 @@ button.ghost-link {
   }
 
   body[data-page="home"] .explore-mobile-brand .brand-mark {
-    width: 36px !important;
-    height: 26px !important;
+    width: 32px !important;
+    height: 24px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-brand .brand-text {
+    max-width: 50px !important;
+    font-size: 0.62rem !important;
   }
 
   body[data-page="home"] .explore-mobile-header-bar .home-chip,
   body[data-page="home"] .explore-mobile-header-bar .icon-chip,
   body[data-page="home"] .explore-mobile-header-bar .avatar-chip,
   body[data-page="home"] .explore-mobile-header-bar .explore-mobile-home {
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    flex-basis: 32px !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    flex-basis: 30px !important;
   }
 
   body[data-page="home"] .explore-mobile-owner {
-    min-height: 32px !important;
-    padding: 0 7px !important;
-    font-size: 0.6rem !important;
+    min-height: 30px !important;
+    max-width: 60px !important;
+    padding: 0 5px !important;
+    font-size: 0.52rem !important;
   }
 
   body[data-page="home"] .explore-mobile-header-right .account-chip {
-    min-width: 62px !important;
-    min-height: 32px !important;
-    padding: 0 7px !important;
+    min-width: 52px !important;
+    min-height: 30px !important;
+    padding: 0 5px !important;
   }
 
   body[data-page="home"] .explore-mobile-header-right .account-chip-label {
-    font-size: 0.6rem !important;
+    font-size: 0.52rem !important;
   }
 
   body[data-page="home"] #featuredMovies,
