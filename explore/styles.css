@@ -116,13 +116,10 @@ select {
   display: none;
 }
 
-.explore-header-mobile {
-  display: none;
-}
-
-.explore-mobile-topbar,
-.explore-mobile-brand-row,
-.explore-mobile-actions {
+.explore-mobile-header-bar,
+.explore-mobile-header-row,
+.explore-mobile-header-left,
+.explore-mobile-header-right {
   display: none;
 }
 
@@ -4196,17 +4193,17 @@ button.ghost-link {
     max-width: 100vw;
     margin-left: calc(50% - 50vw);
     margin-right: calc(50% - 50vw);
-    padding: 12px max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px));
+    padding: 12px 6px 0;
     box-sizing: border-box;
     overflow: visible;
   }
 
-  .explore-header-mobile {
+  .explore-mobile-header-bar {
     display: block;
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    margin: 0 0 18px;
+    margin: 0 auto 18px;
     padding: 14px 14px 13px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 22px;
@@ -4218,7 +4215,7 @@ button.ghost-link {
     max-inline-size: none;
   }
 
-  .explore-mobile-topbar {
+  .explore-mobile-header-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -4229,20 +4226,20 @@ button.ghost-link {
     box-sizing: border-box;
   }
 
-  .explore-mobile-brand-row,
-  .explore-mobile-actions {
+  .explore-mobile-header-left,
+  .explore-mobile-header-right {
     display: flex;
     align-items: center;
     gap: 10px;
     min-width: 0;
   }
 
-  .explore-mobile-brand-row {
+  .explore-mobile-header-left {
     flex: 1 1 auto;
     justify-content: flex-start;
   }
 
-  .explore-mobile-actions {
+  .explore-mobile-header-right {
     flex: 0 0 auto;
     justify-content: flex-end;
   }
@@ -4268,8 +4265,8 @@ button.ghost-link {
     height: 33px;
   }
 
-  .explore-mobile-actions .icon-chip,
-  .explore-mobile-actions .avatar-chip {
+  .explore-mobile-header-right .icon-chip,
+  .explore-mobile-header-right .avatar-chip {
     width: 41px;
     height: 41px;
     flex: 0 0 auto;
@@ -4285,12 +4282,12 @@ button.ghost-link {
     white-space: nowrap;
   }
 
-  .explore-mobile-actions .account-menu-wrap {
+  .explore-mobile-header-right .account-menu-wrap {
     flex: 0 0 auto;
     flex-shrink: 0;
   }
 
-  .explore-mobile-actions .account-chip {
+  .explore-mobile-header-right .account-chip {
     min-height: 41px;
     min-width: 96px;
     padding: 0 16px;
@@ -4299,43 +4296,10 @@ button.ghost-link {
     flex-shrink: 0;
   }
 
-  .explore-mobile-actions .account-chip-label {
+  .explore-mobile-header-right .account-chip-label {
     display: block;
     font-size: 0.84rem;
     font-weight: 700;
-  }
-
-  .explore-mobile-nav {
-    display: none;
-  }
-
-  .explore-mobile-nav .explore-nav-link {
-    width: 100%;
-    min-height: 44px;
-    min-width: 0;
-    padding: 0 10px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.03);
-    box-shadow: none;
-    font-size: 0.76rem;
-    font-weight: 600;
-    gap: 6px;
-    white-space: nowrap;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0.78);
-  }
-
-  .explore-mobile-nav .explore-nav-link span {
-    font-size: 0.58rem;
-  }
-
-  .explore-mobile-nav .explore-nav-link.active,
-  .explore-mobile-nav .explore-nav-link:hover {
-    border-color: rgba(126, 70, 255, 0.34);
-    background: rgba(126, 70, 255, 0.16);
-    box-shadow: 0 0 0 1px rgba(126, 70, 255, 0.18), 0 0 18px rgba(126, 70, 255, 0.18);
-    color: #fff;
   }
 
   .trend-grid {
@@ -4672,17 +4636,13 @@ button.ghost-link {
   }
 
   .explore-header-mobile-shell {
-    padding: 10px max(6px, env(safe-area-inset-right, 0px)) 0 max(6px, env(safe-area-inset-left, 0px));
+    padding: 10px 4px 0;
   }
 
-  .explore-header-mobile {
+  .explore-mobile-header-bar {
     margin: 0 0 16px;
     padding: 10px 12px;
     border-radius: 20px;
-  }
-
-  .explore-mobile-header-grid {
-    row-gap: 10px;
   }
 
   .explore-mobile-brand .brand-text {
@@ -4694,8 +4654,8 @@ button.ghost-link {
     height: 30px;
   }
 
-  .explore-mobile-actions .icon-chip,
-  .explore-mobile-actions .avatar-chip,
+  .explore-mobile-header-right .icon-chip,
+  .explore-mobile-header-right .avatar-chip,
   .explore-mobile-home {
     width: 38px;
     height: 38px;
@@ -4707,13 +4667,13 @@ button.ghost-link {
     font-size: 0.73rem;
   }
 
-  .explore-mobile-actions .account-chip {
+  .explore-mobile-header-right .account-chip {
     min-height: 38px;
     min-width: 82px;
     padding: 0 12px;
   }
 
-  .explore-mobile-actions .account-chip-label {
+  .explore-mobile-header-right .account-chip-label {
     font-size: 0.74rem;
   }
 
@@ -4779,7 +4739,7 @@ button.ghost-link {
 }
 
 @media (max-width: 380px) {
-  .explore-mobile-topbar {
+  .explore-mobile-header-row {
     gap: 8px;
     align-items: flex-start;
     overflow-x: auto;
@@ -4788,16 +4748,16 @@ button.ghost-link {
     -webkit-overflow-scrolling: touch;
   }
 
-  .explore-mobile-topbar::-webkit-scrollbar {
+  .explore-mobile-header-row::-webkit-scrollbar {
     display: none;
   }
 
-  .explore-mobile-brand-row,
-  .explore-mobile-actions {
+  .explore-mobile-header-left,
+  .explore-mobile-header-right {
     min-width: max-content;
   }
 
-  .explore-mobile-actions {
+  .explore-mobile-header-right {
     gap: 6px;
   }
 
@@ -4806,12 +4766,12 @@ button.ghost-link {
     font-size: 0.68rem;
   }
 
-  .explore-mobile-actions .account-chip {
+  .explore-mobile-header-right .account-chip {
     min-width: 72px;
     padding: 0 10px;
   }
 
-  .explore-mobile-actions .account-chip-label {
+  .explore-mobile-header-right .account-chip-label {
     font-size: 0.7rem;
   }
 }
