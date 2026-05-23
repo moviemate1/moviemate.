@@ -4214,13 +4214,10 @@ button.ghost-link {
 
   .explore-mobile-header-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "left right"
-      "nav nav";
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "left nav right";
     align-items: center;
     column-gap: 12px;
-    row-gap: 10px;
     width: 100%;
     max-width: 100%;
     min-width: 0;
@@ -4237,7 +4234,7 @@ button.ghost-link {
 
   .explore-mobile-toprow-left {
     grid-area: left;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
   }
 
   .explore-mobile-toprow-right {
@@ -4312,8 +4309,12 @@ button.ghost-link {
   .explore-mobile-nav {
     grid-area: nav;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(2, max-content);
+    grid-template-rows: repeat(2, minmax(0, auto));
+    justify-content: center;
+    align-content: center;
+    column-gap: 18px;
+    row-gap: 8px;
     width: 100%;
     max-width: 100%;
     min-width: 0;
@@ -4321,30 +4322,32 @@ button.ghost-link {
   }
 
   .explore-mobile-nav .explore-nav-link {
-    width: 100%;
-    min-height: 42px;
+    width: auto;
+    min-height: 0;
     min-width: 0;
-    padding: 0 12px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    background: rgba(255, 255, 255, 0.03);
+    padding: 0 0 4px;
+    border-radius: 0;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
     box-shadow: none;
-    font-size: 0.8rem;
-    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    gap: 5px;
     white-space: nowrap;
-    justify-content: center;
+    justify-content: flex-start;
     color: rgba(255, 255, 255, 0.78);
   }
 
   .explore-mobile-nav .explore-nav-link span {
-    font-size: 0.64rem;
+    font-size: 0.52rem;
   }
 
   .explore-mobile-nav .explore-nav-link.active,
   .explore-mobile-nav .explore-nav-link:hover {
-    border-color: rgba(126, 70, 255, 0.28);
-    background: rgba(126, 70, 255, 0.12);
-    box-shadow: inset 0 -2px 0 #7e46ff;
+    border-bottom-color: #7e46ff;
+    background: transparent;
+    box-shadow: none;
     color: #fff;
   }
 
@@ -4684,7 +4687,6 @@ button.ghost-link {
 
   .explore-mobile-header-grid {
     column-gap: 10px;
-    row-gap: 9px;
   }
 
   .explore-mobile-brand .brand-text {
@@ -4725,13 +4727,13 @@ button.ghost-link {
   }
 
   .explore-mobile-nav .explore-nav-link {
-    min-height: 38px;
-    padding: 0 10px;
-    font-size: 0.72rem;
+    min-height: 0;
+    padding: 0 0 4px;
+    font-size: 0.69rem;
   }
 
   .explore-mobile-nav .explore-nav-link span {
-    font-size: 0.58rem;
+    font-size: 0.5rem;
   }
 
   .install-banner {
@@ -4788,33 +4790,25 @@ button.ghost-link {
   }
 
   .explore-mobile-header-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "left"
-      "right"
-      "nav";
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "left nav right";
+    column-gap: 8px;
   }
 
-  .explore-mobile-toprow-left,
-  .explore-mobile-toprow-right {
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .explore-mobile-toprow-left::-webkit-scrollbar,
-  .explore-mobile-toprow-right::-webkit-scrollbar {
-    display: none;
+  .explore-mobile-toprow-left {
+    min-width: max-content;
   }
 
   .explore-mobile-toprow-right {
-    justify-self: stretch;
+    min-width: max-content;
   }
 
   .explore-mobile-nav {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    justify-content: center;
+    column-gap: 12px;
+    row-gap: 7px;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
@@ -4827,7 +4821,7 @@ button.ghost-link {
 
   .explore-mobile-nav .explore-nav-link {
     width: auto;
-    min-width: 96px;
+    min-width: 0;
     flex: 0 0 auto;
   }
 }
