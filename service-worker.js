@@ -1,4 +1,4 @@
-const CACHE_NAME = "moviemate-shell-v4";
+const CACHE_NAME = "moviemate-shell-v3";
 const SHELL_ASSETS = [
   "/explore/",
   "/explore/index.html",
@@ -39,15 +39,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const shouldRefreshFromNetwork =
-    event.request.destination === "style" ||
-    event.request.destination === "script" ||
-    event.request.destination === "worker" ||
-    requestUrl.pathname.endsWith(".css") ||
-    requestUrl.pathname.endsWith(".js") ||
-    requestUrl.pathname.endsWith(".html");
+  const cacheSafeDestination = ["style", "script", "worker", "document"].includes(event.request.destination);
+  const cacheSafeFile = /\.(css|js|html)$/i.test(requestUrl.pathname);
 
-  if (shouldRefreshFromNetwork) {
+  if (cacheSafeDestination || cacheSafeFile) {
     event.respondWith(
       fetch(event.request)
         .then((networkResponse) => {
