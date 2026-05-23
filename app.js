@@ -5753,6 +5753,12 @@ async function renderDetailsPage() {
           </div>
         `
       : '<strong class="detail-platform-empty">Platform not added</strong>';
+    const genreTagsMarkup = String(title.genre || "")
+      .split(",")
+      .map((genre) => genre.trim())
+      .filter(Boolean)
+      .map((genre) => `<span>${escapeHtml(genre)}</span>`)
+      .join("");
     const currentWatchStatus = getTitleWatchStatus(title.id);
     const primaryWatchButton = getPrimaryWatchButtonState(title, currentWatchStatus);
     const memberReady = isSignedIn();
@@ -5787,15 +5793,15 @@ async function renderDetailsPage() {
             <h1>${escapeHtml(title.title)}</h1>
             <div class="status-row">${badges}</div>
             <div class="detail-facts-grid">
-              <div class="detail-fact">
+              <div class="detail-fact detail-fact-director">
                 <span>${escapeHtml(leadCreditLabel)}</span>
                 <strong>${escapeHtml(leadDirector)}</strong>
               </div>
-              <div class="detail-fact">
+              <div class="detail-fact detail-fact-genre">
                 <span>Genre</span>
                 <strong>${escapeHtml(title.genre)}</strong>
               </div>
-              <div class="detail-fact">
+              <div class="detail-fact detail-fact-language">
                 <span>Language</span>
                 <strong>${escapeHtml(primaryLanguage)}</strong>
               </div>
@@ -5803,7 +5809,7 @@ async function renderDetailsPage() {
                 <span>Platform</span>
                 ${primaryPlatformMarkup}
               </div>
-              <div class="detail-fact">
+              <div class="detail-fact detail-fact-release">
                 <span>Release</span>
                 <strong>${escapeHtml(formatReleaseDate(title.releaseDate))}</strong>
               </div>
@@ -5822,6 +5828,11 @@ async function renderDetailsPage() {
             </button>
             <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>${saved ? "Saved to Collection" : "Add to Collection"}</button>
             ${memberReady ? `<p class="hero-interest-helper detail-cta-helper">${escapeHtml(primaryWatchButton.helper)}</p>` : '<p class="hero-interest-helper detail-cta-helper">Members only can save, track interest, and update watch status.</p>'}
+          </div>
+          <div class="detail-mobile-overview">
+            <h2>Overview</h2>
+            <p>${escapeHtml(title.description)}</p>
+            ${genreTagsMarkup ? `<div class="detail-mobile-tags">${genreTagsMarkup}</div>` : ""}
           </div>
         </div>
       </div>
