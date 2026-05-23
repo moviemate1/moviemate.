@@ -120,6 +120,12 @@ select {
   display: none;
 }
 
+.explore-mobile-topbar,
+.explore-mobile-brand-row,
+.explore-mobile-actions {
+  display: none;
+}
+
 .explore-topbar {
   display: block;
   padding: 0;
@@ -4212,44 +4218,31 @@ button.ghost-link {
     max-inline-size: none;
   }
 
-  .explore-mobile-header-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "top"
-      "nav";
-    align-items: stretch;
-    row-gap: 12px;
+  .explore-mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     width: 100%;
     max-width: 100%;
     min-width: 0;
     box-sizing: border-box;
   }
 
-  .explore-mobile-toprow {
-    grid-area: top;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-width: 0;
-    width: 100%;
-  }
-
-  .explore-mobile-toprow-left,
-  .explore-mobile-toprow-right {
+  .explore-mobile-brand-row,
+  .explore-mobile-actions {
     display: flex;
     align-items: center;
     gap: 10px;
     min-width: 0;
   }
 
-  .explore-mobile-toprow-left {
+  .explore-mobile-brand-row {
     flex: 1 1 auto;
     justify-content: flex-start;
   }
 
-  .explore-mobile-toprow-right {
+  .explore-mobile-actions {
     flex: 0 0 auto;
     justify-content: flex-end;
   }
@@ -4270,13 +4263,13 @@ button.ghost-link {
     letter-spacing: 0.04em;
   }
 
-  .explore-mobile-header-grid .brand-mark {
+  .explore-mobile-brand .brand-mark {
     width: 48px;
     height: 33px;
   }
 
-  .explore-mobile-toprow .icon-chip,
-  .explore-mobile-toprow .avatar-chip {
+  .explore-mobile-actions .icon-chip,
+  .explore-mobile-actions .avatar-chip {
     width: 41px;
     height: 41px;
     flex: 0 0 auto;
@@ -4284,26 +4277,32 @@ button.ghost-link {
   }
 
   .explore-mobile-owner {
-    display: none;
-  }
-
-  .explore-mobile-toprow .account-menu-wrap {
-    flex: 0 0 auto;
-    flex-shrink: 0;
-  }
-
-  .explore-mobile-toprow .account-chip {
     min-height: 41px;
-    min-width: 41px;
-    width: 41px;
-    padding: 0;
-    border-radius: 50%;
+    padding: 0 14px;
+    font-size: 0.8rem;
+    border-radius: 16px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .explore-mobile-actions .account-menu-wrap {
     flex: 0 0 auto;
     flex-shrink: 0;
   }
 
-  .explore-mobile-toprow .account-chip-label {
-    display: none;
+  .explore-mobile-actions .account-chip {
+    min-height: 41px;
+    min-width: 96px;
+    padding: 0 16px;
+    border-radius: 16px;
+    flex: 0 0 auto;
+    flex-shrink: 0;
+  }
+
+  .explore-mobile-actions .account-chip-label {
+    display: block;
+    font-size: 0.84rem;
+    font-weight: 700;
   }
 
   .explore-mobile-nav {
@@ -4690,22 +4689,32 @@ button.ghost-link {
     font-size: 0.96rem;
   }
 
-  .explore-mobile-header-grid .brand-mark {
+  .explore-mobile-brand .brand-mark {
     width: 44px;
     height: 30px;
   }
 
-  .explore-mobile-toprow .icon-chip,
-  .explore-mobile-toprow .avatar-chip,
-  .explore-mobile-toprow .home-chip {
+  .explore-mobile-actions .icon-chip,
+  .explore-mobile-actions .avatar-chip,
+  .explore-mobile-home {
     width: 38px;
     height: 38px;
   }
 
-  .explore-mobile-toprow .account-chip {
+  .explore-mobile-owner {
     min-height: 38px;
-    min-width: 38px;
-    width: 38px;
+    padding: 0 11px;
+    font-size: 0.73rem;
+  }
+
+  .explore-mobile-actions .account-chip {
+    min-height: 38px;
+    min-width: 82px;
+    padding: 0 12px;
+  }
+
+  .explore-mobile-actions .account-chip-label {
+    font-size: 0.74rem;
   }
 
   .mobile-dock {
@@ -4770,15 +4779,7 @@ button.ghost-link {
 }
 
 @media (max-width: 380px) {
-  .explore-mobile-header-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "top"
-      "nav";
-    row-gap: 8px;
-  }
-
-  .explore-mobile-toprow {
+  .explore-mobile-topbar {
     gap: 8px;
     align-items: flex-start;
     overflow-x: auto;
@@ -4787,21 +4788,30 @@ button.ghost-link {
     -webkit-overflow-scrolling: touch;
   }
 
-  .explore-mobile-toprow::-webkit-scrollbar {
+  .explore-mobile-topbar::-webkit-scrollbar {
     display: none;
   }
 
-  .explore-mobile-toprow-left,
-  .explore-mobile-toprow-right {
+  .explore-mobile-brand-row,
+  .explore-mobile-actions {
     min-width: max-content;
   }
 
-  .explore-mobile-toprow-right {
+  .explore-mobile-actions {
     gap: 6px;
   }
 
-  .explore-mobile-header-grid .account-chip {
-    min-width: 36px;
-    width: 36px;
+  .explore-mobile-owner {
+    padding: 0 8px;
+    font-size: 0.68rem;
+  }
+
+  .explore-mobile-actions .account-chip {
+    min-width: 72px;
+    padding: 0 10px;
+  }
+
+  .explore-mobile-actions .account-chip-label {
+    font-size: 0.7rem;
   }
 }
