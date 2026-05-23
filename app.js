@@ -2122,6 +2122,7 @@ function getUpcomingInterestState(status) {
       label: "Interested",
       nextStatus: "clear",
       className: "watch-status-btn-interested active",
+      icon: "eye",
       helper: "Tap again to remove this from interested."
     };
   }
@@ -2130,6 +2131,7 @@ function getUpcomingInterestState(status) {
     label: "Mark as Interested",
     nextStatus: "interested",
     className: "watch-status-btn-interested",
+    icon: "eye",
     helper: "Members can mark unreleased titles as interested."
   };
 }
@@ -2140,6 +2142,7 @@ function getWatchCycleState(status) {
       label: "Interested",
       nextStatus: "watching",
       className: "watch-status-btn-interested active",
+      icon: "eye",
       helper: "Tap again to move this to Watching."
     };
   }
@@ -2149,6 +2152,7 @@ function getWatchCycleState(status) {
       label: "Watching...",
       nextStatus: "watched",
       className: "watch-status-btn-watching active",
+      icon: "eye",
       helper: "Tap again to mark this as Watched."
     };
   }
@@ -2158,6 +2162,7 @@ function getWatchCycleState(status) {
       label: "Watched",
       nextStatus: "clear",
       className: "watch-status-btn-watched active",
+      icon: "check",
       helper: "Tap again to clear this watch status."
     };
   }
@@ -2166,12 +2171,53 @@ function getWatchCycleState(status) {
     label: "Mark as Interested",
     nextStatus: "interested",
     className: "watch-status-btn-interested",
+    icon: "eye",
     helper: "Tap again after that to move through Watching and Watched."
   };
 }
 
 function getPrimaryWatchButtonState(title, status) {
   return isUpcomingTitle(title) ? getUpcomingInterestState(status) : getWatchCycleState(status);
+}
+
+function buttonIconTemplate(icon) {
+  if (icon === "check") {
+    return `
+      <span class="button-icon button-icon-check" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M5 12.5l4.2 4.2L19 7"></path>
+        </svg>
+      </span>
+    `;
+  }
+
+  if (icon === "bookmark") {
+    return `
+      <span class="button-icon button-icon-bookmark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M7 4h10a1 1 0 0 1 1 1v15l-6-3.4L6 20V5a1 1 0 0 1 1-1Z"></path>
+        </svg>
+      </span>
+    `;
+  }
+
+  return `
+    <span class="button-icon button-icon-eye" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+        <circle cx="12" cy="12" r="2.8"></circle>
+      </svg>
+    </span>
+  `;
+}
+
+function watchStatusButtonContent(state) {
+  return `${buttonIconTemplate(state.icon || "eye")}<span class="button-label">${escapeHtml(state.label)}</span>`;
+}
+
+function saveTitleButtonContent(saved) {
+  const label = saved ? "Added to Collection" : "Add to Collection";
+  return `${buttonIconTemplate("bookmark")}<span class="button-label">${label}</span>`;
 }
 
 function getNextPrimaryWatchStatus(titleId) {
@@ -2528,7 +2574,7 @@ function trailerPanelTemplate(title) {
       <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
       <p class="hero-interest-count">${escapeHtml(interestedCount)} interested</p>
       <button class="watch-status-btn hero-interest-action ${interestState.className}" type="button" data-watch-status="${interestState.nextStatus}" data-id="${title.id}" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>
-        ${escapeHtml(interestState.label)}
+        ${watchStatusButtonContent(interestState)}
       </button>
       <p class="hero-interest-helper">${memberReady ? escapeHtml(interestState.helper) : "Sign in to mark titles as interested."}</p>
     </aside>
@@ -2868,7 +2914,7 @@ function updateDetailActionUI(titleId) {
     button.className = isHeroButton
       ? `watch-status-btn hero-interest-action ${primaryWatchButton.className}`
       : `watch-status-btn ${primaryWatchButton.className}`;
-    button.textContent = primaryWatchButton.label;
+    button.innerHTML = watchStatusButtonContent(primaryWatchButton);
     button.dataset.watchStatus = primaryWatchButton.nextStatus;
     setButtonDisabledState(button, !memberReady);
   });
@@ -2890,7 +2936,7 @@ function updateDetailActionUI(titleId) {
   const saveButton = document.querySelector(`.detail-save-btn[data-save-id="${title.id}"]`);
 
   if (saveButton) {
-    saveButton.textContent = saved ? "Saved to Collection" : "Add to Collection";
+    saveButton.innerHTML = saveTitleButtonContent(saved);
     saveButton.classList.toggle("active", saved);
     setButtonDisabledState(saveButton, !memberReady);
   }
@@ -5824,9 +5870,9 @@ async function renderDetailsPage() {
               data-id="${title.id}"
               ${memberReady ? "" : "disabled aria-disabled=\"true\""}
             >
-              ${escapeHtml(primaryWatchButton.label)}
+              ${watchStatusButtonContent(primaryWatchButton)}
             </button>
-            <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>${saved ? "Saved to Collection" : "Add to Collection"}</button>
+            <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>${saveTitleButtonContent(saved)}</button>
             ${memberReady ? `<p class="hero-interest-helper detail-cta-helper">${escapeHtml(primaryWatchButton.helper)}</p>` : '<p class="hero-interest-helper detail-cta-helper">Members only can save, track interest, and update watch status.</p>'}
           </div>
           <div class="detail-mobile-overview">
