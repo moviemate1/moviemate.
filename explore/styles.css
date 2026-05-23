@@ -4284,12 +4284,7 @@ button.ghost-link {
   }
 
   .explore-mobile-owner {
-    min-height: 41px;
-    padding: 0 15px;
-    font-size: 0.81rem;
-    border-radius: 16px;
-    flex: 0 0 auto;
-    white-space: nowrap;
+    display: none;
   }
 
   .explore-mobile-toprow .account-menu-wrap {
@@ -4299,29 +4294,20 @@ button.ghost-link {
 
   .explore-mobile-toprow .account-chip {
     min-height: 41px;
-    min-width: 96px;
-    padding: 0 17px;
-    border-radius: 16px;
+    min-width: 41px;
+    width: 41px;
+    padding: 0;
+    border-radius: 50%;
     flex: 0 0 auto;
     flex-shrink: 0;
   }
 
   .explore-mobile-toprow .account-chip-label {
-    font-size: 0.84rem;
-    font-weight: 700;
+    display: none;
   }
 
   .explore-mobile-nav {
-    grid-area: nav;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    column-gap: 9px;
-    row-gap: 8px;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    align-items: stretch;
+    display: none;
   }
 
   .explore-mobile-nav .explore-nav-link {
@@ -4405,7 +4391,16 @@ button.ghost-link {
   }
 
   .mobile-dock {
-    display: none !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: calc(100% - 20px);
+    max-width: none;
+  }
+
+  #ownerDockToggle {
+    display: none;
   }
 
   .people-rail {
@@ -4707,30 +4702,24 @@ button.ghost-link {
     height: 38px;
   }
 
-  .explore-mobile-owner {
-    min-height: 38px;
-    padding: 0 11px;
-    font-size: 0.73rem;
-  }
-
   .explore-mobile-toprow .account-chip {
     min-height: 38px;
-    min-width: 82px;
-    padding: 0 12px;
+    min-width: 38px;
+    width: 38px;
   }
 
-  .explore-mobile-toprow .account-chip-label {
+  .mobile-dock {
+    width: calc(100% - 10px);
+    gap: 6px;
+    padding: 9px 8px;
+    border-radius: 18px;
+  }
+
+  .mobile-dock-link {
+    min-height: 44px;
+    padding: 8px 6px;
+    border-radius: 14px;
     font-size: 0.74rem;
-  }
-
-  .explore-mobile-nav .explore-nav-link {
-    min-height: 40px;
-    padding: 0 8px;
-    font-size: 0.69rem;
-  }
-
-  .explore-mobile-nav .explore-nav-link span {
-    font-size: 0.54rem;
   }
 
   .install-banner {
@@ -4811,36 +4800,8 @@ button.ghost-link {
     gap: 6px;
   }
 
-  .explore-mobile-nav {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    column-gap: 6px;
-    row-gap: 6px;
-  }
-
-  .explore-mobile-nav .explore-nav-link {
-    width: 100%;
-    min-width: 0;
-    min-height: 36px;
-    padding: 0 6px;
-    font-size: 0.64rem;
-  }
-
-  .explore-mobile-nav .explore-nav-link span {
-    font-size: 0.48rem;
-  }
-
-  .explore-mobile-owner {
-    padding: 0 8px;
-    font-size: 0.68rem;
-  }
-
   .explore-mobile-header-grid .account-chip {
-    min-width: 72px;
-    padding: 0 10px;
-  }
-
-  .explore-mobile-header-grid .account-chip-label {
-    font-size: 0.7rem;
+    min-width: 36px;
+    width: 36px;
   }
 }
