@@ -3273,7 +3273,8 @@ function updateDetailActionUI(titleId) {
       meterSkip.textContent = `${skipPercent}%`;
     }
 
-    applyMeterDisplay(meterCard, stats, meterCard.dataset.lockedSegment || "");
+    meterCard.dataset.lockedSegment = currentReaction || "";
+    applyMeterDisplay(meterCard, stats, currentReaction || "");
   }
 }
 
@@ -7145,7 +7146,7 @@ function setupCommentInteractionButtons() {
     }
   });
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
     const reactionButton = event.target instanceof HTMLElement ? event.target.closest("[data-comment-reaction-value]") : null;
 
     if (!reactionButton) {
@@ -7159,9 +7160,55 @@ function setupCommentInteractionButtons() {
       return;
     }
 
-    picker.querySelectorAll("[data-comment-reaction-value]").forEach((button) => button.classList.remove("active"));
-    reactionButton.classList.add("active");
-    input.value = reactionButton.getAttribute("data-comment-reaction-value") || "";
+    if (document.body.dataset.page !== "details") {
+      picker.querySelectorAll("[data-comment-reaction-value]").forEach((button) => button.classList.remove("active"));
+      reactionButton.classList.add("active");
+      input.value = reactionButton.getAttribute("data-comment-reaction-value") || "";
+      return;
+    }
+
+    if (!requireAccount("vote on movies and series")) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const titleId = params.get("id");
+    const nextReaction = reactionButton.getAttribute("data-comment-reaction-value") || "";
+
+    if (!titleId || !(nextReaction in REACTION_OPTIONS)) {
+      return;
+    }
+
+    showMessage("#detailVoteMessage", "Saving your vote...");
+
+    try {
+      const result = await reactToTitle(titleId, nextReaction);
+
+      if (!result) {
+        showMessage("#detailVoteMessage", "Could not save your vote right now.");
+        return;
+      }
+
+      const currentReaction = getReaction(titleId);
+      picker.querySelectorAll("[data-comment-reaction-value]").forEach((button) => {
+        button.classList.toggle("active", button.getAttribute("data-comment-reaction-value") === currentReaction);
+      });
+      input.value = currentReaction;
+      updateDetailActionUI(titleId);
+
+      const meterCard = document.querySelector(".detail-meter-card");
+      const title = getCachedTitleById(titleId);
+
+      if (meterCard && title) {
+        meterCard.dataset.lockedSegment = currentReaction || "";
+        applyMeterDisplay(meterCard, getReactionStats(title), currentReaction || "");
+      }
+
+      showMessage("#detailVoteMessage", result.cleared ? "Your vote was removed." : "Your vote was saved.");
+    } catch (error) {
+      console.error(error);
+      showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not save your vote right now."));
+    }
   });
 
   document.addEventListener("click", async (event) => {
