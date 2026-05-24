@@ -6374,3 +6374,42 @@ button.ghost-link {
     padding-right: 7px !important;
   }
 }
+
+/* Mobile signed-in header: keep the account action as a clean avatar button. */
+@media (max-width: 768px) {
+  body[data-page="home"] .explore-mobile-header-right .account-chip.signed-in {
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    border-radius: 50% !important;
+    flex: 0 0 34px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-chip.signed-in .account-chip-avatar {
+    width: 30px !important;
+    height: 30px !important;
+    border-width: 2px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-chip.signed-in .account-chip-label {
+    display: none !important;
+  }
+}
+
+@media (max-width: 390px) {
+  body[data-page="home"] .explore-mobile-header-right .account-chip.signed-in {
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    flex-basis: 32px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-chip.signed-in .account-chip-avatar {
+    width: 28px !important;
+    height: 28px !important;
+  }
+}

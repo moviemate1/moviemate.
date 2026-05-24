@@ -4808,12 +4808,21 @@ function updateOwnerToggle() {
     pendingNotificationState.count ?? getPendingTitles(titlesCache).length;
 
   document.querySelectorAll("[data-owner-toggle]").forEach((button) => {
+    const mobileLabel = button.classList.contains("explore-mobile-owner");
     button.classList.toggle("active", active);
     button.textContent = active
-      ? pendingCount
+      ? mobileLabel
+        ? pendingCount
+          ? `On • ${pendingCount}`
+          : "On"
+        : pendingCount
         ? `Owner Unlocked • ${pendingCount}`
         : "Owner Unlocked"
-      : pendingCount
+      : mobileLabel
+        ? pendingCount
+          ? `Owner • ${pendingCount}`
+          : "Owner"
+        : pendingCount
         ? `Owner Mode • ${pendingCount}`
         : "Owner Mode";
   });
