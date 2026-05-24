@@ -7275,10 +7275,10 @@ body[data-page="details"] .detail-hero-card-upcoming .detail-cta-stack .watch-st
 
 body[data-page="details"] .detail-hero-card .detail-cta-stack .watch-status-btn.watch-status-btn-watching.active,
 body[data-page="details"] .detail-hero-card .detail-cta-stack .watch-status-btn.watch-status-btn-watched.active {
-  background: linear-gradient(135deg, #22c968 0%, #15ae51 62%, #0c8f3f 100%);
-  border-color: rgba(79, 236, 142, 0.72);
-  color: #fff;
-  box-shadow: 0 18px 44px rgba(20, 185, 86, 0.28);
+  background: linear-gradient(135deg, #22c968 0%, #15ae51 62%, #0c8f3f 100%) !important;
+  border-color: rgba(79, 236, 142, 0.72) !important;
+  color: #fff !important;
+  box-shadow: 0 18px 44px rgba(20, 185, 86, 0.28) !important;
 }
 
 @media (min-width: 901px) {
