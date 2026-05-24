@@ -43,6 +43,7 @@ const LAST_AUTH_SEEN_AT_KEY = "moviemate_last_auth_seen_at";
 const USER_PROFILE_CACHE_PREFIX = "moviemate_user_profile_cache_";
 const TITLES_CACHE_KEY = "moviemate_titles_cache_v1";
 const HOMEPAGE_CONTENT_CACHE_KEY = "moviemate_homepage_content_cache_v1";
+const DETAIL_HEADER_SEARCH_HISTORY_KEY = "moviemate_detail_header_search_history_v1";
 const SEARCH_PAGE_SIZE = 24;
 const OWNER_PASSCODE = "1A2b3456@";
 const OWNER_NOTIFICATION_TOAST_MS = 3200;
@@ -248,6 +249,15 @@ const detailWatchRequestsInFlight = new Set();
 let pendingNotificationState = {
   count: null,
   unsubscribe: null
+};
+let detailHeaderPanelState = {
+  mode: "",
+  searchTab: "content",
+  searchQuery: "",
+  scheduleWindow: "released",
+  scheduleType: "all",
+  spacesFeed: "feed",
+  titles: []
 };
 
 const DEFAULT_USER_PROFILE = {
@@ -4302,6 +4312,682 @@ function renderScheduleGrid(titles) {
 
   grid.innerHTML = items.map(scheduleCardTemplate).join("");
   emptyState.classList.toggle("hidden", items.length > 0);
+}
+
+function getDetailHeaderPanelRoot() {
+  return document.querySelector("#detailHeaderPanel");
+}
+
+function getDetailHeaderPanelBackdrop() {
+  return document.querySelector("#detailHeaderPanelBackdrop");
+}
+
+function getDetailHeaderPanelTriggers() {
+  return [...document.querySelectorAll("[data-detail-panel-trigger]")];
+}
+
+function getDetailHeaderSearchHistory() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(DETAIL_HEADER_SEARCH_HISTORY_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0, 6) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDetailHeaderSearchHistory(history) {
+  try {
+    localStorage.setItem(DETAIL_HEADER_SEARCH_HISTORY_KEY, JSON.stringify(history.slice(0, 6)));
+  } catch {
+    // Ignore storage errors for this lightweight UI helper.
+  }
+}
+
+function rememberDetailHeaderSearch(query) {
+  const normalized = String(query || "").trim();
+
+  if (!normalized) {
+    return;
+  }
+
+  const next = [normalized, ...getDetailHeaderSearchHistory().filter((entry) => entry.toLowerCase() !== normalized.toLowerCase())];
+  saveDetailHeaderSearchHistory(next);
+}
+
+async function ensureDetailHeaderTitles() {
+  const titles = await fetchTitles();
+  const visible = getVisibleTitles(titles);
+  detailHeaderPanelState.titles = visible;
+  return visible;
+}
+
+function setActiveDetailHeaderTrigger(mode) {
+  getDetailHeaderPanelTriggers().forEach((trigger) => {
+    const active = trigger.dataset.detailPanelTrigger === mode;
+    trigger.classList.toggle("active", active);
+    trigger.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+}
+
+function closeDetailHeaderPanel() {
+  const root = getDetailHeaderPanelRoot();
+  const backdrop = getDetailHeaderPanelBackdrop();
+
+  detailHeaderPanelState.mode = "";
+
+  if (root) {
+    root.innerHTML = "";
+    root.classList.add("hidden");
+    root.setAttribute("aria-hidden", "true");
+  }
+
+  if (backdrop) {
+    backdrop.classList.add("hidden");
+  }
+
+  document.body.classList.remove("detail-header-panel-open");
+  setActiveDetailHeaderTrigger("");
+}
+
+function getDetailHeaderPeople(titles, query = "") {
+  const counts = new Map();
+  const queryValue = query.trim().toLowerCase();
+
+  titles.forEach((title) => {
+    [...(title.cast || []), ...(title.crew || [])].forEach((person) => {
+      const name = String(person?.name || "").trim();
+
+      if (!name) {
+        return;
+      }
+
+      const key = normalizePersonName(name);
+      const current = counts.get(key) || {
+        name,
+        role: person.role || "Cast & Crew",
+        tmdbPersonId: person.tmdbPersonId || "",
+        appearances: 0
+      };
+      current.appearances += 1;
+      if (!current.tmdbPersonId && person.tmdbPersonId) {
+        current.tmdbPersonId = person.tmdbPersonId;
+      }
+      counts.set(key, current);
+    });
+  });
+
+  return [...counts.values()]
+    .filter((person) => !queryValue || `${person.name} ${person.role}`.toLowerCase().includes(queryValue))
+    .sort((left, right) => right.appearances - left.appearances || left.name.localeCompare(right.name))
+    .slice(0, 12);
+}
+
+function detailHeaderSearchResultsTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const tab = detailHeaderPanelState.searchTab;
+  const query = detailHeaderPanelState.searchQuery.trim().toLowerCase();
+  const history = getDetailHeaderSearchHistory();
+
+  if (!query) {
+    const quickTitles = [...titles].sort(compareMostInterestedTitles).slice(0, 6);
+    return `
+      <div class="detail-search-panel-recent">
+        <div class="detail-search-panel-meta">
+          <strong>Recent searches</strong>
+          <button class="detail-search-clear" type="button" data-detail-search-clear="true">Clear history</button>
+        </div>
+        <div class="detail-search-chip-row">
+          ${
+            history.length
+              ? history
+                  .map(
+                    (item) => `
+                      <button class="detail-search-chip" type="button" data-detail-search-chip="${escapeHtml(item)}">
+                        ${escapeHtml(item)}
+                      </button>
+                    `
+                  )
+                  .join("")
+              : '<span class="detail-search-empty-copy">Search once and your latest titles will show up here.</span>'
+          }
+        </div>
+      </div>
+      <div class="detail-search-panel-meta compact">
+        <strong>Popular right now</strong>
+      </div>
+      <div class="detail-header-card-grid detail-header-card-grid-search">
+        ${quickTitles.map(movieCardTemplate).join("")}
+      </div>
+    `;
+  }
+
+  if (tab === "castcrew") {
+    const people = getDetailHeaderPeople(titles, query);
+    return people.length
+      ? `
+          <div class="detail-person-result-list">
+            ${people
+              .map(
+                (person) => `
+                  <a class="detail-person-result" href="${buildPersonUrl(person.name, person.tmdbPersonId)}">
+                    <span class="detail-person-result-avatar">${escapeHtml(person.name.charAt(0).toUpperCase())}</span>
+                    <span>
+                      <strong>${escapeHtml(person.name)}</strong>
+                      <small>${escapeHtml(person.role)} • ${person.appearances} title${person.appearances === 1 ? "" : "s"}</small>
+                    </span>
+                  </a>
+                `
+              )
+              .join("")}
+          </div>
+        `
+      : '<p class="detail-search-empty-copy">No cast or crew matches yet.</p>';
+  }
+
+  if (tab === "collections") {
+    const collections = buildDiscoverCollections(titles)
+      .filter((collection) => `${collection.title} ${collection.subtitle}`.toLowerCase().includes(query))
+      .slice(0, 6);
+
+    return collections.length
+      ? `
+          <div class="detail-collection-result-list">
+            ${collections
+              .map(
+                (collection) => `
+                  <a class="detail-collection-result" href="collection.html?mode=discover&slug=${encodeURIComponent(collection.slug || slugify(collection.title))}">
+                    <img src="${escapeHtml(collection.image)}" alt="${escapeHtml(collection.title)} cover" loading="lazy" decoding="async" />
+                    <span>
+                      <strong>${escapeHtml(collection.title)}</strong>
+                      <small>${escapeHtml(collection.subtitle)}</small>
+                    </span>
+                  </a>
+                `
+              )
+              .join("")}
+          </div>
+        `
+      : '<p class="detail-search-empty-copy">No collection matches yet.</p>';
+  }
+
+  if (tab === "users") {
+    const currentName = getProfileDisplayName(currentUserProfile, currentUser);
+    const username = getProfileUsername(currentUserProfile, currentUser);
+    const matchesCurrent =
+      currentUser &&
+      `${currentName} ${username} ${currentUser?.email || ""}`.toLowerCase().includes(query);
+
+    return matchesCurrent
+      ? `
+          <div class="detail-person-result-list">
+            <a class="detail-person-result" href="/profile.html">
+              <span class="detail-person-result-avatar">${escapeHtml((username || currentName || "MM").slice(0, 2).toUpperCase())}</span>
+              <span>
+                <strong>${escapeHtml(currentName || "MovieMate Member")}</strong>
+                <small>@${escapeHtml(username || "member")} • Your profile</small>
+              </span>
+            </a>
+          </div>
+        `
+      : '<p class="detail-search-empty-copy">User search is ready for signed-in profiles. Try your own username here.</p>';
+  }
+
+  const matches = titles
+    .filter((title) => {
+      const haystack = [
+        title.title,
+        title.description,
+        title.genre,
+        title.type,
+        title.language.join(" "),
+        formatPlatforms(title.platforms),
+        title.director,
+        title.mainLead,
+        title.heroine,
+        ...(title.cast || []).map((person) => `${person.name} ${person.role || ""}`),
+        ...(title.crew || []).map((person) => `${person.name} ${person.role || ""}`)
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(query);
+    })
+    .slice(0, 8);
+
+  return matches.length
+    ? `
+        <div class="detail-header-card-grid detail-header-card-grid-search">
+          ${matches.map(movieCardTemplate).join("")}
+        </div>
+      `
+    : '<p class="detail-search-empty-copy">No title matches yet. Try a different movie, show, anime, cast, or crew name.</p>';
+}
+
+function detailHeaderSearchPanelTemplate() {
+  const tabs = [
+    ["content", "Content"],
+    ["collections", "Collections"],
+    ["castcrew", "Cast & Crew"],
+    ["users", "Users"]
+  ];
+
+  return `
+    <div class="detail-header-panel-surface detail-header-panel-search-surface">
+      <div class="detail-header-search-shell">
+        <label class="detail-header-search-field">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="5.5"></circle><path d="m16 16 4 4"></path></svg>
+          <input id="detailHeaderSearchInput" type="search" value="${escapeHtml(detailHeaderPanelState.searchQuery)}" placeholder="Search for Movies, Shows, Anime, Cast & Crew or Users..." />
+        </label>
+        <div class="detail-header-tab-row">
+          ${tabs
+            .map(
+              ([value, label]) => `
+                <button class="detail-header-tab ${detailHeaderPanelState.searchTab === value ? "active" : ""}" type="button" data-detail-search-tab="${value}">
+                  ${label}
+                </button>
+              `
+            )
+            .join("")}
+        </div>
+        <div class="detail-header-search-results" id="detailHeaderSearchResults">
+          ${detailHeaderSearchResultsTemplate()}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getDetailSchedulePanelTitles(titles, windowKey, typeKey) {
+  const today = new Date().toISOString().slice(0, 10);
+  const futureThreshold = new Date();
+  futureThreshold.setDate(futureThreshold.getDate() + 45);
+
+  let items = titles.filter((title) => (typeKey === "all" ? true : title.type === typeKey));
+
+  if (windowKey === "released") {
+    items = items
+      .filter((title) => title.releaseDate && getComparableReleaseDate(title.releaseDate) && getComparableReleaseDate(title.releaseDate) <= today)
+      .sort((left, right) => (right.releaseDate || "").localeCompare(left.releaseDate || ""));
+  } else if (windowKey === "upcoming") {
+    items = items
+      .filter((title) => title.releaseDate && getComparableReleaseDate(title.releaseDate) > today)
+      .sort((left, right) => (left.releaseDate || "").localeCompare(right.releaseDate || ""));
+  } else {
+    items = items
+      .filter((title) => {
+        if (title.status !== "Upcoming") {
+          return false;
+        }
+
+        if (!title.releaseDate) {
+          return true;
+        }
+
+        const comparable = getComparableReleaseDate(title.releaseDate);
+        return !comparable || new Date(`${comparable}T00:00:00`) > futureThreshold;
+      })
+      .sort((left, right) => (left.releaseDate || "9999-12-31").localeCompare(right.releaseDate || "9999-12-31"));
+  }
+
+  return items.slice(0, 18);
+}
+
+function detailHeaderSchedulePanelTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const items = getDetailSchedulePanelTitles(titles, detailHeaderPanelState.scheduleWindow, detailHeaderPanelState.scheduleType);
+  const windows = [
+    ["released", "Released"],
+    ["upcoming", "Upcoming"],
+    ["announced", "Announced"]
+  ];
+  const types = [
+    ["all", "All"],
+    ["Movie", "Movies"],
+    ["Series", "Shows"]
+  ];
+
+  return `
+    <div class="detail-header-panel-surface">
+      <div class="detail-panel-title-row">
+        <span class="detail-panel-title-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2"></rect><path d="M8 3.5v4M16 3.5v4M4 9.5h16"></path></svg>
+          <span>Schedule</span>
+        </span>
+      </div>
+      <div class="detail-header-schedule-shell">
+        <aside class="detail-header-schedule-sidebar">
+          ${windows
+            .map(
+              ([value, label]) => `
+                <button class="detail-schedule-menu-btn ${detailHeaderPanelState.scheduleWindow === value ? "active" : ""}" type="button" data-detail-schedule-window="${value}">
+                  ${label}
+                </button>
+              `
+            )
+            .join("")}
+        </aside>
+        <section class="detail-header-schedule-main">
+          <div class="detail-header-pill-row">
+            ${types
+              .map(
+                ([value, label]) => `
+                  <button class="detail-header-pill ${detailHeaderPanelState.scheduleType === value ? "active" : ""}" type="button" data-detail-schedule-type="${value}">
+                    ${label}
+                  </button>
+                `
+              )
+              .join("")}
+          </div>
+          <div class="detail-header-schedule-grid">
+            ${items.length ? items.map(scheduleCardTemplate).join("") : '<p class="detail-search-empty-copy">No schedule items match this filter right now.</p>'}
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+}
+
+function detailHeaderExplorePanelTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const talkTitles = getCuratedTitles(
+    titles,
+    (title) => title.trending || title.importBuckets.includes("trending") || getInterestScore(title) > 120,
+    (left, right) => getInterestScore(right) - getInterestScore(left),
+    10
+  );
+  const districtTitles = getCuratedTitles(
+    titles,
+    (title) => title.pinned || getReactionStats(title).recommendedPercent >= 65,
+    (left, right) => getReactionStats(right).recommendedPercent - getReactionStats(left).recommendedPercent,
+    6
+  );
+  const mostInterested = [...titles].sort(compareMostInterestedTitles).slice(0, 5);
+
+  return `
+    <div class="detail-header-panel-surface">
+      <div class="detail-panel-title-row">
+        <span class="detail-panel-title-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.25"></circle><circle cx="12" cy="12" r="2.25"></circle></svg>
+          <span>Explore</span>
+        </span>
+      </div>
+      <div class="detail-header-explore-shell">
+        <section class="detail-header-explore-main">
+          <div class="detail-header-feature-block">
+            <h3>Talk Of The Town</h3>
+            <div class="detail-header-card-grid">
+              ${talkTitles.map(featuredCardTemplate).join("")}
+            </div>
+          </div>
+          <div class="detail-header-feature-block">
+            <h3>Watch It With District</h3>
+            <div class="detail-header-card-grid">
+              ${districtTitles.map(featuredCardTemplate).join("")}
+            </div>
+          </div>
+        </section>
+        <aside class="detail-header-explore-side">
+          <div class="detail-header-ad-card">
+            <span class="detail-header-ad-badge">Crunchyroll</span>
+            <strong>ANi-MAY</strong>
+            <small>Mega fan offer and anime season picks.</small>
+          </div>
+          <div class="detail-header-most-card">
+            <div class="detail-search-panel-meta compact">
+              <strong>Most Interested</strong>
+              <span>This Week</span>
+            </div>
+            <div class="detail-header-interest-list">
+              ${mostInterested.map(mostInterestedItemTemplate).join("")}
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  `;
+}
+
+function detailHeaderSpacesPanelTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const discussionTitles = [...titles]
+    .filter((title) => title.comments?.length || title.trending || getInterestedCount(title) > 0)
+    .sort((left, right) => getInterestScore(right) - getInterestScore(left))
+    .slice(0, 6);
+  const topicButtons = ["Indian", "International", "Anime", "Sports", "Games"];
+  const filterCards = [
+    "Monthly Ranking",
+    "Top 100",
+    "Category",
+    "Genre",
+    "Country",
+    "Language",
+    "Family Friendly",
+    "Award Winners",
+    "MovieMate Select",
+    "Anime",
+    "Franchise"
+  ];
+
+  return `
+    <div class="detail-header-panel-surface">
+      <div class="detail-panel-title-row">
+        <span class="detail-panel-title-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-3 3v-3H5a2 2 0 0 1-2-2V8a3 3 0 0 1 3-3h1"></path><path d="M16 6h2a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-1l-2 2v-2"></path></svg>
+          <span>Spaces</span>
+        </span>
+      </div>
+      <div class="detail-header-spaces-shell">
+        <aside class="detail-header-spaces-sidebar">
+          <button class="detail-schedule-menu-btn active" type="button">Feed</button>
+          <button class="detail-schedule-menu-btn" type="button">Discussion</button>
+          <div class="detail-header-spaces-topics">
+            <span>Topics</span>
+            ${topicButtons
+              .map(
+                (label) => `
+                  <button class="detail-space-topic" type="button">
+                    <span>✓</span>
+                    ${label}
+                  </button>
+                `
+              )
+              .join("")}
+          </div>
+        </aside>
+        <section class="detail-header-spaces-feed">
+          ${discussionTitles
+            .slice(0, 2)
+            .map(
+              (title) => `
+                <article class="detail-space-story-card">
+                  <img src="${getOptimizedImageUrl(title.image, 900)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+                  <div class="detail-space-story-copy">
+                    <span>Discussion Space</span>
+                    <h3>${escapeHtml(title.title)}</h3>
+                    <p>By MovieMate • ${getInterestedCount(title)} interested</p>
+                  </div>
+                </article>
+              `
+            )
+            .join("")}
+        </section>
+        <aside class="detail-header-spaces-filters">
+          ${filterCards
+            .map(
+              (label) => `
+                <button class="detail-space-filter-card" type="button">
+                  <span>${label}</span>
+                </button>
+              `
+            )
+            .join("")}
+        </aside>
+      </div>
+    </div>
+  `;
+}
+
+async function renderDetailHeaderPanel() {
+  const root = getDetailHeaderPanelRoot();
+  const backdrop = getDetailHeaderPanelBackdrop();
+  const mode = detailHeaderPanelState.mode;
+
+  if (!root || !mode) {
+    closeDetailHeaderPanel();
+    return;
+  }
+
+  await ensureDetailHeaderTitles();
+
+  let markup = "";
+  if (mode === "search") {
+    markup = detailHeaderSearchPanelTemplate();
+  } else if (mode === "schedule") {
+    markup = detailHeaderSchedulePanelTemplate();
+  } else if (mode === "explore") {
+    markup = detailHeaderExplorePanelTemplate();
+  } else if (mode === "spaces") {
+    markup = detailHeaderSpacesPanelTemplate();
+  }
+
+  root.innerHTML = markup;
+  root.classList.remove("hidden");
+  root.setAttribute("aria-hidden", "false");
+  backdrop?.classList.remove("hidden");
+  document.body.classList.add("detail-header-panel-open");
+  setActiveDetailHeaderTrigger(mode);
+
+  if (mode === "search") {
+    const input = root.querySelector("#detailHeaderSearchInput");
+    window.requestAnimationFrame(() => {
+      input?.focus();
+      input?.setSelectionRange(input.value.length, input.value.length);
+    });
+  }
+}
+
+function setupDetailHeaderPanels() {
+  if (document.body.dataset.page !== "details") {
+    return;
+  }
+
+  const panelRoot = getDetailHeaderPanelRoot();
+  const backdrop = getDetailHeaderPanelBackdrop();
+
+  if (!panelRoot || panelRoot.dataset.bound === "true") {
+    return;
+  }
+
+  panelRoot.dataset.bound = "true";
+
+  getDetailHeaderPanelTriggers().forEach((trigger) => {
+    trigger.addEventListener("click", async (event) => {
+      event.preventDefault();
+      const mode = trigger.dataset.detailPanelTrigger || "";
+
+      if (!mode) {
+        return;
+      }
+
+      if (detailHeaderPanelState.mode === mode) {
+        closeDetailHeaderPanel();
+        return;
+      }
+
+      detailHeaderPanelState.mode = mode;
+      await renderDetailHeaderPanel();
+    });
+  });
+
+  backdrop?.addEventListener("click", () => {
+    closeDetailHeaderPanel();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && detailHeaderPanelState.mode) {
+      closeDetailHeaderPanel();
+    }
+  });
+
+  panelRoot.addEventListener("click", async (event) => {
+    const target = event.target instanceof HTMLElement ? event.target : null;
+
+    if (!target) {
+      return;
+    }
+
+    const tabButton = target.closest("[data-detail-search-tab]");
+    if (tabButton) {
+      detailHeaderPanelState.searchTab = tabButton.dataset.detailSearchTab || "content";
+      await renderDetailHeaderPanel();
+      return;
+    }
+
+    const historyChip = target.closest("[data-detail-search-chip]");
+    if (historyChip) {
+      detailHeaderPanelState.searchQuery = historyChip.dataset.detailSearchChip || "";
+      rememberDetailHeaderSearch(detailHeaderPanelState.searchQuery);
+      await renderDetailHeaderPanel();
+      return;
+    }
+
+    if (target.closest("[data-detail-search-clear='true']")) {
+      saveDetailHeaderSearchHistory([]);
+      if (detailHeaderPanelState.mode === "search") {
+        await renderDetailHeaderPanel();
+      }
+      return;
+    }
+
+    const scheduleWindowButton = target.closest("[data-detail-schedule-window]");
+    if (scheduleWindowButton) {
+      detailHeaderPanelState.scheduleWindow = scheduleWindowButton.dataset.detailScheduleWindow || "released";
+      await renderDetailHeaderPanel();
+      return;
+    }
+
+    const scheduleTypeButton = target.closest("[data-detail-schedule-type]");
+    if (scheduleTypeButton) {
+      detailHeaderPanelState.scheduleType = scheduleTypeButton.dataset.detailScheduleType || "all";
+      await renderDetailHeaderPanel();
+    }
+  });
+
+  panelRoot.addEventListener("input", (event) => {
+    const input = event.target instanceof HTMLInputElement ? event.target : null;
+
+    if (!input || input.id !== "detailHeaderSearchInput") {
+      return;
+    }
+
+    detailHeaderPanelState.searchQuery = input.value;
+    const results = panelRoot.querySelector("#detailHeaderSearchResults");
+    if (results) {
+      results.innerHTML = detailHeaderSearchResultsTemplate();
+    }
+  });
+
+  panelRoot.addEventListener("keydown", (event) => {
+    const input = event.target instanceof HTMLInputElement ? event.target : null;
+
+    if (!input || input.id !== "detailHeaderSearchInput" || event.key !== "Enter") {
+      return;
+    }
+
+    rememberDetailHeaderSearch(input.value);
+  });
+
+  panelRoot.addEventListener("click", (event) => {
+    const link = event.target instanceof HTMLElement ? event.target.closest("a") : null;
+
+    if (!link) {
+      return;
+    }
+
+    if (detailHeaderPanelState.mode === "search") {
+      rememberDetailHeaderSearch(detailHeaderPanelState.searchQuery);
+    }
+  });
 }
 
 function collectionCardTemplate(collection) {
@@ -9204,6 +9890,7 @@ async function init() {
   }
 
   if (document.body.dataset.page === "details") {
+    setupDetailHeaderPanels();
     await renderDetailsPage();
     updateOwnerToggle();
   }
