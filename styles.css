@@ -7008,7 +7008,7 @@ body[data-page="details"] .hero-interest-card {
     top: clamp(38px, 4vw, 64px);
     right: max(54px, calc((100vw - 1260px) / 2 + 42px));
     z-index: 8;
-    width: min(336px, 24vw);
+    width: 286px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
@@ -7064,7 +7064,7 @@ body[data-page="details"] .hero-interest-card {
     top: clamp(32px, 3.8vw, 54px);
     right: max(42px, calc((100vw - 1280px) / 2 + 30px));
     z-index: 8;
-    width: min(286px, 22vw);
+    width: 286px;
     display: grid;
     gap: 9px;
     padding: 14px 18px 13px;
@@ -7166,7 +7166,7 @@ body[data-page="details"] .detail-summary {
 
 body[data-page="details"] .detail-summary-header {
   display: grid;
-  grid-template-columns: minmax(144px, 184px) minmax(0, 1fr) minmax(268px, 310px);
+  grid-template-columns: minmax(144px, 184px) minmax(0, 1fr) 286px;
   align-items: end;
   gap: clamp(20px, 2.8vw, 34px);
 }
