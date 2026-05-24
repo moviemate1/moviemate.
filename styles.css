@@ -6805,9 +6805,20 @@ body[data-page="details"] .detail-upcoming-mobile-card .hero-interest-fire-icon 
   }
 
   body[data-page="details"] .detail-upcoming-meta-interest .button-icon {
-    width: 1em;
-    height: 1em;
-    color: #ff7650;
+    width: 20px;
+    height: 20px;
+    margin-right: 1px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ff7448 0%, #ee4d6d 100%);
+    color: #fff;
+    box-shadow: 0 5px 12px rgba(238, 77, 109, 0.32);
+  }
+
+  body[data-page="details"] .detail-upcoming-meta-interest .button-icon svg {
+    width: 13px;
+    height: 13px;
   }
 
   body[data-page="details"] .detail-upcoming-mobile-card > .hero-interest-fire-icon {
