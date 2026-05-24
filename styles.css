@@ -7282,6 +7282,8 @@ body[data-page="details"] .detail-hero-card .detail-cta-stack .watch-status-btn.
 }
 
 @media (min-width: 901px) {
+  body[data-page="details"] .detail-hero-card-upcoming .detail-cta-stack .watch-status-btn.watch-status-btn-interested,
+  body[data-page="details"] .detail-hero-card-upcoming .detail-cta-stack .watch-status-btn.watch-status-btn-interested.active,
   body[data-page="details"] .detail-hero-card-upcoming .detail-cta-stack .watch-status-btn,
   body[data-page="details"] .detail-hero-card-upcoming .detail-cta-stack .watch-status-btn:disabled {
     background: linear-gradient(135deg, #f25f3a 0%, #e14e42 48%, #cb455c 100%);
