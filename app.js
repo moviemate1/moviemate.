@@ -39,12 +39,14 @@ const SAVED_TITLES_STORAGE_KEY = "moviemate_saved_titles";
 const OWNER_MODE_KEY = "moviemate_owner_mode";
 const USER_NOTIFICATIONS_SEEN_KEY = "moviemate_notifications_seen_at";
 const LAST_AUTH_UID_KEY = "moviemate_last_auth_uid";
+const LAST_AUTH_SEEN_AT_KEY = "moviemate_last_auth_seen_at";
 const USER_PROFILE_CACHE_PREFIX = "moviemate_user_profile_cache_";
 const TITLES_CACHE_KEY = "moviemate_titles_cache_v1";
 const HOMEPAGE_CONTENT_CACHE_KEY = "moviemate_homepage_content_cache_v1";
 const SEARCH_PAGE_SIZE = 24;
 const OWNER_PASSCODE = "1A2b3456@";
 const OWNER_NOTIFICATION_TOAST_MS = 3200;
+const AUTH_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const REACTION_OPTIONS = {
   perfect: { label: "Perfection", className: "perfect" },
   goForIt: { label: "Go for it", className: "goforit" },
@@ -255,8 +257,10 @@ function rememberSignedInUid(uid) {
   try {
     if (uid) {
       localStorage.setItem(LAST_AUTH_UID_KEY, uid);
+      localStorage.setItem(LAST_AUTH_SEEN_AT_KEY, String(Date.now()));
     } else {
       localStorage.removeItem(LAST_AUTH_UID_KEY);
+      localStorage.removeItem(LAST_AUTH_SEEN_AT_KEY);
     }
   } catch (error) {
     console.warn("Could not update auth uid cache", error);
@@ -265,7 +269,20 @@ function rememberSignedInUid(uid) {
 
 function getRememberedSignedInUid() {
   try {
-    return localStorage.getItem(LAST_AUTH_UID_KEY) || "";
+    const uid = localStorage.getItem(LAST_AUTH_UID_KEY) || "";
+    const seenAt = Number(localStorage.getItem(LAST_AUTH_SEEN_AT_KEY) || 0);
+
+    if (!uid) {
+      return "";
+    }
+
+    if (seenAt && Date.now() - seenAt > AUTH_CACHE_TTL_MS) {
+      rememberSignedInUid("");
+      clearUserProfileCache(uid);
+      return "";
+    }
+
+    return uid;
   } catch (error) {
     console.warn("Could not read auth uid cache", error);
     return "";
@@ -1471,6 +1488,132 @@ function seasonsSectionTemplate(title) {
           })
           .join("")}
       </div>
+    </section>
+  `;
+}
+
+function getDetailCountryLabel(title) {
+  const languages = (title.language || []).map((language) => language.toLowerCase());
+
+  if (languages.some((language) => ["hindi", "tamil", "telugu", "malayalam", "kannada"].includes(language))) {
+    return "India";
+  }
+
+  if (languages.some((language) => ["japanese", "korean"].includes(language))) {
+    return languages.includes("japanese") ? "Japan" : "South Korea";
+  }
+
+  return "USA";
+}
+
+function getDetailAgeRating(title) {
+  const text = `${title.genre || ""} ${title.description || ""}`.toLowerCase();
+
+  if (text.includes("horror") || text.includes("crime") || text.includes("blood") || text.includes("gore")) {
+    return "18+";
+  }
+
+  if (text.includes("action") || text.includes("thriller") || text.includes("mystery")) {
+    return "13+";
+  }
+
+  return "U/A";
+}
+
+function getDetailRuntimeLabel(title) {
+  if (title.type === "Series") {
+    const seasonCount = Number(title.seasonsCount || title.seasons?.length || 0);
+    return seasonCount ? `${seasonCount} Season${seasonCount === 1 ? "" : "s"}` : "Series";
+  }
+
+  return "2h 30m";
+}
+
+function detailAvailabilityCardTemplate(title, platforms, titleIsUpcoming) {
+  const platform = platforms[0] || (titleIsUpcoming ? "District" : "Prime Video");
+  const heading = titleIsUpcoming ? "Tickets On" : "Watch Online";
+  const subcopy = titleIsUpcoming ? "Book when live" : "Subscription";
+  const initials = platform
+    .split(/\s+/)
+    .map((part) => part.charAt(0))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "MM";
+
+  return `
+    <article class="detail-availability-card">
+      <h3>${escapeHtml(heading)}</h3>
+      <div class="detail-platform-row">
+        <span class="detail-platform-logo">${escapeHtml(initials)}</span>
+        <span>
+          <strong>${escapeHtml(platform)}</strong>
+          <small>${escapeHtml(subcopy)}</small>
+        </span>
+        <span class="detail-platform-arrow" aria-hidden="true">↗</span>
+      </div>
+      <button class="detail-report-link" type="button">Broken Link? Report</button>
+    </article>
+  `;
+}
+
+function detailNewsSectionTemplate(title, titles) {
+  const related = [title, ...titles.filter((item) => item.id !== title.id)].slice(0, 3);
+
+  if (!related.length) {
+    return "";
+  }
+
+  return `
+    <section class="detail-extra-section detail-news-section">
+      <div class="section-heading compact-heading">
+        <div>
+          <p class="eyebrow">Latest</p>
+          <h2>Latest News</h2>
+        </div>
+        <div class="detail-section-arrows" aria-hidden="true"><span>‹</span><span>›</span></div>
+      </div>
+      <div class="detail-news-grid">
+        ${related
+          .map(
+            (item, index) => `
+              <article class="detail-news-card">
+                <img src="${escapeHtml(item.image || title.image)}" alt="${escapeHtml(item.title)} news" loading="lazy" decoding="async" />
+                <h3>${escapeHtml(index === 0 ? `Box Office Update: ${title.title}` : `${item.title} update`)}</h3>
+                <p>${escapeHtml(`${item.title} is getting attention from MovieMate visitors and community reactions...more`)}</p>
+                <small>By MovieMate Official • ${index ? "yesterday" : "today"}</small>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function detailDiscussionSectionTemplate(title, titles) {
+  const related = titles.filter((item) => item.id !== title.id).slice(0, 1);
+  const discussionTitle = related[0]?.title
+    ? `${title.title}, ${related[0].title}, or your current weekend winner?`
+    : `${title.title} community discussion`;
+  const images = [title, ...related, ...titles.filter((item) => item.id !== title.id && item.id !== related[0]?.id)].slice(0, 4);
+
+  return `
+    <section class="detail-extra-section detail-discussion-section">
+      <div class="section-heading compact-heading">
+        <div>
+          <p class="eyebrow">Community</p>
+          <h2>Discussions</h2>
+        </div>
+        <div class="detail-section-arrows" aria-hidden="true"><span>‹</span><span>›</span></div>
+      </div>
+      <article class="detail-discussion-card">
+        <div class="detail-discussion-collage">
+          ${images.map((item) => `<img src="${escapeHtml(item.image || title.image)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" />`).join("")}
+        </div>
+        <h3>${escapeHtml(discussionTitle)}</h3>
+        <p>Which one has the strongest vibe for you ...more</p>
+        <small>By MovieMate Official • today</small>
+      </article>
     </section>
   `;
 }
@@ -5853,16 +5996,22 @@ async function renderDetailsPage() {
     const currentWatchStatus = getTitleWatchStatus(title.id);
     const primaryWatchButton = getPrimaryWatchButtonState(title, currentWatchStatus);
     const memberReady = isSignedIn();
+    const visibleTitles = getVisibleTitles(titlesCache);
+    const countryLabel = getDetailCountryLabel(title);
+    const ageRatingLabel = getDetailAgeRating(title);
+    const runtimeLabel = getDetailRuntimeLabel(title);
+    const heroMetaLine = `${displayTypeLabel} • ${releaseYear} • ${runtimeLabel}`;
+    const availabilityCard = detailAvailabilityCardTemplate(title, primaryPlatforms, titleIsUpcoming);
     const upcomingReleaseCard = titleIsUpcoming
       ? `
           <div class="detail-upcoming-mobile-card">
-            <div>
-              <p class="hero-interest-eyebrow">${escapeHtml(getHeroLaunchLabel(title))}</p>
-              <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
-              <p class="hero-interest-count hero-interest-count-fire">
+            <div class="detail-upcoming-mobile-meta">
+              <span class="detail-upcoming-meta-pill">${escapeHtml(getHeroLaunchLabel(title))}</span>
+              <span class="detail-upcoming-meta-pill">${escapeHtml(formatReleaseDate(title.releaseDate))}</span>
+              <span class="detail-upcoming-meta-pill detail-upcoming-meta-interest">
                 ${buttonIconTemplate("fire")}
-                <span>${escapeHtml(formatLargeNumber(getInterestedCount(title)))} interested</span>
-              </p>
+                ${escapeHtml(formatLargeNumber(getInterestedCount(title)))} interested
+              </span>
             </div>
             <span class="hero-interest-fire-icon" aria-hidden="true">${buttonIconTemplate("fire")}</span>
           </div>
@@ -5895,7 +6044,7 @@ async function renderDetailsPage() {
         <div class="detail-summary-header">
           <img class="detail-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
           <div class="detail-copy">
-            <p class="eyebrow">${escapeHtml(displayTypeLabel)} • ${escapeHtml(String(releaseYear))}</p>
+            <p class="eyebrow">${escapeHtml(heroMetaLine)}</p>
             <h1>${escapeHtml(title.title)}</h1>
             <div class="status-row">${badges}</div>
             <div class="detail-facts-grid">
@@ -5903,21 +6052,17 @@ async function renderDetailsPage() {
                 <span>${escapeHtml(leadCreditLabel)}</span>
                 <strong>${escapeHtml(leadDirector)}</strong>
               </div>
-              <div class="detail-fact detail-fact-genre">
-                <span>Genre</span>
-                <strong>${escapeHtml(title.genre)}</strong>
+              <div class="detail-fact detail-fact-country">
+                <span>Country</span>
+                <strong>${escapeHtml(countryLabel)}</strong>
               </div>
               <div class="detail-fact detail-fact-language">
                 <span>Language</span>
                 <strong>${escapeHtml(primaryLanguage)}</strong>
               </div>
-              <div class="detail-fact detail-fact-platform">
-                <span>Platform</span>
-                ${primaryPlatformMarkup}
-              </div>
-              <div class="detail-fact detail-fact-release">
-                <span>Release</span>
-                <strong>${escapeHtml(formatReleaseDate(title.releaseDate))}</strong>
+              <div class="detail-fact detail-fact-rating">
+                <span>Age Rating</span>
+                <strong>${escapeHtml(ageRatingLabel)}</strong>
               </div>
             </div>
             <p class="detail-hero-description">${escapeHtml(title.description)}</p>
@@ -5934,6 +6079,7 @@ async function renderDetailsPage() {
             </button>
             <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>${saveTitleButtonContent(saved)}</button>
             ${memberReady ? `<p class="hero-interest-helper detail-cta-helper">${escapeHtml(primaryWatchButton.helper)}</p>` : '<p class="hero-interest-helper detail-cta-helper">Members only can save, track interest, and update watch status.</p>'}
+            <p class="form-message" id="detailVoteMessage" aria-live="polite"></p>
           </div>
           ${upcomingReleaseCard}
           <div class="detail-mobile-overview">
@@ -5945,86 +6091,81 @@ async function renderDetailsPage() {
       </div>
     </section>
 
-    <section class="detail-action-strip">
-      <div class="detail-actions">
-        ${reactionButtonsTemplate(title)}
-        ${
-          embeddedTrailerUrl
-            ? `<button class="secondary-btn trailer-btn" type="button" data-open-trailer="true" data-embed-url="${embeddedTrailerUrl}" data-trailer-title="${escapeHtml(title.title)} trailer">Watch Trailer</button>`
-            : `<a class="secondary-btn trailer-btn" href="${getTrailerLink(title)}" target="_blank" rel="noreferrer">Open Trailer</a>`
-        }
-        <button class="secondary-btn share-title-btn" data-share-id="${title.id}" type="button">Share Title</button>
-        ${ownerControls}
-        <p class="form-message" id="detailVoteMessage" aria-live="polite"></p>
-      </div>
-    </section>
+    <section class="detail-page-grid">
+      <div class="detail-main-column">
+        <section class="detail-overview-section">
+          <h2>Overview</h2>
+          <p>${escapeHtml(title.description)}</p>
+          ${genreTagsMarkup ? `<div class="detail-mobile-tags">${genreTagsMarkup}</div>` : ""}
+        </section>
 
-    <section class="detail-insights-grid">
-      ${reactionMeterTemplate(title)}
-      ${vibeChartTemplate(title)}
-      <article class="insight-card insight-overview-card">
-        <div class="insight-header">
-          <div>
-            <p class="eyebrow">Overview</p>
-            <h3>${escapeHtml(title.title)}</h3>
-          </div>
-          <span class="insight-pill">${stats.recommendedPercent}% recommend</span>
-        </div>
-        <p class="detail-overview">${escapeHtml(title.description)}</p>
-      </article>
-    </section>
+        ${seasonsSectionTemplate(title)}
 
-    ${seasonsSectionTemplate(title)}
+        ${peopleSectionTemplate(title)}
 
-    ${peopleSectionTemplate(title)}
+        <section class="detail-meter-section">
+          ${reactionMeterTemplate(title)}
+        </section>
 
-    ${similarSectionTemplate(title, getVisibleTitles(titlesCache), "genre")}
-    ${similarSectionTemplate(title, getVisibleTitles(titlesCache), "language")}
-
-    <section class="comment-section">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">${escapeHtml(commentSectionCopy.eyebrow)}</p>
-          <h2>${escapeHtml(commentSectionCopy.title)}</h2>
-        </div>
-        <p class="section-copy">${escapeHtml(commentSectionCopy.helper)}</p>
-      </div>
-
-      ${
-        isSignedIn()
-          ? `
-            <form class="suggest-form comment-form" id="commentForm">
-              <div class="form-grid">
-                <label class="check-option spoiler-check form-span">
-                  <input name="spoiler" type="checkbox" />
-                  <span>Mark this comment as spoiler</span>
-                </label>
-                <label class="input-group form-span">
-                  <span>Your reaction</span>
-                  ${commentReactionPickerTemplate(title.id)}
-                </label>
-                <label class="input-group form-span">
-                  <span>${escapeHtml(commentSectionCopy.fieldLabel)}</span>
-                  <textarea name="comment" rows="4" placeholder="${escapeHtml(commentSectionCopy.placeholder)}"></textarea>
-                </label>
-              </div>
-              <div class="form-actions">
-                <button class="primary-btn" type="submit">${escapeHtml(commentSectionCopy.buttonLabel)}</button>
-                <p class="form-message" id="commentMessage" aria-live="polite"></p>
-              </div>
-            </form>
-          `
-          : `
-            <div class="member-lock-card">
-              <p class="section-copy">Sign in to vote, post reviews, save collections, and mark titles as interested.</p>
-              <button class="primary-btn" type="button" id="detailsCommentSignInBtn">Sign In to React</button>
+        <section class="comment-section">
+          <div class="section-heading detail-review-heading">
+            <div>
+              <p class="eyebrow">${escapeHtml(commentSectionCopy.eyebrow)}</p>
+              <h2>${escapeHtml(commentSectionCopy.title)}</h2>
             </div>
-          `
-      }
+            <div class="detail-review-tools">
+              <button class="secondary-btn" type="button">Most Liked</button>
+              <label class="detail-review-check"><input type="checkbox" /> <span>Show Spoilers</span></label>
+              <label class="detail-review-check"><input type="checkbox" /> <span>Following Only</span></label>
+            </div>
+          </div>
 
-      <div class="comment-list">
-        ${title.comments.length ? title.comments.map(commentTemplate).join("") : `<p class="empty-state">${escapeHtml(commentSectionCopy.emptyLabel)}</p>`}
+          ${
+            isSignedIn()
+              ? `
+                <form class="suggest-form comment-form" id="commentForm">
+                  <div class="comment-form-head">
+                    ${profileAvatarTemplate(currentUserProfile, currentUser, "account-chip-avatar")}
+                    <strong>@${escapeHtml(getProfileUsername(currentUserProfile, currentUser))}</strong>
+                    ${commentReactionPickerTemplate(title.id)}
+                  </div>
+                  <label class="input-group form-span detail-review-textarea">
+                    <span>${escapeHtml(commentSectionCopy.fieldLabel)}</span>
+                    <textarea name="comment" rows="4" maxlength="1000" placeholder="${escapeHtml(commentSectionCopy.placeholder)}"></textarea>
+                  </label>
+                  <label class="check-option spoiler-check">
+                    <input name="spoiler" type="checkbox" />
+                    <span>Show as spoiler</span>
+                  </label>
+                  <div class="form-actions">
+                    <span class="detail-char-count">0/1000</span>
+                    <button class="primary-btn" type="submit">${escapeHtml(commentSectionCopy.buttonLabel)}</button>
+                    <p class="form-message" id="commentMessage" aria-live="polite"></p>
+                  </div>
+                </form>
+              `
+              : `
+                <div class="member-lock-card">
+                  <p class="section-copy">Sign in to vote, post reviews, save collections, and mark titles as interested.</p>
+                  <button class="primary-btn" type="button" id="detailsCommentSignInBtn">Sign In to React</button>
+                </div>
+              `
+          }
+
+          <div class="comment-list">
+            ${title.comments.length ? title.comments.map(commentTemplate).join("") : `<p class="empty-state">${escapeHtml(commentSectionCopy.emptyLabel)}</p>`}
+          </div>
+        </section>
+
+        ${detailNewsSectionTemplate(title, visibleTitles)}
+        ${detailDiscussionSectionTemplate(title, visibleTitles)}
+        ${ownerControls ? `<section class="detail-owner-section">${ownerControls}</section>` : ""}
       </div>
+
+      <aside class="detail-side-column">
+        ${vibeChartTemplate(title)}
+        ${availabilityCard}
+      </aside>
     </section>
   `;
 
@@ -6032,8 +6173,8 @@ async function renderDetailsPage() {
       applyVibeDisplay(vibeCard, vibeCard.dataset.lockedVibeSegment || "", false);
     });
 
-    const detailActions = target.querySelector(".detail-actions");
-    const detailHeroCard = target.querySelector(".detail-hero-card");
+    const detailActions = target;
+    const detailHeroCard = null;
 
     detailActions?.addEventListener("click", async (event) => {
     const actionTarget = event.target instanceof HTMLElement ? event.target : null;
