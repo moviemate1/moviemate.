@@ -6216,8 +6216,13 @@ async function renderDetailsPage() {
               ? `
                 <form class="suggest-form comment-form" id="commentForm">
                   <div class="comment-form-head">
-                    ${profileAvatarTemplate(currentUserProfile, currentUser, "account-chip-avatar")}
-                    <strong>@${escapeHtml(getProfileUsername(currentUserProfile, currentUser))}</strong>
+                    <div class="comment-form-user">
+                      ${profileAvatarTemplate(currentUserProfile, currentUser, "account-chip-avatar")}
+                      <div class="comment-form-identity">
+                        <strong>@${escapeHtml(getProfileUsername(currentUserProfile, currentUser))}</strong>
+                        <span>${escapeHtml(isUpcomingTitle(title) ? "Join the discussion" : "Share your review")}</span>
+                      </div>
+                    </div>
                     ${commentReactionPickerTemplate(title.id)}
                   </div>
                   <label class="input-group form-span detail-review-textarea">
