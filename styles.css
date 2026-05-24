@@ -7096,15 +7096,15 @@ body[data-page="details"] .hero-interest-card {
     min-height: 44px;
     margin-top: 0;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: linear-gradient(135deg, #b34dff 0%, #8e4df4 58%, #7b43e8 100%);
+    border: 1px solid rgba(190, 127, 255, 0.68);
     color: #fff;
-    box-shadow: none;
+    box-shadow: 0 18px 44px rgba(151, 72, 255, 0.2);
   }
 
   body[data-page="details"] .hero-interest-card-watch .hero-interest-action:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.28);
+    background: linear-gradient(135deg, #bf5aff 0%, #9651f6 58%, #8250eb 100%);
+    border-color: rgba(208, 160, 255, 0.74);
   }
 
   body[data-page="details"] .hero-interest-card-watch .hero-interest-helper {
