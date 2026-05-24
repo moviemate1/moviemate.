@@ -61,10 +61,36 @@ const REACTION_METER_COLORS = {
 };
 
 function getReactionMeterGradient(stats) {
-  const perfectEnd = stats.perfectPercent;
-  const goEnd = perfectEnd + stats.goForItPercent;
-  const timepassEnd = goEnd + stats.timepassPercent;
-  return `conic-gradient(${REACTION_METER_COLORS.perfect.solid} 0 ${perfectEnd}%, ${REACTION_METER_COLORS.goForIt.solid} ${perfectEnd}% ${goEnd}%, ${REACTION_METER_COLORS.timepass.solid} ${goEnd}% ${timepassEnd}%, ${REACTION_METER_COLORS.skip.solid} ${timepassEnd}% 100%)`;
+  const segments = [
+    { color: REACTION_METER_COLORS.skip.solid, percent: stats.skipPercent },
+    { color: REACTION_METER_COLORS.timepass.solid, percent: stats.timepassPercent },
+    { color: REACTION_METER_COLORS.goForIt.solid, percent: stats.goForItPercent },
+    { color: REACTION_METER_COLORS.perfect.solid, percent: stats.perfectPercent }
+  ].filter((segment) => segment.percent > 0);
+
+  if (!segments.length) {
+    return "conic-gradient(from 270deg at 50% 100%, rgba(255,255,255,0.12) 0deg 180deg, transparent 180deg 360deg)";
+  }
+
+  const gap = segments.length > 1 ? 4 : 0;
+  const usableDegrees = 180 - gap * (segments.length - 1);
+  let cursor = 0;
+  const parts = [];
+
+  segments.forEach((segment, index) => {
+    const size = index === segments.length - 1 ? 180 - cursor : (segment.percent / 100) * usableDegrees;
+    const end = Math.min(180, cursor + size);
+    parts.push(`${segment.color} ${cursor.toFixed(2)}deg ${end.toFixed(2)}deg`);
+    cursor = end;
+
+    if (index < segments.length - 1) {
+      const gapEnd = Math.min(180, cursor + gap);
+      parts.push(`transparent ${cursor.toFixed(2)}deg ${gapEnd.toFixed(2)}deg`);
+      cursor = gapEnd;
+    }
+  });
+
+  return `conic-gradient(from 270deg at 50% 100%, ${parts.join(", ")}, transparent ${cursor.toFixed(2)}deg 360deg)`;
 }
 const DEFAULT_HOMEPAGE_CONTENT = {
   heroEyebrow: "MoviemateHub picks for every mood",
@@ -1529,29 +1555,64 @@ function getDetailRuntimeLabel(title) {
   return "2h 30m";
 }
 
+function getAvailabilityLink(title, platform, titleIsUpcoming) {
+  const query = encodeURIComponent(title.title || "movie");
+  const normalizedPlatform = String(platform || "").toLowerCase();
+
+  if (titleIsUpcoming) {
+    return `https://in.bookmyshow.com/search?q=${query}`;
+  }
+
+  if (normalizedPlatform.includes("prime")) {
+    return `https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${query}`;
+  }
+
+  if (normalizedPlatform.includes("netflix")) {
+    return `https://www.netflix.com/search?q=${query}`;
+  }
+
+  if (normalizedPlatform.includes("hotstar") || normalizedPlatform.includes("jio")) {
+    return `https://www.hotstar.com/in/search?q=${query}`;
+  }
+
+  if (normalizedPlatform.includes("crunchyroll")) {
+    return `https://www.crunchyroll.com/search?q=${query}`;
+  }
+
+  if (normalizedPlatform.includes("district")) {
+    return `https://www.district.in/search?query=${query}`;
+  }
+
+  return `https://www.google.com/search?q=${encodeURIComponent(`${title.title || "movie"} ${platform || "watch online"}`)}`;
+}
+
 function detailAvailabilityCardTemplate(title, platforms, titleIsUpcoming) {
-  const platform = platforms[0] || (titleIsUpcoming ? "District" : "Prime Video");
+  const platform = titleIsUpcoming ? "BookMyShow" : platforms[0] || "Prime Video";
   const heading = titleIsUpcoming ? "Tickets On" : "Watch Online";
-  const subcopy = titleIsUpcoming ? "Book when live" : "Subscription";
-  const initials = platform
-    .split(/\s+/)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "MM";
+  const subcopy = titleIsUpcoming ? "Book your tickets" : "Subscription";
+  const availabilityUrl = getAvailabilityLink(title, platform, titleIsUpcoming);
+  const reportUrl = `mailto:hello@moviematehub.indevs.in?subject=${encodeURIComponent(`Broken link: ${title.title}`)}&body=${encodeURIComponent(`Please check the ${heading.toLowerCase()} link for ${title.title}.`)}`;
+  const initials = titleIsUpcoming
+    ? "BM"
+    : platform
+        .split(/\s+/)
+        .map((part) => part.charAt(0))
+        .join("")
+        .slice(0, 2)
+        .toUpperCase() || "MM";
 
   return `
     <article class="detail-availability-card">
       <h3>${escapeHtml(heading)}</h3>
-      <div class="detail-platform-row">
+      <a class="detail-platform-row" href="${escapeHtml(availabilityUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${heading}: ${platform}`)}">
         <span class="detail-platform-logo">${escapeHtml(initials)}</span>
         <span>
           <strong>${escapeHtml(platform)}</strong>
           <small>${escapeHtml(subcopy)}</small>
         </span>
         <span class="detail-platform-arrow" aria-hidden="true">↗</span>
-      </div>
-      <button class="detail-report-link" type="button">Broken Link? Report</button>
+      </a>
+      <a class="detail-report-link" href="${escapeHtml(reportUrl)}">Broken Link? Report</a>
     </article>
   `;
 }
@@ -2081,6 +2142,26 @@ function formatReleaseDate(value) {
   });
 }
 
+function formatHeroReleaseDate(title) {
+  if (!title?.releaseDate) {
+    return "Release date not added";
+  }
+
+  if (isUpcomingTitle(title) && title.type === "Movie") {
+    const date = new Date(`${title.releaseDate}T00:00:00`);
+
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+  }
+
+  return formatReleaseDate(title.releaseDate);
+}
+
 function getComparableReleaseDate(value) {
   const raw = String(value || "").trim();
 
@@ -2453,11 +2534,18 @@ function buildGenreSegments(title) {
 }
 
 function genreChartStyle(segments) {
+  if (!segments.length) {
+    return "background: conic-gradient(#7e46ff 0deg 360deg);";
+  }
+
+  const gap = segments.length > 1 ? 2.6 : 0;
+  const usableDegrees = 360 - gap * segments.length;
   let start = 0;
   const parts = segments.map((segment) => {
-    const end = start + segment.percent;
-    const result = `${segment.color} ${start}% ${end}%`;
-    start = end;
+    const end = start + (segment.percent / 100) * usableDegrees;
+    const gapEnd = Math.min(360, end + gap);
+    const result = `${segment.color} ${start.toFixed(2)}deg ${end.toFixed(2)}deg, transparent ${end.toFixed(2)}deg ${gapEnd.toFixed(2)}deg`;
+    start = gapEnd;
     return result;
   });
 
@@ -2512,9 +2600,10 @@ function reactionMeterTemplate(title) {
       <div class="insight-header">
         <div>
           <p class="eyebrow">MovieMate Meter</p>
-          <h3 data-meter-recommend>${recommendedPercent}% recommend</h3>
+          <h3>MovieMate Meter</h3>
         </div>
-        <span class="insight-pill" data-meter-votes>${formatLargeNumber(total)} votes</span>
+        <button class="meter-share-btn share-title-btn" type="button" aria-label="Share MovieMate Meter">⌯</button>
+        <span class="insight-pill meter-votes-hidden" data-meter-votes>${formatLargeNumber(total)} votes</span>
       </div>
       <div class="meter-visual" data-meter-visual style="background: ${getReactionMeterGradient(stats)};">
         <div class="meter-core">
@@ -2631,7 +2720,7 @@ function vibeChartTemplate(title) {
 
   return `
     <article
-      class="insight-card"
+      class="insight-card detail-vibe-card"
       data-vibe-card="true"
       data-vibe-title-id="${title.id}"
       data-vibe-default-heading="${escapeHtml(defaultHeading)}"
@@ -2639,7 +2728,7 @@ function vibeChartTemplate(title) {
       <div class="insight-header">
         <div>
           <p class="eyebrow">Vibe Chart</p>
-          <h3 data-vibe-heading>${escapeHtml(defaultHeading)}</h3>
+          <h3>Vibe Chart</h3>
         </div>
       </div>
       <div class="genre-chart" data-vibe-chart="true" style="${genreChartStyle(segments)}">
@@ -2714,10 +2803,10 @@ function applyVibeDisplay(vibeCard, segmentLabel = "", isFocused = false) {
 function trailerPanelTemplate(title) {
   const trailerLink = getTrailerLink(title);
   const embedUrl = getYouTubeEmbedUrl(title.trailerUrl);
-  const interestLabel = getHeroLaunchLabel(title);
+  const titleIsUpcoming = isUpcomingTitle(title);
+  const interestLabel = titleIsUpcoming && title.type === "Movie" ? "Coming to Theaters" : getHeroLaunchLabel(title);
   const interestedCount = formatLargeNumber(getInterestedCount(title));
   const interestState = getPrimaryWatchButtonState(title, getTitleWatchStatus(title.id));
-  const titleIsUpcoming = isUpcomingTitle(title);
   const memberReady = isSignedIn();
   const overlayTitle = `
     <p class="eyebrow">${escapeHtml(title.type)} • ${escapeHtml(String(title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now"))}</p>
@@ -2729,7 +2818,7 @@ function trailerPanelTemplate(title) {
         <aside class="hero-interest-card hero-interest-card-upcoming">
           <div class="hero-interest-copy">
             <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
-            <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
+            <h3>${escapeHtml(formatHeroReleaseDate(title))}</h3>
             <p class="hero-interest-count hero-interest-count-fire">${interestCountMarkup}</p>
           </div>
           <span class="hero-interest-fire-icon" aria-hidden="true">${buttonIconTemplate("fire")}</span>
@@ -6000,7 +6089,9 @@ async function renderDetailsPage() {
     const countryLabel = getDetailCountryLabel(title);
     const ageRatingLabel = getDetailAgeRating(title);
     const runtimeLabel = getDetailRuntimeLabel(title);
-    const heroMetaLine = `${displayTypeLabel} • ${releaseYear} • ${runtimeLabel}`;
+    const heroMetaLine = titleIsUpcoming
+      ? `${displayTypeLabel} • ${releaseYear}`
+      : `${displayTypeLabel} • ${releaseYear} • ${runtimeLabel}`;
     const availabilityCard = detailAvailabilityCardTemplate(title, primaryPlatforms, titleIsUpcoming);
     const upcomingReleaseCard = titleIsUpcoming
       ? `
