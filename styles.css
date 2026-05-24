@@ -7066,8 +7066,8 @@ body[data-page="details"] .hero-interest-card {
     z-index: 8;
     width: min(286px, 22vw);
     display: grid;
-    gap: 12px;
-    padding: 18px 18px 16px;
+    gap: 9px;
+    padding: 14px 18px 13px;
     border-radius: 22px;
     background: rgba(7, 8, 11, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -7077,24 +7077,24 @@ body[data-page="details"] .hero-interest-card {
 
   body[data-page="details"] .hero-interest-card-watch .hero-interest-eyebrow {
     color: rgba(255, 255, 255, 0.74);
-    font-size: 0.92rem;
+    font-size: 0.88rem;
   }
 
   body[data-page="details"] .hero-interest-card-watch h3 {
     color: #fff;
-    font-size: 1.02rem;
-    line-height: 1.18;
+    font-size: 0.96rem;
+    line-height: 1.14;
   }
 
   body[data-page="details"] .hero-interest-card-watch .hero-interest-count {
     color: #c875ff;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 900;
   }
 
   body[data-page="details"] .hero-interest-card-watch .hero-interest-action {
-    min-height: 48px;
-    margin-top: 2px;
+    min-height: 44px;
+    margin-top: 0;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.16);
@@ -7110,8 +7110,8 @@ body[data-page="details"] .hero-interest-card {
   body[data-page="details"] .hero-interest-card-watch .hero-interest-helper {
     margin: 0;
     color: rgba(255, 255, 255, 0.68);
-    font-size: 0.86rem;
-    line-height: 1.4;
+    font-size: 0.82rem;
+    line-height: 1.34;
   }
 
   body[data-page="details"] .hero-interest-card-watch .hero-interest-action.watch-status-btn-interested.active {
@@ -7263,7 +7263,8 @@ body[data-page="details"] .detail-cta-stack .watch-status-btn {
   box-shadow: none;
 }
 
-body[data-page="details"] .detail-hero-card .detail-cta-stack .watch-status-btn,
+body[data-page="details"] .detail-hero-card .detail-cta-stack .watch-status-btn.watch-status-btn-interested,
+body[data-page="details"] .detail-hero-card .detail-cta-stack .watch-status-btn.watch-status-btn-interested.active,
 body[data-page="details"] .detail-hero-card-upcoming .detail-cta-stack .watch-status-btn,
 body[data-page="details"] .detail-hero-card-upcoming .detail-cta-stack .watch-status-btn:disabled {
   background: linear-gradient(135deg, #b34dff 0%, #8e4df4 58%, #7b43e8 100%);
