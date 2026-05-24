@@ -6741,3 +6741,21 @@ body[data-page="details"] .detail-upcoming-mobile-card .hero-interest-fire-icon 
   width: 50px;
   height: 50px;
 }
+
+@media (min-width: 901px) {
+  /* Desktop: upcoming titles use fire-style primary button and hide mobile-only release block. */
+  body[data-page="details"] .detail-hero-card-upcoming .detail-cta-stack .watch-status-btn {
+    background: linear-gradient(135deg, #ff6f3f 0%, #ef4c66 56%, #d63f80 100%);
+    border-color: rgba(255, 149, 112, 0.72);
+    color: #fff8f4;
+    box-shadow: 0 18px 44px rgba(239, 76, 102, 0.28);
+  }
+
+  body[data-page="details"] .detail-hero-card-upcoming .detail-cta-stack .watch-status-btn .button-icon {
+    color: #fff3ec;
+  }
+
+  body[data-page="details"] .detail-hero-card-upcoming .detail-upcoming-mobile-card {
+    display: none;
+  }
+}
