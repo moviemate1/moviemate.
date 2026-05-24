@@ -6759,3 +6759,70 @@ body[data-page="details"] .detail-upcoming-mobile-card .hero-interest-fire-icon 
     display: none;
   }
 }
+
+/* Mobile upcoming release strip: full-width and horizontal under the action buttons. */
+@media (max-width: 720px) {
+  body[data-page="details"] .detail-upcoming-mobile-card {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-top: 4px;
+    padding: 12px;
+    border-radius: 18px;
+    display: block;
+  }
+
+  body[data-page="details"] .detail-upcoming-mobile-meta {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  body[data-page="details"] .detail-upcoming-meta-pill {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 42px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    color: #fff2ec;
+    font-size: clamp(0.68rem, 3.15vw, 0.82rem);
+    font-weight: 800;
+    line-height: 1.12;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  body[data-page="details"] .detail-upcoming-meta-pill + .detail-upcoming-meta-pill {
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  body[data-page="details"] .detail-upcoming-meta-interest .button-icon {
+    width: 1em;
+    height: 1em;
+    color: #ff7650;
+  }
+
+  body[data-page="details"] .detail-upcoming-mobile-card > .hero-interest-fire-icon {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  body[data-page="details"] .detail-upcoming-mobile-card {
+    padding: 10px;
+  }
+
+  body[data-page="details"] .detail-upcoming-meta-pill {
+    min-height: 40px;
+    padding: 0 6px;
+    font-size: 0.66rem;
+  }
+}
