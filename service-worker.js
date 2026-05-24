@@ -1,4 +1,4 @@
-const CACHE_NAME = "moviemate-shell-v14";
+const CACHE_NAME = "moviemate-shell-v15";
 const SHELL_ASSETS = [
   "/explore/",
   "/explore/index.html",

@@ -6569,6 +6569,11 @@ body[data-page="details"] .button-icon-bookmark svg {
   stroke: none;
 }
 
+body[data-page="details"] .button-icon-fire svg {
+  fill: currentColor;
+  stroke: none;
+}
+
 body[data-page="details"] .detail-cta-stack .watch-status-btn::before,
 body[data-page="details"] .detail-cta-stack .detail-save-btn::before {
   content: none;
@@ -6661,4 +6666,78 @@ body[data-page="details"] .hero-interest-card:has(.watch-status-btn-watched.acti
     linear-gradient(180deg, rgba(12, 132, 55, 0.92), rgba(5, 70, 32, 0.97)),
     rgba(8, 34, 19, 0.86);
   border-color: rgba(109, 255, 156, 0.48);
+}
+
+body[data-page="details"] .hero-interest-card-upcoming {
+  --watch-accent: #ff7a48;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  background:
+    radial-gradient(120% 120% at 12% 0%, rgba(255, 118, 72, 0.16), transparent 62%),
+    linear-gradient(180deg, rgba(54, 31, 25, 0.94), rgba(31, 20, 16, 0.97));
+  border-color: rgba(255, 131, 88, 0.44);
+}
+
+body[data-page="details"] .hero-interest-count-fire {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ff8e62;
+}
+
+body[data-page="details"] .hero-interest-count-fire .button-icon {
+  width: 1.04em;
+  height: 1.04em;
+  color: #ff7343;
+}
+
+body[data-page="details"] .hero-interest-fire-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #ff7245 0%, #ea4c73 100%);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 14px 28px rgba(234, 76, 115, 0.34);
+}
+
+body[data-page="details"] .hero-interest-fire-icon .button-icon {
+  width: 1.28em;
+  height: 1.28em;
+}
+
+body[data-page="details"] .detail-upcoming-mobile-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 18px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 131, 88, 0.38);
+  background:
+    radial-gradient(120% 120% at 12% 0%, rgba(255, 118, 72, 0.14), transparent 62%),
+    linear-gradient(180deg, rgba(28, 20, 17, 0.95), rgba(20, 15, 14, 0.98));
+}
+
+body[data-page="details"] .detail-upcoming-mobile-card .hero-interest-eyebrow {
+  color: rgba(255, 197, 173, 0.9);
+}
+
+body[data-page="details"] .detail-upcoming-mobile-card h3 {
+  margin: 4px 0 8px;
+  color: #fff;
+  font-size: clamp(1.42rem, 3.4vw, 1.95rem);
+  line-height: 1.14;
+}
+
+body[data-page="details"] .detail-upcoming-mobile-card .hero-interest-fire-icon {
+  width: 50px;
+  height: 50px;
 }

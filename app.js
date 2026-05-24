@@ -2122,7 +2122,7 @@ function getUpcomingInterestState(status) {
       label: "Interested",
       nextStatus: "clear",
       className: "watch-status-btn-interested active",
-      icon: "eye",
+      icon: "fire",
       helper: "Tap again to remove this from interested."
     };
   }
@@ -2131,7 +2131,7 @@ function getUpcomingInterestState(status) {
     label: "Mark as Interested",
     nextStatus: "interested",
     className: "watch-status-btn-interested",
-    icon: "eye",
+    icon: "fire",
     helper: "Members can mark unreleased titles as interested."
   };
 }
@@ -2181,6 +2181,17 @@ function getPrimaryWatchButtonState(title, status) {
 }
 
 function buttonIconTemplate(icon) {
+  if (icon === "fire") {
+    return `
+      <span class="button-icon button-icon-fire" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M12 22c-3.9 0-7-2.9-7-6.8 0-2.4 1.1-4.5 3.2-6.3.4 2.2 1.6 3.7 3.1 4.6-.7-3.6.7-7.1 4-10.5.1 3.4 1.6 5.2 3.2 7.1 1.3 1.5 2.5 3 2.5 5.1 0 3.9-3.1 6.8-7 6.8Z"></path>
+          <path d="M12.1 18.8c-1.7 0-3-1.2-3-2.9 0-1.2.6-2.2 1.6-3 .2 1.2.9 2 1.8 2.5-.2-1.8.5-3.3 2-4.8.1 1.5.8 2.4 1.5 3.2.6.7 1 1.3 1 2.1 0 1.7-1.3 2.9-2.9 2.9Z"></path>
+        </svg>
+      </span>
+    `;
+  }
+
   if (icon === "check") {
     return `
       <span class="button-icon button-icon-check" aria-hidden="true">
@@ -2563,22 +2574,35 @@ function trailerPanelTemplate(title) {
   const interestLabel = getHeroLaunchLabel(title);
   const interestedCount = formatLargeNumber(getInterestedCount(title));
   const interestState = getPrimaryWatchButtonState(title, getTitleWatchStatus(title.id));
+  const titleIsUpcoming = isUpcomingTitle(title);
   const memberReady = isSignedIn();
   const overlayTitle = `
     <p class="eyebrow">${escapeHtml(title.type)} • ${escapeHtml(String(title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now"))}</p>
     <h2>${escapeHtml(title.title)}</h2>
   `;
-  const interestCard = `
-    <aside class="hero-interest-card">
-      <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
-      <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
-      <p class="hero-interest-count">${escapeHtml(interestedCount)} interested</p>
-      <button class="watch-status-btn hero-interest-action ${interestState.className}" type="button" data-watch-status="${interestState.nextStatus}" data-id="${title.id}" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>
-        ${watchStatusButtonContent(interestState)}
-      </button>
-      <p class="hero-interest-helper">${memberReady ? escapeHtml(interestState.helper) : "Sign in to mark titles as interested."}</p>
-    </aside>
-  `;
+  const interestCountMarkup = `${buttonIconTemplate("fire")}<span>${escapeHtml(interestedCount)} interested</span>`;
+  const interestCard = titleIsUpcoming
+    ? `
+        <aside class="hero-interest-card hero-interest-card-upcoming">
+          <div class="hero-interest-copy">
+            <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
+            <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
+            <p class="hero-interest-count hero-interest-count-fire">${interestCountMarkup}</p>
+          </div>
+          <span class="hero-interest-fire-icon" aria-hidden="true">${buttonIconTemplate("fire")}</span>
+        </aside>
+      `
+    : `
+        <aside class="hero-interest-card hero-interest-card-watch">
+          <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
+          <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
+          <p class="hero-interest-count">${escapeHtml(interestedCount)} interested</p>
+          <button class="watch-status-btn hero-interest-action ${interestState.className}" type="button" data-watch-status="${interestState.nextStatus}" data-id="${title.id}" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>
+            ${watchStatusButtonContent(interestState)}
+          </button>
+          <p class="hero-interest-helper">${memberReady ? escapeHtml(interestState.helper) : "Sign in to mark titles as interested."}</p>
+        </aside>
+      `;
 
   if (embedUrl) {
     return `
@@ -4997,9 +5021,27 @@ function updateAuthUI() {
     const avatar = button.querySelector("[data-account-avatar]");
     const label = button.querySelector("[data-account-label]");
     const avatarData = getProfileAvatar(uiProfile, uiUser);
+    const displayName = getProfileDisplayName(uiProfile, uiUser);
+    const initials = getProfileInitials(uiProfile, uiUser);
+    const isCompactAccountButton =
+      Boolean(button.closest(".explore-mobile-header-bar")) ||
+      Boolean(button.closest(".mobile-dock")) ||
+      (
+        Boolean(button.closest(".explore-topbar")) &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(max-width: 920px)").matches
+      ) ||
+      (
+        button.classList.contains("account-chip") &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(max-width: 920px)").matches
+      );
+    const accountLabelText = isCompactAccountButton ? initials : displayName;
 
     if (signedInForUi) {
       button.classList.add("signed-in");
+      button.dataset.accountInitials = initials;
+      button.dataset.accountName = displayName;
       if (avatar) {
         if (avatarData.image) {
           avatar.textContent = "";
@@ -5008,7 +5050,7 @@ function updateAuthUI() {
           avatar.style.backgroundPosition = "center";
           avatar.style.backgroundRepeat = "no-repeat";
         } else {
-          avatar.textContent = getProfileInitials(uiProfile, uiUser);
+          avatar.textContent = initials;
           avatar.style.backgroundImage = "";
           avatar.style.backgroundSize = "";
           avatar.style.backgroundPosition = "";
@@ -5017,12 +5059,14 @@ function updateAuthUI() {
         avatar.classList.remove("hidden");
       }
       if (label) {
-        label.textContent = getProfileDisplayName(uiProfile, uiUser);
+        label.textContent = accountLabelText;
       } else {
-        button.textContent = getProfileDisplayName(uiProfile, uiUser);
+        button.textContent = accountLabelText;
       }
     } else {
       button.classList.remove("signed-in");
+      delete button.dataset.accountInitials;
+      delete button.dataset.accountName;
       if (avatar) {
         avatar.textContent = "MM";
         avatar.style.backgroundImage = "";
@@ -5790,6 +5834,7 @@ async function renderDetailsPage() {
     const commentSectionCopy = getCommentSectionCopy(title);
     const primaryLanguage = title.language?.[0] || "Not added";
     const primaryPlatforms = getPrimaryPlatforms(title.platforms);
+    const titleIsUpcoming = isUpcomingTitle(title);
     const primaryPlatformMarkup = primaryPlatforms.length
       ? `
           <div class="detail-platform-list">
@@ -5808,6 +5853,21 @@ async function renderDetailsPage() {
     const currentWatchStatus = getTitleWatchStatus(title.id);
     const primaryWatchButton = getPrimaryWatchButtonState(title, currentWatchStatus);
     const memberReady = isSignedIn();
+    const upcomingReleaseCard = titleIsUpcoming
+      ? `
+          <div class="detail-upcoming-mobile-card">
+            <div>
+              <p class="hero-interest-eyebrow">${escapeHtml(getHeroLaunchLabel(title))}</p>
+              <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
+              <p class="hero-interest-count hero-interest-count-fire">
+                ${buttonIconTemplate("fire")}
+                <span>${escapeHtml(formatLargeNumber(getInterestedCount(title)))} interested</span>
+              </p>
+            </div>
+            <span class="hero-interest-fire-icon" aria-hidden="true">${buttonIconTemplate("fire")}</span>
+          </div>
+        `
+      : "";
     const ownerControls = isOwnerMode()
       ? `
           <div class="owner-actions">
@@ -5829,7 +5889,7 @@ async function renderDetailsPage() {
     `;
 
     target.innerHTML = `
-    <section class="detail-hero-card">
+    <section class="detail-hero-card ${titleIsUpcoming ? "detail-hero-card-upcoming" : "detail-hero-card-released"}">
       ${trailerPanelTemplate(title)}
       <div class="detail-summary">
         <div class="detail-summary-header">
@@ -5875,6 +5935,7 @@ async function renderDetailsPage() {
             <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>${saveTitleButtonContent(saved)}</button>
             ${memberReady ? `<p class="hero-interest-helper detail-cta-helper">${escapeHtml(primaryWatchButton.helper)}</p>` : '<p class="hero-interest-helper detail-cta-helper">Members only can save, track interest, and update watch status.</p>'}
           </div>
+          ${upcomingReleaseCard}
           <div class="detail-mobile-overview">
             <h2>Overview</h2>
             <p>${escapeHtml(title.description)}</p>
