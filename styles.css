@@ -7032,6 +7032,14 @@ body[data-page="details"] .detail-header-panel-search-surface {
   width: min(1480px, 100%);
 }
 
+body[data-page="details"] .detail-header-panel-surface-floating {
+  width: min(560px, calc(100% - 120px));
+  margin-right: max(12px, calc((100vw - 1440px) / 2 + 88px));
+  margin-left: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+}
+
 body[data-page="details"] .detail-panel-title-row {
   margin-bottom: 22px;
 }
@@ -7238,17 +7246,34 @@ body[data-page="details"] .detail-collection-result img {
 }
 
 body[data-page="details"] .detail-header-schedule-shell,
-body[data-page="details"] .detail-header-spaces-shell {
+body[data-page="details"] .detail-header-spaces-shell,
+body[data-page="details"] .detail-header-collections-shell {
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 28px;
 }
 
 body[data-page="details"] .detail-header-schedule-sidebar,
-body[data-page="details"] .detail-header-spaces-sidebar {
+body[data-page="details"] .detail-header-spaces-sidebar,
+body[data-page="details"] .detail-header-collections-sidebar {
   display: grid;
   align-content: start;
   gap: 12px;
+}
+
+body[data-page="details"] .detail-header-collections-main {
+  min-width: 0;
+}
+
+body[data-page="details"] .detail-header-collections-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+body[data-page="details"] .detail-header-collections-empty {
+  display: grid;
+  align-items: center;
 }
 
 body[data-page="details"] .detail-schedule-menu-btn {
@@ -7387,9 +7412,11 @@ body[data-page="details"] .detail-header-spaces-feed {
 }
 
 body[data-page="details"] .detail-space-story-card {
+  display: block;
   overflow: hidden;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.04);
+  text-decoration: none;
 }
 
 body[data-page="details"] .detail-space-story-card img {
@@ -7429,6 +7456,12 @@ body[data-page="details"] .detail-header-spaces-filters {
   gap: 12px;
 }
 
+body[data-page="details"] .detail-header-browse-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 body[data-page="details"] .detail-space-filter-card {
   min-height: 126px;
   padding: 18px;
@@ -7439,8 +7472,21 @@ body[data-page="details"] .detail-space-filter-card {
   font-weight: 700;
 }
 
+body[data-page="details"] .detail-browse-filter-card {
+  text-decoration: none;
+}
+
+body[data-page="details"] .detail-header-notification-feed {
+  max-height: min(62vh, 560px);
+  overflow: auto;
+}
+
 body[data-page="details"] .detail-header-panel .featured-card,
 body[data-page="details"] .detail-header-panel .movie-card {
+  min-width: 0;
+}
+
+body[data-page="details"] .detail-header-panel .collection-card {
   min-width: 0;
 }
 

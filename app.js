@@ -256,6 +256,7 @@ let detailHeaderPanelState = {
   searchQuery: "",
   scheduleWindow: "released",
   scheduleType: "all",
+  collectionsMode: "discover",
   spacesFeed: "feed",
   titles: []
 };
@@ -4747,6 +4748,110 @@ function detailHeaderExplorePanelTemplate() {
   `;
 }
 
+function detailHeaderCollectionsPanelTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const mode = detailHeaderPanelState.collectionsMode || "discover";
+  const modes = [
+    ["discover", "Discover"],
+    ["mine", "My Collections"],
+    ["saved", "Saved"]
+  ];
+
+  if ((mode === "mine" || mode === "saved") && !isSignedIn()) {
+    return `
+      <div class="detail-header-panel-surface">
+        <div class="detail-panel-title-row">
+          <span class="detail-panel-title-mark">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v14l-6.5-3.8L5.5 20V6A1.5 1.5 0 0 1 7 4.5Z"></path></svg>
+            <span>Collections</span>
+          </span>
+        </div>
+        <div class="detail-header-collections-shell">
+          <aside class="detail-header-collections-sidebar">
+            ${modes
+              .map(
+                ([value, label]) => `
+                  <button class="detail-schedule-menu-btn ${mode === value ? "active" : ""}" type="button" data-detail-collections-mode="${value}">
+                    ${label}
+                  </button>
+                `
+              )
+              .join("")}
+          </aside>
+          <section class="detail-header-collections-main detail-header-collections-empty">
+            <p class="detail-search-empty-copy">Sign in to open your personal collections and saved shelves here.</p>
+          </section>
+        </div>
+      </div>
+    `;
+  }
+
+  const collections = getCollectionsByMode(titles, mode);
+
+  return `
+    <div class="detail-header-panel-surface">
+      <div class="detail-panel-title-row">
+        <span class="detail-panel-title-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v14l-6.5-3.8L5.5 20V6A1.5 1.5 0 0 1 7 4.5Z"></path></svg>
+          <span>Collections</span>
+        </span>
+      </div>
+      <div class="detail-header-collections-shell">
+        <aside class="detail-header-collections-sidebar">
+          ${modes
+            .map(
+              ([value, label]) => `
+                <button class="detail-schedule-menu-btn ${mode === value ? "active" : ""}" type="button" data-detail-collections-mode="${value}">
+                  ${label}
+                </button>
+              `
+            )
+            .join("")}
+        </aside>
+        <section class="detail-header-collections-main">
+          <div class="detail-header-collections-grid">
+            ${
+              collections.length
+                ? collections.map(collectionCardTemplate).join("")
+                : '<p class="detail-search-empty-copy">No collections are ready in this section yet.</p>'
+            }
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+}
+
+function detailHeaderBrowsePanelTemplate() {
+  const cards = [
+    "Monthly Ranking",
+    "Top 100",
+    "Category",
+    "Genre",
+    "Country",
+    "Language",
+    "MovieMate Select",
+    "Family Friendly",
+    "Franchise"
+  ];
+
+  return `
+    <div class="detail-header-panel-surface detail-header-panel-surface-floating">
+      <div class="detail-header-browse-grid">
+        ${cards
+          .map(
+            (label) => `
+              <a class="detail-space-filter-card detail-browse-filter-card" href="/explore/#browse">
+                <span>${label}</span>
+              </a>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
 function detailHeaderSpacesPanelTemplate() {
   const titles = detailHeaderPanelState.titles || [];
   const discussionTitles = [...titles]
@@ -4799,14 +4904,14 @@ function detailHeaderSpacesPanelTemplate() {
             .slice(0, 2)
             .map(
               (title) => `
-                <article class="detail-space-story-card">
+                <a class="detail-space-story-card" href="${buildTitleUrl(title.id)}#discussions">
                   <img src="${getOptimizedImageUrl(title.image, 900)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
                   <div class="detail-space-story-copy">
                     <span>Discussion Space</span>
                     <h3>${escapeHtml(title.title)}</h3>
                     <p>By MovieMate • ${getInterestedCount(title)} interested</p>
                   </div>
-                </article>
+                </a>
               `
             )
             .join("")}
@@ -4822,6 +4927,29 @@ function detailHeaderSpacesPanelTemplate() {
             )
             .join("")}
         </aside>
+      </div>
+    </div>
+  `;
+}
+
+function detailHeaderNotificationsPanelTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const notifications = buildUserNotifications(titles).slice(0, 8);
+
+  return `
+    <div class="detail-header-panel-surface detail-header-panel-surface-floating">
+      <div class="detail-panel-title-row">
+        <span class="detail-panel-title-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a4 4 0 0 1 4 4v2.1c0 1.2.4 2.3 1.1 3.2l1 1.2H5.9l1-1.2c.7-.9 1.1-2 1.1-3.2V8.5a4 4 0 0 1 4-4Z"></path><path d="M9.5 18a2.5 2.5 0 0 0 5 0"></path></svg>
+          <span>Notifications</span>
+        </span>
+      </div>
+      <div class="notification-feed detail-header-notification-feed">
+        ${
+          notifications.length
+            ? notifications.map(userNotificationTemplate).join("")
+            : '<p class="detail-search-empty-copy">No notifications yet. Saved titles and interested titles will show updates here.</p>'
+        }
       </div>
     </div>
   `;
@@ -4844,10 +4972,16 @@ async function renderDetailHeaderPanel() {
     markup = detailHeaderSearchPanelTemplate();
   } else if (mode === "schedule") {
     markup = detailHeaderSchedulePanelTemplate();
+  } else if (mode === "collections") {
+    markup = detailHeaderCollectionsPanelTemplate();
   } else if (mode === "explore") {
     markup = detailHeaderExplorePanelTemplate();
   } else if (mode === "spaces") {
     markup = detailHeaderSpacesPanelTemplate();
+  } else if (mode === "browse") {
+    markup = detailHeaderBrowsePanelTemplate();
+  } else if (mode === "notifications") {
+    markup = detailHeaderNotificationsPanelTemplate();
   }
 
   root.innerHTML = markup;
@@ -4949,6 +5083,13 @@ function setupDetailHeaderPanels() {
     const scheduleTypeButton = target.closest("[data-detail-schedule-type]");
     if (scheduleTypeButton) {
       detailHeaderPanelState.scheduleType = scheduleTypeButton.dataset.detailScheduleType || "all";
+      await renderDetailHeaderPanel();
+      return;
+    }
+
+    const collectionsModeButton = target.closest("[data-detail-collections-mode]");
+    if (collectionsModeButton) {
+      detailHeaderPanelState.collectionsMode = collectionsModeButton.dataset.detailCollectionsMode || "discover";
       await renderDetailHeaderPanel();
     }
   });

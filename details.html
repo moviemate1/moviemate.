@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=110-detail-header-panels" />
+    <link rel="stylesheet" href="styles.css?v=111-detail-header-collections-notifications" />
   </head>
   <body data-page="details">
     <div class="page-shell detail-shell">
@@ -38,18 +38,18 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-3 3v-3H5a2 2 0 0 1-2-2V8a3 3 0 0 1 3-3h1"></path><path d="M16 6h2a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-1l-2 2v-2"></path></svg>
             <span class="detail-nav-label">Spaces</span>
           </button>
-          <a class="detail-nav-btn detail-nav-link" href="/explore/#collections" aria-label="Collections">
+          <button class="detail-nav-btn" type="button" aria-label="Collections" data-detail-panel-trigger="collections">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v14l-6.5-3.8L5.5 20V6A1.5 1.5 0 0 1 7 4.5Z"></path></svg>
             <span class="detail-nav-label">Collections</span>
-          </a>
-          <a class="detail-nav-btn detail-nav-link" href="/explore/#browse" aria-label="Browse">
+          </button>
+          <button class="detail-nav-btn" type="button" aria-label="Browse" data-detail-panel-trigger="browse">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.2"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.2"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.2"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.2"></rect></svg>
             <span class="detail-nav-label">Browse</span>
-          </a>
-          <a class="detail-nav-btn detail-nav-link" href="/account.html" aria-label="Account alerts">
+          </button>
+          <button class="detail-nav-btn" type="button" aria-label="Notifications" data-detail-panel-trigger="notifications">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a4 4 0 0 1 4 4v2.1c0 1.2.4 2.3 1.1 3.2l1 1.2H5.9l1-1.2c.7-.9 1.1-2 1.1-3.2V8.5a4 4 0 0 1 4-4Z"></path><path d="M9.5 18a2.5 2.5 0 0 0 5 0"></path></svg>
-            <span class="detail-nav-label">Alerts</span>
-          </a>
+            <span class="detail-nav-label">Notifications</span>
+          </button>
           <button class="detail-nav-btn" type="button" aria-label="Search" data-detail-panel-trigger="search">
             <svg class="detail-nav-icon-search" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="5.5"></circle><path d="m16 16 4 4"></path></svg>
             <svg class="detail-nav-icon-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 18 18M18 6 6 18"></path></svg>
@@ -214,7 +214,7 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=161-detail-header-panels"></script>
+    <script type="module" src="app.js?v=162-detail-header-collections-notifications"></script>
     <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a3795ec89854463a9b90761fb384fb6c"}'></script><!-- End Cloudflare Web Analytics -->
   </body>
 </html>
