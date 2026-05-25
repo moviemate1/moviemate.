@@ -258,6 +258,7 @@ let detailHeaderPanelState = {
   scheduleType: "all",
   collectionsMode: "discover",
   spacesFeed: "feed",
+  spacesTopic: "all",
   titles: []
 };
 
@@ -4857,11 +4858,96 @@ function detailHeaderBrowsePanelTemplate() {
   `;
 }
 
-function detailHeaderSpacesPanelTemplate() {
-  const titles = detailHeaderPanelState.titles || [];
-  const mode = detailHeaderPanelState.spacesFeed || "feed";
-  const discussionTitles = [...titles]
-    .filter((title) => title.comments?.length || title.trending || getInterestedCount(title) > 0)
+function getTitleSpacesTopics(title) {
+  const text = [
+    title.title,
+    title.type,
+    title.genre,
+    title.description,
+    title.country,
+    ...(title.language || []),
+    ...(title.importBuckets || [])
+  ]
+    .join(" ")
+    .toLowerCase();
+  const topics = new Set(["International"]);
+
+  if (
+    /(india|indian|hindi|tamil|telugu|malayalam|kannada|bollywood|south|nepal|nepali)/.test(text)
+  ) {
+    topics.add("Indian");
+    topics.delete("International");
+  }
+
+  if (/(anime|animation|crunchyroll|manga)/.test(text)) {
+    topics.add("Anime");
+  }
+
+  if (/(sport|football|cricket|basketball|baseball|wrestling|racing)/.test(text)) {
+    topics.add("Sports");
+  }
+
+  if (/(game|gaming|player|quest|arcade|esports)/.test(text)) {
+    topics.add("Games");
+  }
+
+  return topics;
+}
+
+function getSpacesPostLabel(title, mode) {
+  if (mode === "discussion") {
+    return "Discussion";
+  }
+
+  if (title.releaseDate && title.releaseDate > new Date().toISOString().slice(0, 10)) {
+    return "Announcement";
+  }
+
+  if (title.description) {
+    return "Details Report";
+  }
+
+  return "Feed Post";
+}
+
+function truncateText(text, maxLength) {
+  const normalized = String(text || "").trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength - 1).trim()}…`;
+}
+
+function getSpacesPostCopy(title, mode) {
+  if (mode === "discussion") {
+    const count = title.comments?.length || 0;
+    return count
+      ? `${count} viewer ${count === 1 ? "comment" : "comments"} on this ${title.type.toLowerCase()}.`
+      : `Start a discussion about this ${title.type.toLowerCase()}.`;
+  }
+
+  if (title.description) {
+    return truncateText(title.description, 150);
+  }
+
+  return `${title.type} update • ${title.genre || "MovieMate pick"}`;
+}
+
+function getDetailSpacesPanelTitles(titles, mode, topic) {
+  return [...titles]
+    .filter((title) => {
+      if (mode === "discussion" && !(title.comments?.length || title.trending || getInterestedCount(title) > 0)) {
+        return false;
+      }
+
+      if (!topic || topic === "all") {
+        return true;
+      }
+
+      return getTitleSpacesTopics(title).has(topic);
+    })
     .sort((left, right) => {
       if (mode === "discussion") {
         return (right.comments?.length || 0) - (left.comments?.length || 0) || getInterestScore(right) - getInterestScore(left);
@@ -4869,27 +4955,41 @@ function detailHeaderSpacesPanelTemplate() {
 
       return getInterestScore(right) - getInterestScore(left);
     })
-    .slice(0, 6);
+    .slice(0, 12);
+}
+
+function detailHeaderSpacesPanelTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const mode = detailHeaderPanelState.spacesFeed || "feed";
+  const topic = detailHeaderPanelState.spacesTopic || "all";
+  const discussionTitles = getDetailSpacesPanelTitles(titles, mode, topic);
   const topicButtons = ["Indian", "International", "Anime", "Sports", "Games"];
 
   return `
     <div class="detail-header-panel-surface">
-      <div class="detail-panel-title-row">
+      <div class="detail-panel-title-row detail-panel-title-row-compact">
         <span class="detail-panel-title-mark">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-3 3v-3H5a2 2 0 0 1-2-2V8a3 3 0 0 1 3-3h1"></path><path d="M16 6h2a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-1l-2 2v-2"></path></svg>
           <span>Spaces</span>
         </span>
+        <p>Movie and series reports, detail updates, announcements, and viewer discussions appear here.</p>
       </div>
       <div class="detail-header-spaces-shell">
         <aside class="detail-header-spaces-sidebar">
-          <button class="detail-schedule-menu-btn ${mode === "feed" ? "active" : ""}" type="button" data-detail-spaces-feed="feed">Feed</button>
-          <button class="detail-schedule-menu-btn ${mode === "discussion" ? "active" : ""}" type="button" data-detail-spaces-feed="discussion">Discussion</button>
+          <button class="detail-schedule-menu-btn detail-space-mode-btn ${mode === "feed" ? "active" : ""}" type="button" data-detail-spaces-feed="feed">
+            <span class="detail-space-mode-icon" aria-hidden="true">▤</span>
+            Feed
+          </button>
+          <button class="detail-schedule-menu-btn detail-space-mode-btn ${mode === "discussion" ? "active" : ""}" type="button" data-detail-spaces-feed="discussion">
+            <span class="detail-space-mode-icon" aria-hidden="true">▱</span>
+            Discussion
+          </button>
           <div class="detail-header-spaces-topics">
             <span>Topics</span>
             ${topicButtons
               .map(
                 (label) => `
-                  <button class="detail-space-topic" type="button">
+                  <button class="detail-space-topic ${topic === "all" || topic === label ? "active" : ""}" type="button" data-detail-spaces-topic="${label}">
                     <span>✓</span>
                     ${label}
                   </button>
@@ -4898,22 +4998,25 @@ function detailHeaderSpacesPanelTemplate() {
               .join("")}
           </div>
         </aside>
-        <section class="detail-header-spaces-feed detail-header-spaces-feed-wide">
+        <section class="detail-header-spaces-feed">
           ${discussionTitles
-            .slice(0, 4)
             .map(
               (title) => `
-                <a class="detail-space-story-card" href="${buildTitleUrl(title.id)}#discussions">
-                  <img src="${getOptimizedImageUrl(title.image, 900)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+                <a class="detail-space-story-card" href="${buildTitleUrl(title.id)}${mode === "discussion" ? "#discussions" : ""}">
+                  <div class="detail-space-story-media">
+                    <img src="${getOptimizedImageUrl(title.backdrop || title.image, 900)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+                    ${title.trailerUrl ? '<span class="detail-space-play" aria-hidden="true">▶</span>' : ""}
+                  </div>
                   <div class="detail-space-story-copy">
-                    <span>${mode === "discussion" ? "Discussion Space" : "Feed Post"}</span>
+                    <span>${getSpacesPostLabel(title, mode)}</span>
                     <h3>${escapeHtml(title.title)}</h3>
-                    <p>By MovieMate • ${mode === "discussion" ? `${title.comments?.length || 0} comments` : `${getInterestedCount(title)} interested`}</p>
+                    <p>${escapeHtml(getSpacesPostCopy(title, mode))}</p>
+                    <small>By MovieMate • ${mode === "discussion" ? `${title.comments?.length || 0} comments` : `${getInterestedCount(title)} interested`}</small>
                   </div>
                 </a>
               `
             )
-            .join("")}
+            .join("") || '<p class="detail-search-empty-copy">No space posts match this topic yet.</p>'}
         </section>
       </div>
     </div>
@@ -5078,6 +5181,14 @@ function setupDetailHeaderPanels() {
     const spacesFeedButton = target.closest("[data-detail-spaces-feed]");
     if (spacesFeedButton) {
       detailHeaderPanelState.spacesFeed = spacesFeedButton.dataset.detailSpacesFeed || "feed";
+      await renderDetailHeaderPanel();
+      return;
+    }
+
+    const spacesTopicButton = target.closest("[data-detail-spaces-topic]");
+    if (spacesTopicButton) {
+      const nextTopic = spacesTopicButton.dataset.detailSpacesTopic || "all";
+      detailHeaderPanelState.spacesTopic = detailHeaderPanelState.spacesTopic === nextTopic ? "all" : nextTopic;
       await renderDetailHeaderPanel();
     }
   });
