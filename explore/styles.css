@@ -18,6 +18,524 @@
   --install-banner-bottom: calc(var(--mobile-dock-bottom) + 74px + var(--install-banner-gap));
 }
 
+/* Moctale rebuild: replace the public home with a dark poster feed like the provided reference. */
+body[data-page="home"] {
+  background: #030303 !important;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+body[data-page="home"] .page-shell {
+  width: 100% !important;
+  max-width: none !important;
+  padding: 0 0 80px !important;
+}
+
+body[data-page="home"] .explore-header-desktop {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 200 !important;
+  display: block !important;
+  width: 100vw !important;
+  margin: 0 0 0 calc(50% - 50vw) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 0 !important;
+  background: rgba(2, 2, 3, 0.98) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(18px) !important;
+}
+
+body[data-page="home"] .explore-topbar-main {
+  display: grid !important;
+  grid-template-columns: minmax(245px, 1fr) auto minmax(245px, 1fr) !important;
+  align-items: center !important;
+  width: min(1540px, calc(100% - 48px)) !important;
+  min-height: 86px !important;
+  margin: 0 auto !important;
+  gap: 20px !important;
+}
+
+body[data-page="home"] .explore-topbar-left {
+  justify-self: start !important;
+  gap: 12px !important;
+}
+
+body[data-page="home"] .brand-compact {
+  gap: 12px !important;
+  color: #fff !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 1.45rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase !important;
+}
+
+body[data-page="home"] .brand-text {
+  letter-spacing: 0 !important;
+}
+
+body[data-page="home"] .brand-mark {
+  width: 35px !important;
+  height: 24px !important;
+  border-radius: 999px !important;
+  background:
+    radial-gradient(circle at 27% 50%, #fff 0 10px, transparent 10.8px),
+    radial-gradient(circle at 73% 50%, #fff 0 10px, transparent 10.8px),
+    linear-gradient(90deg, transparent 0 18%, #fff 18% 82%, transparent 82% 100%) !important;
+  box-shadow: none !important;
+}
+
+body[data-page="home"] .brand-mark::before,
+body[data-page="home"] .brand-mark::after {
+  top: 3px !important;
+  width: 12px !important;
+  height: 18px !important;
+  border-radius: 999px !important;
+  background: #030303 !important;
+}
+
+body[data-page="home"] .brand-mark::before {
+  left: -4px !important;
+}
+
+body[data-page="home"] .brand-mark::after {
+  right: -4px !important;
+}
+
+body[data-page="home"] .beta-chip {
+  color: rgba(255, 255, 255, 0.68) !important;
+  font-size: 1.45rem !important;
+}
+
+body[data-page="home"] .explore-nav-center {
+  justify-self: center !important;
+  gap: clamp(14px, 2vw, 30px) !important;
+}
+
+body[data-page="home"] .explore-nav-link {
+  position: relative !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  font-size: 0 !important;
+}
+
+body[data-page="home"] .explore-nav-link svg {
+  width: 23px !important;
+  height: 23px !important;
+  stroke-width: 2.1 !important;
+}
+
+body[data-page="home"] .explore-nav-link.active {
+  width: auto !important;
+  padding: 0 8px !important;
+  gap: 10px !important;
+  color: #fff !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+}
+
+body[data-page="home"] .explore-nav-link.active::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: -22px !important;
+  display: block !important;
+  height: 2px !important;
+  background: #5e1cb9 !important;
+}
+
+body[data-page="home"] .explore-actions-right {
+  justify-self: end !important;
+  gap: clamp(12px, 1.7vw, 24px) !important;
+}
+
+body[data-page="home"] .icon-chip {
+  width: 42px !important;
+  height: 42px !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+body[data-page="home"] .account-chip {
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.5), transparent 28%),
+    linear-gradient(135deg, #535437, #263442 45%, #8c8873) !important;
+}
+
+body[data-page="home"] .explore-main {
+  width: min(1540px, calc(100% - 48px)) !important;
+  margin: 0 auto !important;
+  padding-top: 40px !important;
+}
+
+body[data-page="home"] .explore-main::before {
+  top: 0 !important;
+  height: 820px !important;
+  background:
+    radial-gradient(ellipse at 21% 0%, rgba(105, 71, 161, 0.56), transparent 38%),
+    radial-gradient(ellipse at 42% 6%, rgba(67, 93, 99, 0.2), transparent 28%),
+    linear-gradient(90deg, rgba(64, 35, 75, 0.82), rgba(23, 22, 29, 0.64) 40%, rgba(3, 3, 3, 0.95) 72%, #030303 100%),
+    linear-gradient(180deg, rgba(58, 37, 83, 0.74), rgba(9, 9, 11, 0.5) 48%, rgba(3, 3, 3, 0) 100%) !important;
+}
+
+body[data-page="home"] .explore-layout {
+  grid-template-columns: minmax(0, 978px) minmax(350px, 450px) !important;
+  justify-content: center !important;
+  align-items: start !important;
+  gap: clamp(46px, 5.4vw, 92px) !important;
+}
+
+body[data-page="home"] .explore-primary {
+  gap: 88px !important;
+}
+
+body[data-page="home"] .explore-showcase,
+body[data-page="home"] .explore-row-section {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body[data-page="home"] .explore-primary .section-heading,
+body[data-page="home"] .showcase-row-heading {
+  margin: 0 0 32px !important;
+}
+
+body[data-page="home"] .showcase-row-title h2,
+body[data-page="home"] .explore-primary .section-heading h2 {
+  color: rgba(255, 255, 255, 0.86) !important;
+  font-size: 1.58rem !important;
+  font-weight: 900 !important;
+  line-height: 1.12 !important;
+  letter-spacing: 0 !important;
+}
+
+body[data-page="home"] .explore-feed-grid,
+body[data-page="home"] .explore-row-section .trend-grid {
+  grid-template-columns: repeat(5, minmax(0, 160px)) !important;
+  gap: 32px 30px !important;
+}
+
+body[data-page="home"] .featured-card,
+body[data-page="home"] .featured-feed-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body[data-page="home"] .featured-feed-card .featured-poster,
+body[data-page="home"] .featured-poster {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 0.645 !important;
+  border-radius: 6px !important;
+  object-fit: cover !important;
+  box-shadow: none !important;
+}
+
+body[data-page="home"] .featured-feed-card .featured-copy {
+  padding: 12px 2px 0 !important;
+  background: transparent !important;
+}
+
+body[data-page="home"] .featured-feed-card .featured-copy h3 {
+  color: rgba(255, 255, 255, 0.76) !important;
+  font-size: 1.03rem !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.02em !important;
+}
+
+body[data-page="home"] .featured-feed-card .movie-meta {
+  color: rgba(255, 255, 255, 0.58) !important;
+  font-size: 0.82rem !important;
+  font-weight: 750 !important;
+}
+
+body[data-page="home"] .explore-row-section:has(#bollywoodRowGrid),
+body[data-page="home"] .explore-row-section:has(#southRowGrid),
+body[data-page="home"] .schedule-section,
+body[data-page="home"] .collections-section,
+body[data-page="home"] .site-footer,
+body[data-page="home"] .mobile-dock,
+body[data-page="home"] .install-banner {
+  display: none !important;
+}
+
+body[data-page="home"] .explore-sidebar {
+  position: sticky !important;
+  top: 112px !important;
+  gap: 36px !important;
+  max-height: calc(100vh - 118px) !important;
+  overflow-y: auto !important;
+  padding-bottom: 28px !important;
+  scrollbar-width: thin !important;
+}
+
+body[data-page="home"] .moctale-ad-card {
+  position: relative;
+  min-height: 376px;
+  padding: 40px 40px 32px;
+  overflow: hidden;
+  border: 1px solid rgba(102, 102, 130, 0.42);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 88% 4%, rgba(117, 37, 211, 0.78), transparent 34%),
+    radial-gradient(circle at 75% 39%, rgba(76, 33, 153, 0.64), transparent 40%),
+    linear-gradient(145deg, #120722 0%, #10071c 44%, #030514 100%);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
+body[data-page="home"] .moctale-ad-card::before {
+  content: "";
+  position: absolute;
+  top: -80px;
+  right: -70px;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  border: 54px solid rgba(82, 32, 148, 0.66);
+}
+
+body[data-page="home"] .moctale-ad-brand {
+  position: relative;
+  z-index: 1;
+  color: #ff7b22;
+  font-size: 1.16rem;
+  font-weight: 900;
+}
+
+body[data-page="home"] .moctale-ad-title {
+  position: relative;
+  z-index: 1;
+  margin-top: 10px;
+  color: #fff4e9;
+  font-size: clamp(4.1rem, 7vw, 5.7rem);
+  font-weight: 1000;
+  line-height: 0.86;
+  letter-spacing: 0;
+}
+
+body[data-page="home"] .moctale-ad-year {
+  position: relative;
+  z-index: 1;
+  margin-top: -6px;
+  color: #ff80b0;
+  font-size: 1.7rem;
+  font-weight: 1000;
+  text-align: right;
+}
+
+body[data-page="home"] .moctale-ad-offer {
+  position: absolute;
+  left: 40px;
+  right: 40px;
+  bottom: 34px;
+  z-index: 1;
+  display: grid;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+body[data-page="home"] .moctale-ad-offer strong {
+  color: #d988ff;
+}
+
+body[data-page="home"] .moctale-ad-offer span {
+  color: #fff;
+  font-weight: 900;
+}
+
+body[data-page="home"] .most-interested-panel {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body[data-page="home"] .most-interested-panel .explore-panel-header {
+  align-items: center !important;
+  margin: 0 0 22px !important;
+}
+
+body[data-page="home"] .most-interested-panel .explore-panel-header h2 {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-size: 1.58rem !important;
+  font-weight: 900 !important;
+}
+
+body[data-page="home"] .interest-window-select {
+  min-width: 112px !important;
+  height: 38px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+body[data-page="home"] .most-interested-list {
+  gap: 16px !important;
+}
+
+body[data-page="home"] .interest-item {
+  grid-template-columns: 72px 74px minmax(0, 1fr) !important;
+  min-height: 122px !important;
+  padding: 16px 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.012) !important;
+}
+
+body[data-page="home"] .interest-rank {
+  min-width: 66px !important;
+  color: transparent !important;
+  background: linear-gradient(180deg, #fff 0%, #9f9f9f 100%) !important;
+  background-clip: text !important;
+  -webkit-background-clip: text !important;
+  font-size: 5rem !important;
+  font-weight: 1000 !important;
+  letter-spacing: -0.07em !important;
+  text-shadow: 0 10px 24px rgba(255, 255, 255, 0.08) !important;
+}
+
+body[data-page="home"] .interest-poster {
+  width: 74px !important;
+  height: 92px !important;
+  border-radius: 7px !important;
+}
+
+body[data-page="home"] .interest-copy h3 {
+  margin-bottom: 8px !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 1.06rem !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+body[data-page="home"] .interest-copy p {
+  color: rgba(255, 255, 255, 0.58) !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+}
+
+body[data-page="home"] .interest-copy span {
+  color: #ff733e !important;
+  font-size: 0.92rem !important;
+  font-weight: 900 !important;
+  text-transform: capitalize !important;
+}
+
+body[data-page="home"] .interest-copy span::before {
+  content: "♨ ";
+}
+
+body[data-page="home"] .interest-see-all {
+  display: grid;
+  place-items: center;
+  height: 58px;
+  margin-top: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+}
+
+@media (max-width: 1180px) {
+  body[data-page="home"] .explore-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  body[data-page="home"] .explore-sidebar {
+    position: static !important;
+    max-height: none !important;
+  }
+
+  body[data-page="home"] .moctale-ad-card {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  body[data-page="home"] .explore-header-desktop {
+    display: none !important;
+  }
+
+  body[data-page="home"] .explore-header-mobile-shell {
+    display: block !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 200 !important;
+    width: 100% !important;
+    padding: 10px 10px 0 !important;
+    background: rgba(3, 3, 3, 0.96) !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-bar {
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    background: #050505 !important;
+  }
+
+  body[data-page="home"] .explore-main {
+    width: 100% !important;
+    padding: 26px 12px 72px !important;
+  }
+
+  body[data-page="home"] .explore-main::before {
+    height: 520px !important;
+  }
+
+  body[data-page="home"] .explore-primary {
+    gap: 54px !important;
+  }
+
+  body[data-page="home"] .explore-feed-grid,
+  body[data-page="home"] .explore-row-section .trend-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 22px 14px !important;
+  }
+
+  body[data-page="home"] .featured-feed-card .featured-poster,
+  body[data-page="home"] .featured-poster {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 0.66 !important;
+    border-radius: 8px !important;
+  }
+
+  body[data-page="home"] .most-interested-panel {
+    padding: 18px 0 0 !important;
+  }
+
+  body[data-page="home"] .interest-item {
+    grid-template-columns: 58px 64px minmax(0, 1fr) !important;
+  }
+
+  body[data-page="home"] .interest-rank {
+    font-size: 4rem !important;
+  }
+}
+
 /* Moctale-style explore shell requested for the public home feed. */
 body[data-page="home"] {
   background: #050505;
@@ -6905,5 +7423,116 @@ button.ghost-link {
   body[data-page="home"] .explore-mobile-header-right .account-chip.signed-in .account-chip-avatar {
     width: 28px !important;
     height: 28px !important;
+  }
+}
+
+/* Final Moctale feed lock. Kept last so older homepage rules cannot re-surface. */
+body[data-page="home"] .explore-main {
+  width: min(1540px, calc(100% - 48px)) !important;
+  margin: 0 auto !important;
+  padding-top: 40px !important;
+}
+
+body[data-page="home"] .explore-header-desktop {
+  min-height: 86px !important;
+  border-radius: 0 !important;
+  background: rgba(2, 2, 3, 0.98) !important;
+}
+
+body[data-page="home"] .explore-layout {
+  grid-template-columns: minmax(0, 978px) minmax(350px, 450px) !important;
+  justify-content: center !important;
+  gap: clamp(46px, 5.4vw, 92px) !important;
+}
+
+body[data-page="home"] .explore-primary {
+  gap: 88px !important;
+}
+
+body[data-page="home"] .explore-showcase,
+body[data-page="home"] .explore-row-section,
+body[data-page="home"] .most-interested-panel {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body[data-page="home"] .explore-feed-grid,
+body[data-page="home"] .explore-row-section .trend-grid {
+  grid-template-columns: repeat(5, minmax(0, 160px)) !important;
+  gap: 32px 30px !important;
+}
+
+body[data-page="home"] .featured-feed-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body[data-page="home"] .featured-feed-card .featured-poster {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 0.645 !important;
+  border-radius: 6px !important;
+}
+
+body[data-page="home"] .explore-row-section:has(#bollywoodRowGrid),
+body[data-page="home"] .explore-row-section:has(#southRowGrid),
+body[data-page="home"] .schedule-section,
+body[data-page="home"] .collections-section,
+body[data-page="home"] .site-footer,
+body[data-page="home"] .mobile-dock {
+  display: none !important;
+}
+
+body[data-page="home"] .moctale-ad-card {
+  display: block;
+}
+
+body[data-page="home"] .interest-item {
+  border-radius: 8px !important;
+}
+
+@media (max-width: 1180px) {
+  body[data-page="home"] .explore-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  body[data-page="home"] .moctale-ad-card {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  body[data-page="home"] .explore-header-desktop {
+    display: none !important;
+  }
+
+  body[data-page="home"] .explore-main {
+    width: 100% !important;
+    padding: 26px 12px 72px !important;
+  }
+
+  body[data-page="home"] .explore-primary {
+    gap: 54px !important;
+  }
+
+  body[data-page="home"] .explore-feed-grid,
+  body[data-page="home"] .explore-row-section .trend-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 22px 14px !important;
+  }
+
+  body[data-page="home"] .featured-feed-card .featured-poster {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 0.66 !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-chip-label {
+    display: none !important;
   }
 }
