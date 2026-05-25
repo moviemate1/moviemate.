@@ -294,6 +294,51 @@
           </aside>
         </section>
 
+        <section class="section browse-section" id="browse">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Browse library</p>
+              <h2 id="browseHeadingText">Search by title, genre, language, or format</h2>
+            </div>
+            <p class="section-copy" id="browseCopyText">
+              Use fast filters to scan the library in a cleaner, more even card layout.
+            </p>
+          </div>
+
+          <div class="controls-card">
+            <label class="input-group">
+              <span>Search</span>
+              <input id="searchInput" type="search" placeholder="Search movies and series" autocomplete="off" />
+              <div class="search-suggestions hidden" id="searchSuggestions"></div>
+            </label>
+            <label class="input-group">
+              <span>Type</span>
+              <select id="typeFilter">
+                <option value="all">All types</option>
+                <option value="Movie">Movies</option>
+                <option value="Series">Shows</option>
+              </select>
+            </label>
+            <label class="input-group">
+              <span>Genre</span>
+              <select id="genreFilter">
+                <option value="all">All genres</option>
+              </select>
+            </label>
+            <label class="input-group">
+              <span>Language</span>
+              <select id="languageFilter">
+                <option value="all">All languages</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="movie-grid" id="movieGrid"></div>
+          <div class="load-more-wrap hidden" id="loadMoreWrap">
+            <button class="secondary-btn" id="loadMoreBtn" type="button">Load More</button>
+          </div>
+        </section>
+
         <section class="section schedule-section" id="schedule">
           <div class="section-heading">
             <div>
@@ -536,7 +581,7 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=25-moctale-home-shell"></script>
+    <script type="module" src="app.js?v=27-home-header-actions"></script>
     <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a3795ec89854463a9b90761fb384fb6c"}'></script><!-- End Cloudflare Web Analytics -->
   </body>
 </html>
