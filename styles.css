@@ -6984,6 +6984,28 @@ body[data-page="details"] .topbar.compact .account-top-link .account-chip-label 
   display: none;
 }
 
+body[data-page="details"] .topbar.compact .account-signin-icon {
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+body[data-page="details"] .topbar.compact .account-signin-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body[data-page="details"] .topbar.compact .account-top-link.signed-in .account-signin-icon {
+  display: none;
+}
+
 body[data-page="details"] .topbar.compact .account-top-link .account-chip-avatar {
   width: 36px;
   height: 36px;
