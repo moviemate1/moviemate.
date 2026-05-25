@@ -7028,9 +7028,10 @@ body[data-page="details"] .detail-header-panel-search-surface {
 }
 
 body[data-page="details"] .detail-header-panel-surface-floating {
-  width: min(640px, calc(100% - 120px));
+  width: min(604px, calc(100% - 120px));
   margin-right: max(12px, calc((100vw - 1440px) / 2 + 88px));
   margin-left: auto;
+  padding: 22px 24px 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
 }
@@ -7451,7 +7452,7 @@ body[data-page="details"] .detail-space-story-copy p {
 
 body[data-page="details"] .detail-header-browse-shell {
   display: grid;
-  gap: 20px;
+  gap: 16px;
 }
 
 body[data-page="details"] .detail-header-browse-copy p {
@@ -7465,19 +7466,19 @@ body[data-page="details"] .detail-header-browse-copy p {
 body[data-page="details"] .detail-header-browse-copy h3 {
   margin: 0;
   color: #fff;
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 800;
 }
 
 body[data-page="details"] .detail-header-browse-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 body[data-page="details"] .detail-space-filter-card {
-  min-height: 126px;
-  padding: 18px;
+  min-height: 104px;
+  padding: 14px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.04);
   color: #fff;
@@ -7486,7 +7487,21 @@ body[data-page="details"] .detail-space-filter-card {
 }
 
 body[data-page="details"] .detail-browse-filter-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
   text-decoration: none;
+}
+
+body[data-page="details"] .detail-browse-filter-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #d8d0fb;
+  font-size: 1rem;
 }
 
 body[data-page="details"] .detail-browse-filter-card.active {

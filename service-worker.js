@@ -1,7 +1,8 @@
-const CACHE_NAME = "moviemate-shell-v17";
+const CACHE_NAME = "moviemate-shell-v18";
 const SHELL_ASSETS = [
   "/",
   "/index.html",
+  "/offline.html",
   "/explore/",
   "/explore/index.html",
   "/explore/styles.css",
@@ -38,7 +39,7 @@ self.addEventListener("fetch", (event) => {
 
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match("/explore/"))
+      fetch(event.request).catch(() => caches.match("/offline.html"))
     );
     return;
   }
