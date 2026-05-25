@@ -43,7 +43,7 @@
             <a class="home-chip explore-mobile-home" href="/explore/#trending" aria-label="Go to explore">⌂</a>
             <a class="brand brand-compact explore-mobile-brand" href="/explore/">
               <span class="brand-mark" aria-hidden="true"></span>
-              <span class="brand-text">Moctale</span>
+              <span class="brand-text">MovieMate</span>
             </a>
           </div>
           <div class="explore-mobile-header-right">
@@ -251,19 +251,35 @@
           </div>
 
           <aside class="explore-sidebar">
-            <aside class="moctale-ad-card" aria-label="Crunchyroll anime offer">
-              <div class="moctale-ad-brand">Crunchyroll</div>
-              <div class="moctale-ad-title">ANI-<br />MAY</div>
-              <div class="moctale-ad-year">2026</div>
-              <div class="moctale-ad-offer">
-                <strong>Mega Fan Offer:</strong>
-                <span>₹475/yr for 1 year</span>
+            <section class="sidebar-card browse-panel">
+              <div class="panel-header explore-panel-header">
+                <div>
+                  <p class="panel-label">Browse By</p>
+                  <h2>Explore faster</h2>
+                </div>
               </div>
-            </aside>
+              <div class="browse-panel-grid">
+                <a class="browse-box" href="#browse"><span class="browse-box-icon">◫</span><span>Category</span></a>
+                <a class="browse-box" href="#browse"><span class="browse-box-icon">◎</span><span>Genre</span></a>
+                <a class="browse-box" href="#browse"><span class="browse-box-icon">◍</span><span>Country</span></a>
+                <a class="browse-box" href="#browse"><span class="browse-box-icon">文</span><span>Language</span></a>
+                <a class="browse-box" href="#collections"><span class="browse-box-icon">☺</span><span>Community</span></a>
+                <a class="browse-box" href="#trending"><span class="browse-box-icon">★</span><span>District</span></a>
+                <a class="browse-box" href="#bollywoodRowHeading"><span class="browse-box-icon">हि</span><span>Bollywood</span></a>
+                <a class="browse-box" href="#southRowHeading"><span class="browse-box-icon">ச</span><span>South</span></a>
+                <a class="browse-box" href="#netflixRowHeading"><span class="browse-box-icon">N</span><span>Netflix</span></a>
+                <a class="browse-box" href="#schedule"><span class="browse-box-icon">◷</span><span>Schedule</span></a>
+                <a class="browse-box" href="#primeRowHeading"><span class="browse-box-icon">P</span><span>Prime</span></a>
+                <a class="browse-box" href="#trending"><span class="browse-box-icon">◎</span><span>Trending</span></a>
+              </div>
+            </section>
 
             <section class="sidebar-card most-interested-panel">
               <div class="panel-header explore-panel-header">
-                <h2><span aria-hidden="true">♨</span> Most Interested</h2>
+                <div>
+                  <p class="panel-label">Most Interested</p>
+                  <h2>Top 10 picks</h2>
+                </div>
                 <label class="interest-filter-wrap" aria-label="Most interested time filter">
                   <select id="interestWindowSelect" class="interest-window-select">
                     <option value="week">This Week</option>
@@ -274,7 +290,6 @@
                 </label>
               </div>
               <div class="most-interested-list" id="mostInterestedList"></div>
-              <a class="interest-see-all" href="#trending">See All ↗</a>
             </section>
           </aside>
         </section>
