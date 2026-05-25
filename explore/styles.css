@@ -35,7 +35,7 @@ body[data-page="home"] .explore-header-desktop {
   z-index: 120;
   width: 100vw;
   margin: 0 0 0 calc(50% - 50vw);
-  padding: 0 max(22px, calc((100vw - 1440px) / 2 + 2px));
+  padding: 0;
   border-width: 0 0 1px;
   border-radius: 0;
   background: rgba(5, 5, 6, 0.98);
@@ -44,14 +44,19 @@ body[data-page="home"] .explore-header-desktop {
 }
 
 body[data-page="home"] .explore-topbar-main {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto minmax(260px, 1fr);
+  align-items: center;
   min-height: 64px;
-  max-width: none;
+  width: min(1530px, calc(100% - 44px));
+  max-width: 1530px;
   margin: 0 auto;
   gap: 18px;
 }
 
 body[data-page="home"] .explore-topbar-left {
-  min-width: 228px;
+  min-width: 0;
+  justify-self: start;
   gap: 12px;
 }
 
@@ -88,7 +93,7 @@ body[data-page="home"] .brand-mark::after {
 body[data-page="home"] .brand-compact {
   gap: 12px;
   font-family: "Manrope", sans-serif;
-  font-size: 1.48rem;
+  font-size: 1.36rem;
   font-weight: 800;
   letter-spacing: 0.01em;
   text-transform: uppercase;
@@ -99,7 +104,7 @@ body[data-page="home"] .beta-chip {
   color: rgba(255, 255, 255, 0.72);
   border: 0;
   background: transparent;
-  font-size: 1.45rem;
+  font-size: 1.38rem;
   font-weight: 500;
   text-transform: none;
 }
@@ -109,8 +114,8 @@ body[data-page="home"] .beta-chip::first-letter {
 }
 
 body[data-page="home"] .explore-nav-center {
-  flex: 1 1 auto;
-  justify-content: flex-end;
+  justify-self: center;
+  justify-content: center;
   gap: clamp(10px, 1vw, 16px);
   color: rgba(255, 255, 255, 0.62);
 }
@@ -184,6 +189,8 @@ body[data-page="home"] .explore-nav-link.active::after {
 
 body[data-page="home"] .explore-actions-right {
   flex: 0 0 auto;
+  justify-self: end;
+  justify-content: flex-end;
   gap: 14px;
 }
 
@@ -200,10 +207,23 @@ body[data-page="home"] .icon-chip {
   background: transparent;
   color: rgba(255, 255, 255, 0.58);
   font-size: 1.35rem;
+  outline: 0;
+}
+
+body[data-page="home"] .icon-chip svg,
+body[data-page="home"] .notification-glyph svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 body[data-page="home"] .notification-glyph {
-  filter: grayscale(1);
+  display: grid;
+  place-items: center;
   opacity: 0.72;
 }
 
