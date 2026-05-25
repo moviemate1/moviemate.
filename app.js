@@ -4819,10 +4819,10 @@ function detailHeaderCollectionsPanelTemplate() {
 
 function detailHeaderBrowsePanelTemplate() {
   const cards = [
-    { label: "Category", icon: "◫", href: "/#browse" },
-    { label: "Genre", icon: "◎", href: "/#browse" },
-    { label: "Country", icon: "◍", href: "/#browse" },
-    { label: "Language", icon: "文", href: "/#browse" },
+    { label: "Category", icon: "◫", href: "/?browseFocus=category#browse" },
+    { label: "Genre", icon: "◎", href: "/?browseFocus=genre#browse" },
+    { label: "Country", icon: "◍", href: "/?browseFocus=country#browse" },
+    { label: "Language", icon: "文", href: "/?browseFocus=language#browse" },
     { label: "Community", icon: "☺", href: "/#collections" },
     { label: "District", icon: "★", href: "/#trending" },
     { label: "Bollywood", icon: "हि", href: "/#bollywoodRowHeading" },
@@ -5758,6 +5758,34 @@ function refreshBrowseResults() {
   renderSearchSuggestions(visibleTitles);
 }
 
+function focusBrowseTargetFromUrl() {
+  if (document.body.dataset.page !== "home") {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const focusTarget = params.get("browseFocus");
+
+  if (!focusTarget) {
+    return;
+  }
+
+  const targetByFocus = {
+    category: "#typeFilter",
+    genre: "#genreFilter",
+    language: "#languageFilter"
+  };
+  const selector = targetByFocus[focusTarget] || "#browse";
+  const target = document.querySelector(selector) || document.querySelector("#browse");
+
+  window.setTimeout(() => {
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (target instanceof HTMLElement && typeof target.focus === "function") {
+      target.focus({ preventScroll: true });
+    }
+  }, 260);
+}
+
 function showMessage(selector, text) {
   const element = document.querySelector(selector);
 
@@ -5823,6 +5851,7 @@ async function renderHomePage() {
       "languages"
     );
     refreshBrowseResults();
+    focusBrowseTargetFromUrl();
     renderScheduleGrid(visibleTitles);
     renderCollectionsGrid(visibleTitles);
     renderUserNotifications(visibleTitles);
@@ -10031,6 +10060,7 @@ async function init() {
     setupUserNotificationsModal();
     setupScrollControls();
     setupSuggestForm();
+    focusBrowseTargetFromUrl();
     await renderHomePage();
     refreshHomePageInBackground();
   }
