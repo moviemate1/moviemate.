@@ -1670,7 +1670,7 @@ function detailDiscussionSectionTemplate(title, titles) {
   const images = [title, ...related, ...titles.filter((item) => item.id !== title.id && item.id !== related[0]?.id)].slice(0, 4);
 
   return `
-    <section class="detail-extra-section detail-discussion-section">
+    <section class="detail-extra-section detail-discussion-section" id="discussions">
       <div class="section-heading compact-heading">
         <div>
           <p class="eyebrow">Community</p>
@@ -4372,7 +4372,6 @@ function setActiveDetailHeaderTrigger(mode) {
 
 function closeDetailHeaderPanel() {
   const root = getDetailHeaderPanelRoot();
-  const backdrop = getDetailHeaderPanelBackdrop();
 
   detailHeaderPanelState.mode = "";
 
@@ -4380,10 +4379,6 @@ function closeDetailHeaderPanel() {
     root.innerHTML = "";
     root.classList.add("hidden");
     root.setAttribute("aria-hidden", "true");
-  }
-
-  if (backdrop) {
-    backdrop.classList.add("hidden");
   }
 
   document.body.classList.remove("detail-header-panel-open");
@@ -4824,29 +4819,38 @@ function detailHeaderCollectionsPanelTemplate() {
 
 function detailHeaderBrowsePanelTemplate() {
   const cards = [
-    "Monthly Ranking",
-    "Top 100",
     "Category",
     "Genre",
     "Country",
     "Language",
-    "MovieMate Select",
-    "Family Friendly",
-    "Franchise"
+    "Community",
+    "District",
+    "Bollywood",
+    "South",
+    "Netflix",
+    "Schedule",
+    "Prime",
+    "Trending"
   ];
 
   return `
     <div class="detail-header-panel-surface detail-header-panel-surface-floating">
-      <div class="detail-header-browse-grid">
+      <div class="detail-header-browse-shell">
+        <div class="detail-header-browse-copy">
+          <p>Browse by</p>
+          <h3>Explore faster</h3>
+        </div>
+        <div class="detail-header-browse-grid">
         ${cards
           .map(
             (label) => `
-              <a class="detail-space-filter-card detail-browse-filter-card" href="/explore/#browse">
+              <a class="detail-space-filter-card detail-browse-filter-card ${label === "Category" ? "active" : ""}" href="/explore/#browse">
                 <span>${label}</span>
               </a>
             `
           )
           .join("")}
+        </div>
       </div>
     </div>
   `;
@@ -4854,24 +4858,18 @@ function detailHeaderBrowsePanelTemplate() {
 
 function detailHeaderSpacesPanelTemplate() {
   const titles = detailHeaderPanelState.titles || [];
+  const mode = detailHeaderPanelState.spacesFeed || "feed";
   const discussionTitles = [...titles]
     .filter((title) => title.comments?.length || title.trending || getInterestedCount(title) > 0)
-    .sort((left, right) => getInterestScore(right) - getInterestScore(left))
+    .sort((left, right) => {
+      if (mode === "discussion") {
+        return (right.comments?.length || 0) - (left.comments?.length || 0) || getInterestScore(right) - getInterestScore(left);
+      }
+
+      return getInterestScore(right) - getInterestScore(left);
+    })
     .slice(0, 6);
   const topicButtons = ["Indian", "International", "Anime", "Sports", "Games"];
-  const filterCards = [
-    "Monthly Ranking",
-    "Top 100",
-    "Category",
-    "Genre",
-    "Country",
-    "Language",
-    "Family Friendly",
-    "Award Winners",
-    "MovieMate Select",
-    "Anime",
-    "Franchise"
-  ];
 
   return `
     <div class="detail-header-panel-surface">
@@ -4883,8 +4881,8 @@ function detailHeaderSpacesPanelTemplate() {
       </div>
       <div class="detail-header-spaces-shell">
         <aside class="detail-header-spaces-sidebar">
-          <button class="detail-schedule-menu-btn active" type="button">Feed</button>
-          <button class="detail-schedule-menu-btn" type="button">Discussion</button>
+          <button class="detail-schedule-menu-btn ${mode === "feed" ? "active" : ""}" type="button" data-detail-spaces-feed="feed">Feed</button>
+          <button class="detail-schedule-menu-btn ${mode === "discussion" ? "active" : ""}" type="button" data-detail-spaces-feed="discussion">Discussion</button>
           <div class="detail-header-spaces-topics">
             <span>Topics</span>
             ${topicButtons
@@ -4899,34 +4897,23 @@ function detailHeaderSpacesPanelTemplate() {
               .join("")}
           </div>
         </aside>
-        <section class="detail-header-spaces-feed">
+        <section class="detail-header-spaces-feed detail-header-spaces-feed-wide">
           ${discussionTitles
-            .slice(0, 2)
+            .slice(0, 4)
             .map(
               (title) => `
                 <a class="detail-space-story-card" href="${buildTitleUrl(title.id)}#discussions">
                   <img src="${getOptimizedImageUrl(title.image, 900)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
                   <div class="detail-space-story-copy">
-                    <span>Discussion Space</span>
+                    <span>${mode === "discussion" ? "Discussion Space" : "Feed Post"}</span>
                     <h3>${escapeHtml(title.title)}</h3>
-                    <p>By MovieMate • ${getInterestedCount(title)} interested</p>
+                    <p>By MovieMate • ${mode === "discussion" ? `${title.comments?.length || 0} comments` : `${getInterestedCount(title)} interested`}</p>
                   </div>
                 </a>
               `
             )
             .join("")}
         </section>
-        <aside class="detail-header-spaces-filters">
-          ${filterCards
-            .map(
-              (label) => `
-                <button class="detail-space-filter-card" type="button">
-                  <span>${label}</span>
-                </button>
-              `
-            )
-            .join("")}
-        </aside>
       </div>
     </div>
   `;
@@ -4957,7 +4944,6 @@ function detailHeaderNotificationsPanelTemplate() {
 
 async function renderDetailHeaderPanel() {
   const root = getDetailHeaderPanelRoot();
-  const backdrop = getDetailHeaderPanelBackdrop();
   const mode = detailHeaderPanelState.mode;
 
   if (!root || !mode) {
@@ -4987,7 +4973,6 @@ async function renderDetailHeaderPanel() {
   root.innerHTML = markup;
   root.classList.remove("hidden");
   root.setAttribute("aria-hidden", "false");
-  backdrop?.classList.remove("hidden");
   document.body.classList.add("detail-header-panel-open");
   setActiveDetailHeaderTrigger(mode);
 
@@ -5006,7 +4991,6 @@ function setupDetailHeaderPanels() {
   }
 
   const panelRoot = getDetailHeaderPanelRoot();
-  const backdrop = getDetailHeaderPanelBackdrop();
 
   if (!panelRoot || panelRoot.dataset.bound === "true") {
     return;
@@ -5031,10 +5015,6 @@ function setupDetailHeaderPanels() {
       detailHeaderPanelState.mode = mode;
       await renderDetailHeaderPanel();
     });
-  });
-
-  backdrop?.addEventListener("click", () => {
-    closeDetailHeaderPanel();
   });
 
   document.addEventListener("keydown", (event) => {
@@ -5091,6 +5071,13 @@ function setupDetailHeaderPanels() {
     if (collectionsModeButton) {
       detailHeaderPanelState.collectionsMode = collectionsModeButton.dataset.detailCollectionsMode || "discover";
       await renderDetailHeaderPanel();
+      return;
+    }
+
+    const spacesFeedButton = target.closest("[data-detail-spaces-feed]");
+    if (spacesFeedButton) {
+      detailHeaderPanelState.spacesFeed = spacesFeedButton.dataset.detailSpacesFeed || "feed";
+      await renderDetailHeaderPanel();
     }
   });
 
@@ -5128,6 +5115,23 @@ function setupDetailHeaderPanels() {
     if (detailHeaderPanelState.mode === "search") {
       rememberDetailHeaderSearch(detailHeaderPanelState.searchQuery);
     }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!detailHeaderPanelState.mode) {
+      return;
+    }
+
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    if (!target) {
+      return;
+    }
+
+    if (target.closest("#detailHeaderPanel") || target.closest("[data-detail-panel-trigger]")) {
+      return;
+    }
+
+    closeDetailHeaderPanel();
   });
 }
 

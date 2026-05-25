@@ -6992,12 +6992,7 @@ body[data-page="details"] .topbar.compact .account-top-link .account-chip-avatar
 }
 
 body[data-page="details"] .detail-header-panel-backdrop {
-  position: fixed;
-  inset: 64px 0 0;
-  z-index: 179;
-  border: 0;
-  background: rgba(0, 0, 0, 0.68);
-  cursor: pointer;
+  display: none;
 }
 
 body[data-page="details"] .detail-header-panel {
@@ -7033,7 +7028,7 @@ body[data-page="details"] .detail-header-panel-search-surface {
 }
 
 body[data-page="details"] .detail-header-panel-surface-floating {
-  width: min(560px, calc(100% - 120px));
+  width: min(640px, calc(100% - 120px));
   margin-right: max(12px, calc((100vw - 1440px) / 2 + 88px));
   margin-left: auto;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -7373,7 +7368,7 @@ body[data-page="details"] .detail-header-ad-card small {
 }
 
 body[data-page="details"] .detail-header-spaces-shell {
-  grid-template-columns: 250px minmax(0, 1fr) 560px;
+  grid-template-columns: 250px minmax(0, 1fr);
 }
 
 body[data-page="details"] .detail-header-spaces-topics {
@@ -7409,6 +7404,10 @@ body[data-page="details"] .detail-space-topic span {
 body[data-page="details"] .detail-header-spaces-feed {
   display: grid;
   gap: 18px;
+}
+
+body[data-page="details"] .detail-header-spaces-feed-wide {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 body[data-page="details"] .detail-space-story-card {
@@ -7450,10 +7449,24 @@ body[data-page="details"] .detail-space-story-copy p {
   color: rgba(255, 255, 255, 0.62);
 }
 
-body[data-page="details"] .detail-header-spaces-filters {
+body[data-page="details"] .detail-header-browse-shell {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 20px;
+}
+
+body[data-page="details"] .detail-header-browse-copy p {
+  margin: 0 0 6px;
+  color: #ffaf9c;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+body[data-page="details"] .detail-header-browse-copy h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 800;
 }
 
 body[data-page="details"] .detail-header-browse-grid {
@@ -7474,6 +7487,12 @@ body[data-page="details"] .detail-space-filter-card {
 
 body[data-page="details"] .detail-browse-filter-card {
   text-decoration: none;
+}
+
+body[data-page="details"] .detail-browse-filter-card.active {
+  background: rgba(77, 49, 153, 0.42);
+  border: 1px solid rgba(143, 109, 255, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(143, 109, 255, 0.2);
 }
 
 body[data-page="details"] .detail-header-notification-feed {
