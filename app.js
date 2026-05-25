@@ -4819,18 +4819,18 @@ function detailHeaderCollectionsPanelTemplate() {
 
 function detailHeaderBrowsePanelTemplate() {
   const cards = [
-    "Category",
-    "Genre",
-    "Country",
-    "Language",
-    "Community",
-    "District",
-    "Bollywood",
-    "South",
-    "Netflix",
-    "Schedule",
-    "Prime",
-    "Trending"
+    { label: "Category", icon: "◫", href: "/#browse" },
+    { label: "Genre", icon: "◎", href: "/#browse" },
+    { label: "Country", icon: "◍", href: "/#browse" },
+    { label: "Language", icon: "文", href: "/#browse" },
+    { label: "Community", icon: "☺", href: "/#collections" },
+    { label: "District", icon: "★", href: "/#trending" },
+    { label: "Bollywood", icon: "हि", href: "/#bollywoodRowHeading" },
+    { label: "South", icon: "ச", href: "/#southRowHeading" },
+    { label: "Netflix", icon: "N", href: "/#netflixRowHeading" },
+    { label: "Schedule", icon: "◷", href: "/#schedule" },
+    { label: "Prime", icon: "P", href: "/#primeRowHeading" },
+    { label: "Trending", icon: "◎", href: "/#trending" }
   ];
 
   return `
@@ -4843,8 +4843,9 @@ function detailHeaderBrowsePanelTemplate() {
         <div class="detail-header-browse-grid">
         ${cards
           .map(
-            (label) => `
-              <a class="detail-space-filter-card detail-browse-filter-card ${label === "Category" ? "active" : ""}" href="/explore/#browse">
+            ({ label, icon, href }) => `
+              <a class="detail-space-filter-card detail-browse-filter-card ${label === "Category" ? "active" : ""}" href="${href}">
+                <span class="detail-browse-filter-icon" aria-hidden="true">${icon}</span>
                 <span>${label}</span>
               </a>
             `
@@ -10112,3 +10113,14 @@ init().catch((error) => {
   showMessage("#formMessage", "Could not load MovieMate right now.");
   showMessage("#commentMessage", "Could not load comments right now.");
 });
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/service-worker.js", { updateViaCache: "none" })
+      .then((registration) => registration.update())
+      .catch((error) => {
+        console.warn("Could not register service worker", error);
+      });
+  });
+}
