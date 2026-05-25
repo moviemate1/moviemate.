@@ -246,9 +246,27 @@ body[data-page="home"] .account-chip.signed-in .account-signin-icon {
 }
 
 body[data-page="home"] .explore-main {
+  position: relative;
+  isolation: isolate;
   width: min(1530px, calc(100% - 44px));
   margin: 0 auto;
   padding-top: 34px;
+}
+
+body[data-page="home"] .explore-main::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(50% - 50vw);
+  z-index: -1;
+  width: 100vw;
+  height: 920px;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 27% 0%, rgba(102, 79, 171, 0.48), transparent 42%),
+    radial-gradient(ellipse at 50% 10%, rgba(58, 85, 101, 0.24), transparent 36%),
+    linear-gradient(90deg, rgba(62, 34, 75, 0.78) 0%, rgba(35, 33, 50, 0.52) 38%, rgba(5, 5, 5, 0.92) 74%, rgba(5, 5, 5, 0.98) 100%),
+    linear-gradient(180deg, rgba(66, 38, 92, 0.78) 0%, rgba(20, 18, 28, 0.72) 44%, rgba(5, 5, 5, 0) 100%);
 }
 
 body[data-page="home"] .explore-layout {
