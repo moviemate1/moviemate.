@@ -258,7 +258,7 @@ let detailHeaderPanelState = {
   scheduleType: "all",
   collectionsMode: "discover",
   spacesFeed: "feed",
-  spacesTopic: "all",
+  spacesTopics: ["Indian", "International", "Anime", "Sports", "Games"],
   titles: []
 };
 
@@ -4380,6 +4380,7 @@ function closeDetailHeaderPanel() {
     root.innerHTML = "";
     root.classList.add("hidden");
     root.setAttribute("aria-hidden", "true");
+    delete root.dataset.detailPanelMode;
   }
 
   document.body.classList.remove("detail-header-panel-open");
@@ -4935,18 +4936,20 @@ function getSpacesPostCopy(title, mode) {
   return `${title.type} update • ${title.genre || "MovieMate pick"}`;
 }
 
-function getDetailSpacesPanelTitles(titles, mode, topic) {
+function getDetailSpacesPanelTitles(titles, mode, activeTopics) {
+  const topicSet = new Set(activeTopics || []);
+
   return [...titles]
     .filter((title) => {
       if (mode === "discussion" && !(title.comments?.length || title.trending || getInterestedCount(title) > 0)) {
         return false;
       }
 
-      if (!topic || topic === "all") {
-        return true;
+      if (!topicSet.size) {
+        return false;
       }
 
-      return getTitleSpacesTopics(title).has(topic);
+      return [...getTitleSpacesTopics(title)].some((topic) => topicSet.has(topic));
     })
     .sort((left, right) => {
       if (mode === "discussion") {
@@ -4961,12 +4964,14 @@ function getDetailSpacesPanelTitles(titles, mode, topic) {
 function detailHeaderSpacesPanelTemplate() {
   const titles = detailHeaderPanelState.titles || [];
   const mode = detailHeaderPanelState.spacesFeed || "feed";
-  const topic = detailHeaderPanelState.spacesTopic || "all";
-  const discussionTitles = getDetailSpacesPanelTitles(titles, mode, topic);
   const topicButtons = ["Indian", "International", "Anime", "Sports", "Games"];
+  const activeTopics = Array.isArray(detailHeaderPanelState.spacesTopics)
+    ? detailHeaderPanelState.spacesTopics
+    : topicButtons;
+  const discussionTitles = getDetailSpacesPanelTitles(titles, mode, activeTopics);
 
   return `
-    <div class="detail-header-panel-surface">
+    <div class="detail-header-panel-surface detail-header-panel-surface-spaces">
       <div class="detail-panel-title-row detail-panel-title-row-compact">
         <span class="detail-panel-title-mark">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-3 3v-3H5a2 2 0 0 1-2-2V8a3 3 0 0 1 3-3h1"></path><path d="M16 6h2a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-1l-2 2v-2"></path></svg>
@@ -4989,7 +4994,7 @@ function detailHeaderSpacesPanelTemplate() {
             ${topicButtons
               .map(
                 (label) => `
-                  <button class="detail-space-topic ${topic === "all" || topic === label ? "active" : ""}" type="button" data-detail-spaces-topic="${label}">
+                  <button class="detail-space-topic ${activeTopics.includes(label) ? "active" : ""}" type="button" data-detail-spaces-topic="${label}" aria-pressed="${activeTopics.includes(label) ? "true" : "false"}">
                     <span>✓</span>
                     ${label}
                   </button>
@@ -5016,7 +5021,7 @@ function detailHeaderSpacesPanelTemplate() {
                 </a>
               `
             )
-            .join("") || '<p class="detail-search-empty-copy">No space posts match this topic yet.</p>'}
+            .join("") || '<p class="detail-search-empty-copy">No space posts match the selected topics yet.</p>'}
         </section>
       </div>
     </div>
@@ -5077,6 +5082,7 @@ async function renderDetailHeaderPanel() {
   root.innerHTML = markup;
   root.classList.remove("hidden");
   root.setAttribute("aria-hidden", "false");
+  root.dataset.detailPanelMode = mode;
   document.body.classList.add("detail-header-panel-open");
   setActiveDetailHeaderTrigger(mode);
 
@@ -5188,7 +5194,18 @@ function setupDetailHeaderPanels() {
     const spacesTopicButton = target.closest("[data-detail-spaces-topic]");
     if (spacesTopicButton) {
       const nextTopic = spacesTopicButton.dataset.detailSpacesTopic || "all";
-      detailHeaderPanelState.spacesTopic = detailHeaderPanelState.spacesTopic === nextTopic ? "all" : nextTopic;
+      const fallbackTopics = ["Indian", "International", "Anime", "Sports", "Games"];
+      const activeTopics = new Set(
+        Array.isArray(detailHeaderPanelState.spacesTopics) ? detailHeaderPanelState.spacesTopics : fallbackTopics
+      );
+
+      if (activeTopics.has(nextTopic)) {
+        activeTopics.delete(nextTopic);
+      } else {
+        activeTopics.add(nextTopic);
+      }
+
+      detailHeaderPanelState.spacesTopics = fallbackTopics.filter((topic) => activeTopics.has(topic));
       await renderDetailHeaderPanel();
     }
   });
