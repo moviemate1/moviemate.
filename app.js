@@ -5921,6 +5921,122 @@ function focusBrowseTargetFromUrl() {
   }, 260);
 }
 
+const HOME_FULLSCREEN_SECTION_IDS = new Set(["browse", "schedule", "collections"]);
+
+function isHomeFullscreenSectionHash(hash) {
+  return HOME_FULLSCREEN_SECTION_IDS.has((hash || "").replace("#", ""));
+}
+
+function setHomeNavActive(hash) {
+  const normalizedHash = hash || "#trending";
+  document.querySelectorAll(".explore-nav-link[href], .mobile-dock-link[href]").forEach((link) => {
+    const linkHash = new URL(link.getAttribute("href") || "#trending", window.location.href).hash || "#trending";
+    link.classList.toggle("active", linkHash === normalizedHash);
+  });
+}
+
+function closeHomeFullscreenSection(options = {}) {
+  document.querySelectorAll(".home-section-panel-open").forEach((section) => {
+    section.classList.remove("home-section-panel-open");
+    section.setAttribute("aria-hidden", "true");
+  });
+  document.body.classList.remove("home-section-panel-active");
+
+  if (options.restoreExploreHash) {
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#trending`);
+    setHomeNavActive("#trending");
+  }
+}
+
+function ensureHomeSectionCloseButton(section) {
+  if (section.querySelector("[data-home-section-close]")) {
+    return;
+  }
+
+  const button = document.createElement("button");
+  button.className = "home-section-panel-close";
+  button.type = "button";
+  button.setAttribute("aria-label", "Close section");
+  button.dataset.homeSectionClose = "true";
+  button.textContent = "Close";
+  section.prepend(button);
+}
+
+function openHomeFullscreenSection(hashOrId) {
+  if (document.body.dataset.page !== "home") {
+    return false;
+  }
+
+  const id = (hashOrId || "").replace("#", "");
+  const section = document.getElementById(id);
+
+  if (!HOME_FULLSCREEN_SECTION_IDS.has(id) || !section) {
+    return false;
+  }
+
+  closeHomeFullscreenSection();
+  ensureHomeSectionCloseButton(section);
+  section.classList.add("home-section-panel-open");
+  section.setAttribute("aria-hidden", "false");
+  document.body.classList.add("home-section-panel-active");
+  window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
+  setHomeNavActive(`#${id}`);
+  window.setTimeout(() => {
+    section.querySelector("input, select, button, a")?.focus({ preventScroll: true });
+  }, 80);
+
+  return true;
+}
+
+function setupHomeFullscreenSections() {
+  if (document.body.dataset.page !== "home") {
+    return;
+  }
+
+  HOME_FULLSCREEN_SECTION_IDS.forEach((id) => {
+    const section = document.getElementById(id);
+    section?.setAttribute("aria-hidden", "true");
+  });
+
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+
+    if (!target) {
+      return;
+    }
+
+    if (target.closest("[data-home-section-close]")) {
+      event.preventDefault();
+      closeHomeFullscreenSection({ restoreExploreHash: true });
+      return;
+    }
+
+    const link = target.closest("a[href]");
+    const hash = link ? new URL(link.getAttribute("href") || "", window.location.href).hash : "";
+
+    if (isHomeFullscreenSectionHash(hash)) {
+      event.preventDefault();
+      openHomeFullscreenSection(hash);
+      return;
+    }
+
+    if (hash === "#trending" && document.body.classList.contains("home-section-panel-active")) {
+      event.preventDefault();
+      closeHomeFullscreenSection({ restoreExploreHash: true });
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && document.body.classList.contains("home-section-panel-active")) {
+      closeHomeFullscreenSection({ restoreExploreHash: true });
+    }
+  });
+
+  if (isHomeFullscreenSectionHash(window.location.hash)) {
+    window.setTimeout(() => openHomeFullscreenSection(window.location.hash), 120);
+  }
+}
+
 function showMessage(selector, text) {
   const element = document.querySelector(selector);
 
@@ -10466,6 +10582,7 @@ async function init() {
     setupScheduleControls();
     setupCollectionTabs();
     setupInterestWindow();
+    setupHomeFullscreenSections();
     setupTopSearch();
     setupUserNotificationsModal();
     setupScrollControls();

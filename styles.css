@@ -9203,7 +9203,9 @@ body[data-page="collection"] .topbar.compact .brand-mark::after {
 body[data-page="home"] #browse,
 body[data-page="home"] #schedule,
 body[data-page="home"] #collections,
-body[data-page="home"] .site-footer {
+body[data-page="home"] .site-footer,
+body[data-page="home"] .mobile-dock,
+body[data-page="home"] .scroll-controls {
   display: none !important;
 }
 
