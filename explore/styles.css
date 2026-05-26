@@ -6994,6 +6994,86 @@ body[data-page="home"] .explore-mobile-brand .brand-mark::after {
   right: -5px !important;
 }
 
+body[data-page="home"] #browse,
+body[data-page="home"] #schedule,
+body[data-page="home"] #collections,
+body[data-page="home"] .site-footer,
+body[data-page="home"] .mobile-dock,
+body[data-page="home"] .scroll-controls {
+  display: none !important;
+}
+
+body[data-page="home"].home-section-panel-active {
+  overflow: hidden;
+}
+
+body[data-page="home"] #browse.home-section-panel-open,
+body[data-page="home"] #schedule.home-section-panel-open,
+body[data-page="home"] #collections.home-section-panel-open {
+  display: block !important;
+  position: fixed;
+  inset: 86px 0 0;
+  z-index: 420;
+  overflow-y: auto;
+  padding: clamp(26px, 4vw, 54px) clamp(18px, 4vw, 56px) 72px;
+  background:
+    radial-gradient(circle at 75% 0%, rgba(132, 92, 255, 0.16), transparent 38%),
+    linear-gradient(180deg, rgba(8, 8, 10, 0.98), #050505 42%, #020202);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body[data-page="home"] #browse.home-section-panel-open .section-heading,
+body[data-page="home"] #schedule.home-section-panel-open .section-heading,
+body[data-page="home"] #collections.home-section-panel-open .section-heading {
+  padding-right: 108px;
+}
+
+.home-section-panel-close {
+  position: sticky;
+  top: 0;
+  float: right;
+  z-index: 2;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(25, 20, 35, 0.9);
+  font: 800 0.92rem/1 "Manrope", sans-serif;
+  cursor: pointer;
+}
+
+.home-section-panel-close:hover,
+.home-section-panel-close:focus-visible {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(55, 38, 84, 0.95);
+}
+
+@media (max-width: 720px) {
+  body[data-page="home"] #browse.home-section-panel-open,
+  body[data-page="home"] #schedule.home-section-panel-open,
+  body[data-page="home"] #collections.home-section-panel-open {
+    inset: 72px 0 60px;
+    padding: 20px 14px 36px;
+  }
+
+  body[data-page="home"] #browse.home-section-panel-open .section-heading,
+  body[data-page="home"] #schedule.home-section-panel-open .section-heading,
+  body[data-page="home"] #collections.home-section-panel-open .section-heading {
+    padding-right: 0;
+  }
+
+  .home-section-panel-close {
+    position: relative;
+    top: auto;
+    float: none;
+    margin: 0 0 18px auto;
+    display: flex;
+    align-items: center;
+    width: max-content;
+  }
+}
+
 .global-search-modal {
   position: fixed;
   inset: 0;
