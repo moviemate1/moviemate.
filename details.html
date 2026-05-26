@@ -4,67 +4,36 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MovieMate | Title Details</title>
-    <meta
-      name="description"
-      content="Explore title details, reactions, release dates, and public reviews on MovieMate."
-    />
+    <meta name="description" content="Explore title details, reactions, release dates, and public reviews on MovieMate." />
     <meta name="theme-color" content="#0a0a0f" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="styles.css?v=118-spaces-fullscreen-signin" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=121-moviemate-global-search" />
   </head>
   <body data-page="details">
     <div class="page-shell detail-shell">
+      
       <nav class="topbar compact">
-        <a class="brand" href="/explore/">
-          <span class="brand-mark" aria-hidden="true"></span>
-          <span class="brand-text">MovieMate</span>
-        </a>
+        <a class="brand" href="/explore/"><span class="brand-mark" aria-hidden="true"></span><span class="brand-text">MOVIEMATE</span></a>
         <div class="detail-nav-icons" aria-label="MovieMate navigation">
-          <button class="detail-nav-btn" type="button" aria-label="Explore" data-detail-panel-trigger="explore">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.25"></circle><circle cx="12" cy="12" r="2.25"></circle></svg>
-            <span class="detail-nav-label">Explore</span>
-          </button>
-          <button class="detail-nav-btn" type="button" aria-label="Schedule" data-detail-panel-trigger="schedule">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2"></rect><path d="M8 3.5v4M16 3.5v4M4 9.5h16"></path></svg>
-            <span class="detail-nav-label">Schedule</span>
-          </button>
-          <button class="detail-nav-btn" type="button" aria-label="Spaces" data-detail-panel-trigger="spaces">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-3 3v-3H5a2 2 0 0 1-2-2V8a3 3 0 0 1 3-3h1"></path><path d="M16 6h2a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-1l-2 2v-2"></path></svg>
-            <span class="detail-nav-label">Spaces</span>
-          </button>
-          <button class="detail-nav-btn" type="button" aria-label="Collections" data-detail-panel-trigger="collections">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v14l-6.5-3.8L5.5 20V6A1.5 1.5 0 0 1 7 4.5Z"></path></svg>
-            <span class="detail-nav-label">Collections</span>
-          </button>
-          <button class="detail-nav-btn" type="button" aria-label="Browse" data-detail-panel-trigger="browse">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.2"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.2"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.2"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.2"></rect></svg>
-            <span class="detail-nav-label">Browse</span>
-          </button>
-          <button class="detail-nav-btn" type="button" aria-label="Notifications" data-detail-panel-trigger="notifications">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a4 4 0 0 1 4 4v2.1c0 1.2.4 2.3 1.1 3.2l1 1.2H5.9l1-1.2c.7-.9 1.1-2 1.1-3.2V8.5a4 4 0 0 1 4-4Z"></path><path d="M9.5 18a2.5 2.5 0 0 0 5 0"></path></svg>
-            <span class="detail-nav-label">Notifications</span>
-          </button>
-          <button class="detail-nav-btn" type="button" aria-label="Search" data-detail-panel-trigger="search">
-            <svg class="detail-nav-icon-search" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="5.5"></circle><path d="m16 16 4 4"></path></svg>
-            <svg class="detail-nav-icon-close" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 18 18M18 6 6 18"></path></svg>
-            <span class="detail-nav-label">Search</span>
-          </button>
+          <button class="detail-nav-btn active" type="button" aria-label="Explore" data-detail-panel-trigger="explore"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.25"></circle><circle cx="12" cy="12" r="2.25"></circle></svg><span class="detail-nav-label">Explore</span></button>
+          <button class="detail-nav-btn " type="button" aria-label="Schedule" data-detail-panel-trigger="schedule"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2"></rect><path d="M8 3.5v4M16 3.5v4M4 9.5h16"></path></svg><span class="detail-nav-label">Schedule</span></button>
+          <button class="detail-nav-btn " type="button" aria-label="Spaces" data-detail-panel-trigger="spaces"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-3 3v-3H5a2 2 0 0 1-2-2V8a3 3 0 0 1 3-3h1"></path><path d="M16 6h2a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-1l-2 2v-2"></path></svg><span class="detail-nav-label">Spaces</span></button>
+          <button class="detail-nav-btn " type="button" aria-label="Collections" data-detail-panel-trigger="collections"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v14l-6.5-3.8L5.5 20V6A1.5 1.5 0 0 1 7 4.5Z"></path></svg><span class="detail-nav-label">Collections</span></button>
+          <button class="detail-nav-btn " type="button" aria-label="Browse" data-detail-panel-trigger="browse"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.2"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.2"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.2"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.2"></rect></svg><span class="detail-nav-label">Browse</span></button>
+          <button class="detail-nav-btn " type="button" aria-label="Notifications" data-detail-panel-trigger="notifications"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a4 4 0 0 1 4 4v2.1c0 1.2.4 2.3 1.1 3.2l1 1.2H5.9l1-1.2c.7-.9 1.1-2 1.1-3.2V8.5a4 4 0 0 1 4-4Z"></path><path d="M9.5 18a2.5 2.5 0 0 0 5 0"></path></svg><span class="detail-nav-label">Notifications</span></button>
+          <button class="detail-nav-btn " type="button" aria-label="Search" data-detail-panel-trigger="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="5.5"></circle><path d="m16 16 4 4"></path></svg><span class="detail-nav-label">Search</span></button>
         </div>
         <div class="topbar-actions">
           <a class="ghost-link" href="/explore/">Back to Browse</a>
           <a class="ghost-link" href="contact.html">Contact</a>
           <button class="ghost-link" id="ownerToggle" type="button">Owner Mode</button>
+          
           <div class="account-menu-wrap">
             <button class="ghost-link account-top-link" data-auth-toggle type="button" aria-label="MovieMate account">
-              <span class="account-signin-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="8.25" r="3.25"></circle><path d="M5.75 19.5a6.25 6.25 0 0 1 12.5 0"></path></svg>
-              </span>
+              <span class="account-signin-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.25" r="3.25"></circle><path d="M5.75 19.5a6.25 6.25 0 0 1 12.5 0"></path></svg></span>
               <span class="account-chip-avatar hidden" data-account-avatar>MM</span>
               <span class="account-chip-label" data-account-label>Sign In</span>
             </button>
@@ -78,112 +47,10 @@
           </div>
         </div>
       </nav>
-      <section class="detail-header-panel hidden" id="detailHeaderPanel" aria-hidden="true"></section>
-      <button class="detail-header-panel-backdrop hidden" id="detailHeaderPanelBackdrop" type="button" aria-label="Close navigation panel"></button>
-
+      <section class="detail-header-panel hidden" id="detailHeaderPanel" aria-hidden="true"></section><button class="detail-header-panel-backdrop hidden" id="detailHeaderPanelBackdrop" type="button" aria-label="Close navigation panel"></button>
       <main class="detail-page" id="movieDetails"></main>
     </div>
-
-    <div class="overlay-modal hidden" id="ownerEditModal" aria-hidden="true">
-      <button class="overlay-backdrop" data-close-owner-edit="true" type="button" aria-label="Close edit form"></button>
-      <div class="overlay-card">
-        <button class="overlay-close" id="ownerEditClose" type="button" aria-label="Close edit form">&times;</button>
-        <p class="eyebrow">Owner edit</p>
-        <h2 class="overlay-title">Edit title details</h2>
-        <form class="overlay-form" id="ownerEditForm">
-          <input type="hidden" name="id" />
-          <label class="input-group">
-            <span>Title</span>
-            <input name="title" type="text" required />
-          </label>
-          <label class="input-group">
-            <span>Type</span>
-            <select name="type" required>
-              <option value="Movie">Movie</option>
-              <option value="Series">Series</option>
-            </select>
-          </label>
-          <label class="input-group">
-            <span>Status</span>
-            <select name="status" required>
-              <option value="Released">Released</option>
-              <option value="Upcoming">Upcoming</option>
-            </select>
-          </label>
-          <label class="input-group">
-            <span>Genre</span>
-            <input name="genre" type="text" required />
-          </label>
-          <label class="input-group form-span">
-            <span>Languages, separated by commas</span>
-            <input name="language" type="text" required />
-          </label>
-          <label class="input-group form-span">
-            <span>Platforms, separated by commas</span>
-            <input name="platforms" type="text" placeholder="Netflix, Prime Video, Theatres" />
-          </label>
-          <label class="input-group">
-            <span>Release date</span>
-            <input name="releaseDate" type="date" required />
-          </label>
-          <label class="input-group form-span">
-            <span>Poster image URL</span>
-            <input name="image" type="url" required />
-          </label>
-          <label class="input-group form-span">
-            <span>Trailer URL</span>
-            <input name="trailerUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." />
-          </label>
-          <label class="input-group">
-            <span>Director</span>
-            <input name="director" type="text" />
-          </label>
-          <label class="input-group">
-            <span>Main lead</span>
-            <input name="mainLead" type="text" />
-          </label>
-          <label class="input-group">
-            <span>Heroine</span>
-            <input name="heroine" type="text" />
-          </label>
-          <label class="input-group form-span">
-            <span>Cast names, separated by commas</span>
-            <textarea name="castText" rows="3"></textarea>
-          </label>
-          <label class="input-group form-span">
-            <span>Crew names and roles</span>
-            <textarea name="crewText" rows="3" placeholder="Name - Role, Name - Role"></textarea>
-          </label>
-          <label class="input-group form-span">
-            <span>Description</span>
-            <textarea name="description" rows="5" required></textarea>
-          </label>
-          <div class="form-actions">
-            <button class="primary-btn" type="submit">Save Changes</button>
-            <p class="form-message" id="ownerEditMessage" aria-live="polite"></p>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div class="overlay-modal hidden" id="trailerModal" aria-hidden="true">
-      <button class="overlay-backdrop" data-close-trailer="true" type="button" aria-label="Close trailer"></button>
-      <div class="overlay-card overlay-card-wide trailer-modal-card">
-        <button class="overlay-close" id="trailerModalClose" type="button" aria-label="Close trailer">&times;</button>
-        <div class="trailer-modal-frame-shell">
-          <iframe
-            id="trailerModalFrame"
-            class="trailer-modal-frame"
-            src=""
-            title="MovieMate trailer"
-            loading="lazy"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen
-          ></iframe>
-        </div>
-      </div>
-    </div>
-
+    
     <div class="overlay-modal hidden" id="authModal" aria-hidden="true">
       <button class="overlay-backdrop" data-close-auth="true" type="button" aria-label="Close account modal"></button>
       <div class="overlay-card auth-overlay">
@@ -196,18 +63,9 @@
         <h2 class="overlay-title" id="authTitle">Sign in to MovieMate</h2>
         <p class="section-copy" id="authHint">Sign in to keep collections, member reactions, and your watch progress across devices.</p>
         <form class="overlay-form auth-form-single" id="authForm" data-mode="login">
-          <label class="input-group hidden" id="authNameField">
-            <span>Name</span>
-            <input name="displayName" type="text" placeholder="Your name" />
-          </label>
-          <label class="input-group form-span">
-            <span>Email</span>
-            <input name="email" type="email" required />
-          </label>
-          <label class="input-group form-span">
-            <span>Password</span>
-            <input name="password" type="password" required />
-          </label>
+          <label class="input-group hidden" id="authNameField"><span>Name</span><input name="displayName" type="text" placeholder="Your name" /></label>
+          <label class="input-group form-span"><span>Email</span><input name="email" type="email" required /></label>
+          <label class="input-group form-span"><span>Password</span><input name="password" type="password" required /></label>
           <div class="form-actions auth-actions">
             <button class="primary-btn" id="authSubmit" type="submit">Sign In</button>
             <button class="ghost-link" id="forgotPasswordBtn" type="button">Forgot Password?</button>
@@ -216,8 +74,15 @@
         </form>
       </div>
     </div>
-
-    <script type="module" src="app.js?v=167-spaces-topic-toggles"></script>
+    <script type="module" src="app.js?v=171-global-search-header"></script>
     <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a3795ec89854463a9b90761fb384fb6c"}'></script><!-- End Cloudflare Web Analytics -->
+  
+    <div class="overlay-modal hidden" id="trailerModal" aria-hidden="true">
+      <button class="overlay-backdrop" data-close-trailer="true" type="button" aria-label="Close trailer"></button>
+      <div class="overlay-card overlay-card-wide trailer-modal-card">
+        <button class="overlay-close" id="trailerModalClose" type="button" aria-label="Close trailer">&times;</button>
+        <div class="trailer-modal-frame-shell"><iframe id="trailerModalFrame" class="trailer-modal-frame" src="" title="MovieMate trailer" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+      </div>
+    </div>
   </body>
 </html>

@@ -4,90 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MovieMate | Offline</title>
-    <meta name="theme-color" content="#1f2126" />
-    <style>
-      :root {
-        color-scheme: dark;
-        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        background: #1f2126;
-        color: #d5d7dc;
-      }
-
-      .offline-shell {
-        width: min(100%, 820px);
-        padding: 48px 28px;
-      }
-
-      .offline-card {
-        display: grid;
-        gap: 18px;
-        max-width: 420px;
-      }
-
-      .offline-dino {
-        width: 64px;
-        height: 64px;
-        color: #dadce0;
-      }
-
-      h1 {
-        margin: 0;
-        color: #dadce0;
-        font-size: clamp(2rem, 4vw, 3rem);
-        font-weight: 700;
-        line-height: 1.05;
-      }
-
-      p,
-      li {
-        margin: 0;
-        color: #9aa0a6;
-        font-size: 1.05rem;
-        line-height: 1.65;
-      }
-
-      ul {
-        margin: 0;
-        padding-left: 28px;
-        display: grid;
-        gap: 4px;
-      }
-
-      .offline-code {
-        color: #8b9097;
-        font-size: 0.98rem;
-        letter-spacing: 0.02em;
-      }
-    </style>
+    <meta name="description" content="MovieMate offline page." />
+    <meta name="theme-color" content="#0a0a0f" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=121-moviemate-global-search" />
   </head>
-  <body>
-    <main class="offline-shell">
-      <section class="offline-card" aria-label="Offline message">
-        <svg class="offline-dino" viewBox="0 0 64 64" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M17 48h6v4H11v-6h4v-4h4v-4h-4v-4h-4v-6h4v-4h4v-4h8v4h6v-4h8v4h4v4h4v8h-4v4h-4v12h-6v-8h-6v8h-6v-8h-4v4h-4zm20-20h4v-4h-4zm-18 4h4v-4h-4zm28 16h6v4h-6z"
-          />
-        </svg>
-        <h1>Press space to play</h1>
-        <p>Try:</p>
-        <ul>
-          <li>Checking the network cables, modem, and router</li>
-          <li>Reconnecting to Wi-Fi</li>
-        </ul>
-        <p class="offline-code">ERR_INTERNET_DISCONNECTED</p>
-      </section>
-    </main>
-  </body>
-</html>
+  <body><main class="account-empty-state"><h1>You are offline.</h1><p class="section-copy">Reconnect to keep exploring MovieMate.</p></main></body></html>

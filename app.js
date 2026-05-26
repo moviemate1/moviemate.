@@ -44,6 +44,7 @@ const USER_PROFILE_CACHE_PREFIX = "moviemate_user_profile_cache_";
 const TITLES_CACHE_KEY = "moviemate_titles_cache_v1";
 const HOMEPAGE_CONTENT_CACHE_KEY = "moviemate_homepage_content_cache_v1";
 const DETAIL_HEADER_SEARCH_HISTORY_KEY = "moviemate_detail_header_search_history_v1";
+const GLOBAL_SEARCH_HISTORY_KEY = "moviemate_global_search_history_v1";
 const SEARCH_PAGE_SIZE = 24;
 const OWNER_PASSCODE = "1A2b3456@";
 const OWNER_NOTIFICATION_TOAST_MS = 3200;
@@ -5117,6 +5118,12 @@ function setupDetailHeaderPanels() {
         return;
       }
 
+      if (mode === "search") {
+        closeDetailHeaderPanel();
+        await openGlobalSearchModal();
+        return;
+      }
+
       if (detailHeaderPanelState.mode === mode) {
         closeDetailHeaderPanel();
         return;
@@ -5134,7 +5141,7 @@ function setupDetailHeaderPanels() {
   });
 
   panelRoot.addEventListener("click", async (event) => {
-    const target = event.target instanceof HTMLElement ? event.target : null;
+    const target = event.target instanceof Element ? event.target : null;
 
     if (!target) {
       return;
@@ -7908,7 +7915,7 @@ function setupLikeButtons() {
         showMessage("#detailVoteMessage", "Could not save your vote right now.");
       }
     }
-  });
+  }, true);
 }
 
 function setupDeleteButtons() {
@@ -8975,24 +8982,298 @@ function closeNotificationsModal() {
   syncModalVisibility();
 }
 
-function setupTopSearch() {
-  const button = document.querySelector("#topSearchBtn");
+function getGlobalSearchHistory() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(GLOBAL_SEARCH_HISTORY_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0, 6) : [];
+  } catch {
+    return [];
+  }
+}
 
-  if (!button) {
+function saveGlobalSearchHistory(history) {
+  try {
+    localStorage.setItem(GLOBAL_SEARCH_HISTORY_KEY, JSON.stringify(history.slice(0, 6)));
+  } catch {
+    // Search history is optional.
+  }
+}
+
+function rememberGlobalSearch(query) {
+  const normalized = String(query || "").trim();
+
+  if (!normalized) {
     return;
   }
 
-  button.addEventListener("click", () => {
-    const searchInput = document.querySelector("#searchInput");
-    const browseSection = document.querySelector("#browse");
+  const next = [normalized, ...getGlobalSearchHistory().filter((entry) => entry.toLowerCase() !== normalized.toLowerCase())];
+  saveGlobalSearchHistory(next);
+}
 
-    browseSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+function getGlobalSearchPeople(titles, query = "") {
+  const queryValue = query.trim().toLowerCase();
+  const people = new Map();
 
-    window.setTimeout(() => {
-      searchInput?.focus();
-    }, 220);
+  titles.forEach((title) => {
+    [...(title.cast || []), ...(title.crew || [])].forEach((person) => {
+      const name = String(person?.name || "").trim();
+
+      if (!name) {
+        return;
+      }
+
+      const key = normalizePersonName(name);
+      const current = people.get(key) || {
+        name,
+        role: person.role || "Cast & Crew",
+        tmdbPersonId: person.tmdbPersonId || "",
+        appearances: 0
+      };
+      current.appearances += 1;
+      current.tmdbPersonId = current.tmdbPersonId || person.tmdbPersonId || "";
+      people.set(key, current);
+    });
   });
 
+  return [...people.values()]
+    .filter((person) => !queryValue || `${person.name} ${person.role}`.toLowerCase().includes(queryValue))
+    .sort((left, right) => right.appearances - left.appearances || left.name.localeCompare(right.name))
+    .slice(0, 12);
+}
+
+function getGlobalSearchTitles(titles, query = "") {
+  const queryValue = query.trim().toLowerCase();
+
+  if (!queryValue) {
+    return [...titles].sort(compareMostInterestedTitles).slice(0, 6);
+  }
+
+  return titles
+    .filter((title) => {
+      const haystack = [
+        title.title,
+        title.description,
+        title.genre,
+        title.type,
+        title.language.join(" "),
+        formatPlatforms(title.platforms),
+        title.director,
+        title.mainLead,
+        title.heroine,
+        ...(title.cast || []).map((person) => `${person.name} ${person.role || ""}`),
+        ...(title.crew || []).map((person) => `${person.name} ${person.role || ""}`)
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(queryValue);
+    })
+    .slice(0, 12);
+}
+
+function globalSearchResultsTemplate() {
+  const modal = document.querySelector("#globalSearchModal");
+  const query = modal?.querySelector("#globalSearchInput")?.value.trim() || "";
+  const tab = modal?.querySelector(".global-search-tab.active")?.dataset.globalSearchTab || "content";
+  const titles = getVisibleTitles(titlesCache);
+
+  if (!query) {
+    const history = getGlobalSearchHistory();
+    const quickTitles = getGlobalSearchTitles(titles);
+    return `
+      <div class="global-search-meta">
+        <strong>Recent searches</strong>
+        <button class="global-search-clear" type="button" data-global-search-clear="true">Clear history</button>
+      </div>
+      <div class="global-search-chip-row">
+        ${
+          history.length
+            ? history.map((item) => `<button class="global-search-chip" type="button" data-global-search-chip="${escapeHtml(item)}">${escapeHtml(item)}</button>`).join("")
+            : '<span class="global-search-empty">Search once and your latest titles will show up here.</span>'
+        }
+      </div>
+      <div class="global-search-meta compact"><strong>Popular right now</strong></div>
+      <div class="global-search-card-grid">${quickTitles.map(movieCardTemplate).join("")}</div>
+    `;
+  }
+
+  if (tab === "castcrew") {
+    const people = getGlobalSearchPeople(titles, query);
+    return people.length
+      ? `<div class="global-search-person-list">${people.map((person) => `
+          <a class="global-search-person" href="${buildPersonUrl(person.name, person.tmdbPersonId)}">
+            <span>${escapeHtml(person.name.charAt(0).toUpperCase())}</span>
+            <strong>${escapeHtml(person.name)}</strong>
+            <small>${escapeHtml(person.role)} • ${person.appearances} title${person.appearances === 1 ? "" : "s"}</small>
+          </a>
+        `).join("")}</div>`
+      : '<p class="global-search-empty">No cast or crew matches yet.</p>';
+  }
+
+  if (tab === "collections") {
+    const collections = buildDiscoverCollections(titles)
+      .filter((collection) => `${collection.title} ${collection.subtitle}`.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, 8);
+    return collections.length
+      ? `<div class="global-search-collection-list">${collections.map((collection) => `
+          <a class="global-search-collection" href="collection.html?mode=discover&slug=${encodeURIComponent(collection.slug || slugify(collection.title))}">
+            <img src="${escapeHtml(collection.image)}" alt="${escapeHtml(collection.title)} cover" loading="lazy" decoding="async" />
+            <span><strong>${escapeHtml(collection.title)}</strong><small>${escapeHtml(collection.subtitle)}</small></span>
+          </a>
+        `).join("")}</div>`
+      : '<p class="global-search-empty">No collection matches yet.</p>';
+  }
+
+  if (tab === "users") {
+    const name = getProfileDisplayName(currentUserProfile, currentUser);
+    const username = getProfileUsername(currentUserProfile, currentUser);
+    const matchesCurrent = currentUser && `${name} ${username} ${currentUser?.email || ""}`.toLowerCase().includes(query.toLowerCase());
+    return matchesCurrent
+      ? `<div class="global-search-person-list"><a class="global-search-person" href="profile.html"><span>${escapeHtml((username || name || "MM").slice(0, 2).toUpperCase())}</span><strong>${escapeHtml(name || "MovieMate Member")}</strong><small>@${escapeHtml(username || "member")} • Your profile</small></a></div>`
+      : '<p class="global-search-empty">User search is ready for signed-in profiles. Try your own username here.</p>';
+  }
+
+  const matches = getGlobalSearchTitles(titles, query);
+  return matches.length
+    ? `<div class="global-search-card-grid">${matches.map(movieCardTemplate).join("")}</div>`
+    : '<p class="global-search-empty">No title matches yet. Try a different movie, show, anime, cast, or crew name.</p>';
+}
+
+function ensureGlobalSearchModal() {
+  let modal = document.querySelector("#globalSearchModal");
+
+  if (modal) {
+    return modal;
+  }
+
+  modal = document.createElement("div");
+  modal.id = "globalSearchModal";
+  modal.className = "global-search-modal hidden";
+  modal.setAttribute("aria-hidden", "true");
+  modal.innerHTML = `
+    <button class="global-search-backdrop" type="button" data-global-search-close="true" aria-label="Close search"></button>
+    <section class="global-search-panel" role="dialog" aria-modal="true" aria-label="Search MovieMate">
+      <label class="global-search-field">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="5.5"></circle><path d="m16 16 4 4"></path></svg>
+        <input id="globalSearchInput" type="search" placeholder="Search for Movies, Shows, Anime, Cast & Crew or Users..." autocomplete="off" />
+      </label>
+      <div class="global-search-tabs">
+        <button class="global-search-tab active" type="button" data-global-search-tab="content">Content</button>
+        <button class="global-search-tab" type="button" data-global-search-tab="collections">Collections</button>
+        <button class="global-search-tab" type="button" data-global-search-tab="castcrew">Cast & Crew</button>
+        <button class="global-search-tab" type="button" data-global-search-tab="users">Users</button>
+      </div>
+      <div class="global-search-results" id="globalSearchResults"></div>
+    </section>
+  `;
+  document.body.appendChild(modal);
+  return modal;
+}
+
+async function openGlobalSearchModal(query = "") {
+  const modal = ensureGlobalSearchModal();
+  const input = modal.querySelector("#globalSearchInput");
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  input.value = query;
+  modal.querySelector("#globalSearchResults").innerHTML = globalSearchResultsTemplate();
+  try {
+    await fetchTitles();
+    modal.querySelector("#globalSearchResults").innerHTML = globalSearchResultsTemplate();
+  } catch (error) {
+    console.warn("Could not refresh search titles.", error);
+  }
+  window.requestAnimationFrame(() => {
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  });
+}
+
+function closeGlobalSearchModal() {
+  const modal = document.querySelector("#globalSearchModal");
+
+  if (!modal) {
+    return;
+  }
+
+  const input = modal.querySelector("#globalSearchInput");
+  rememberGlobalSearch(input?.value || "");
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+function setupGlobalSearchModal() {
+  document.addEventListener("click", async (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+
+    if (!target) {
+      return;
+    }
+
+    const openButton = target.closest("[data-top-search], [data-global-search-toggle]");
+    if (openButton) {
+      event.preventDefault();
+      await openGlobalSearchModal();
+      return;
+    }
+
+    if (target.closest("[data-global-search-close='true']")) {
+      closeGlobalSearchModal();
+      return;
+    }
+
+    const tabButton = target.closest("[data-global-search-tab]");
+    if (tabButton) {
+      document.querySelectorAll(".global-search-tab").forEach((button) => button.classList.remove("active"));
+      tabButton.classList.add("active");
+      document.querySelector("#globalSearchResults").innerHTML = globalSearchResultsTemplate();
+      return;
+    }
+
+    const chip = target.closest("[data-global-search-chip]");
+    if (chip) {
+      const input = document.querySelector("#globalSearchInput");
+      input.value = chip.dataset.globalSearchChip || "";
+      rememberGlobalSearch(input.value);
+      document.querySelector("#globalSearchResults").innerHTML = globalSearchResultsTemplate();
+      input.focus();
+      return;
+    }
+
+    if (target.closest("[data-global-search-clear='true']")) {
+      saveGlobalSearchHistory([]);
+      document.querySelector("#globalSearchResults").innerHTML = globalSearchResultsTemplate();
+      return;
+    }
+
+    const resultLink = target.closest("#globalSearchModal a");
+    if (resultLink) {
+      rememberGlobalSearch(document.querySelector("#globalSearchInput")?.value || "");
+    }
+  }, true);
+
+  document.addEventListener("input", (event) => {
+    const input = event.target instanceof HTMLInputElement ? event.target : null;
+
+    if (!input || input.id !== "globalSearchInput") {
+      return;
+    }
+
+    document.querySelector("#globalSearchResults").innerHTML = globalSearchResultsTemplate();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeGlobalSearchModal();
+    }
+
+    if (event.key === "Enter" && event.target instanceof HTMLInputElement && event.target.id === "globalSearchInput") {
+      rememberGlobalSearch(event.target.value);
+    }
+  });
+}
+
+function setupTopSearch() {
   document.addEventListener("click", (event) => {
     const suggestions = document.querySelector("#searchSuggestions");
 
@@ -10176,6 +10457,7 @@ async function init() {
   setupTrailerModal();
   setupAuthModal();
   setupSpoilerToggle();
+  setupGlobalSearchModal();
 
   if (document.body.dataset.page === "home") {
     renderHomepageSkeletons();
