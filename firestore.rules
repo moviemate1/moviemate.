@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function sameUser(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function socialProfileKeys() {
+      return [
+        "followers",
+        "notifications",
+        "updatedAt"
+      ];
+    }
+
+    function onlySocialProfileChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(socialProfileKeys());
+    }
+
+    function titleInteractionKeys() {
+      return [
+        "likes",
+        "dislikes",
+        "votePerfect",
+        "voteGoForIt",
+        "voteTimepass",
+        "voteSkip",
+        "savesCount",
+        "interestedCount",
+        "viewsCount",
+        "updatedAt"
+      ];
+    }
+
+    function onlyInteractionCountersChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(titleInteractionKeys());
+    }
+
+    function commentHelpfulKeys() {
+      return [
+        "helpfulBy",
+        "helpfulCount"
+      ];
+    }
+
+    function onlyCommentHelpfulChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(commentHelpfulKeys());
+    }
+
+    match /moviemate_titles/{titleId} {
+      allow read: if resource == null || resource.data.approved == true || isSignedIn();
+
+      // Transitional rule set for the current frontend-only app:
+      // signed-in users can update interaction counters, while title moderation
+      // should move to admin claims / server-side functions later.
+      allow update: if isSignedIn() && onlyInteractionCountersChanged();
+      allow create, delete: if false;
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+          && request.resource.data.userId == request.auth.uid;
+        allow update: if (isSignedIn() && resource.data.userId == request.auth.uid)
+          || (isSignedIn() && onlyCommentHelpfulChanged());
+        allow delete: if isSignedIn()
+          && resource.data.userId == request.auth.uid;
+      }
+    }
+
+    match /moviemate_users/{uid} {
+      allow read: if true;
+      allow create, delete: if sameUser(uid);
+      allow update: if sameUser(uid) || (isSignedIn() && onlySocialProfileChanged());
+    }
+
+    match /moviemate_settings/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /moviemate_people/{personId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
