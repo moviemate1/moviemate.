@@ -5097,10 +5097,6 @@ async function renderDetailHeaderPanel() {
 }
 
 function setupDetailHeaderPanels() {
-  if (document.body.dataset.page !== "details") {
-    return;
-  }
-
   const panelRoot = getDetailHeaderPanelRoot();
 
   if (!panelRoot || panelRoot.dataset.bound === "true") {
@@ -10574,6 +10570,7 @@ async function init() {
   setupAuthModal();
   setupSpoilerToggle();
   setupGlobalSearchModal();
+  setupDetailHeaderPanels();
 
   if (document.body.dataset.page === "home") {
     renderHomepageSkeletons();
@@ -10593,7 +10590,6 @@ async function init() {
   }
 
   if (document.body.dataset.page === "details") {
-    setupDetailHeaderPanels();
     await renderDetailsPage();
     updateOwnerToggle();
   }

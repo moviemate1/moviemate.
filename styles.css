@@ -7177,11 +7177,11 @@ body[data-page="details"] .topbar.compact .account-top-link .account-chip-avatar
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24);
 }
 
-body[data-page="details"] .detail-header-panel-backdrop {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-backdrop {
   display: none;
 }
 
-body[data-page="details"] .detail-header-panel {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel {
   position: fixed;
   top: 64px;
   left: 0;
@@ -7191,18 +7191,18 @@ body[data-page="details"] .detail-header-panel {
   pointer-events: none;
 }
 
-body[data-page="details"] .detail-header-panel[data-detail-panel-mode="spaces"] {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel[data-detail-panel-mode="spaces"] {
   top: 72px;
   bottom: 0;
   padding: 0;
 }
 
-body[data-page="details"] .detail-header-panel.hidden,
-body[data-page="details"] .detail-header-panel-backdrop.hidden {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel.hidden,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-backdrop.hidden {
   display: none;
 }
 
-body[data-page="details"] .detail-header-panel-surface {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface {
   width: min(1380px, 100%);
   max-height: calc(100vh - 92px);
   overflow: auto;
@@ -7218,7 +7218,7 @@ body[data-page="details"] .detail-header-panel-surface {
   pointer-events: auto;
 }
 
-body[data-page="details"] .detail-header-panel-surface-spaces {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-spaces {
   width: 100%;
   min-height: calc(100vh - 72px);
   max-height: calc(100vh - 72px);
@@ -7230,11 +7230,11 @@ body[data-page="details"] .detail-header-panel-surface-spaces {
   background: rgba(5, 5, 7, 0.98);
 }
 
-body[data-page="details"] .detail-header-panel-search-surface {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-search-surface {
   width: min(1480px, 100%);
 }
 
-body[data-page="details"] .detail-header-panel-surface-floating {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-floating {
   width: min(520px, calc(100% - 120px));
   margin-right: max(12px, calc((100vw - 1440px) / 2 + 88px));
   margin-left: auto;
@@ -7243,17 +7243,17 @@ body[data-page="details"] .detail-header-panel-surface-floating {
   border-radius: 24px;
 }
 
-body[data-page="details"] .detail-panel-title-row {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-panel-title-row {
   margin-bottom: 22px;
 }
 
-body[data-page="details"] .detail-panel-title-row-compact {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-panel-title-row-compact {
   display: grid;
   gap: 8px;
   margin-bottom: 18px;
 }
 
-body[data-page="details"] .detail-panel-title-row-compact p {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-panel-title-row-compact p {
   max-width: 620px;
   margin: 0;
   color: rgba(255, 255, 255, 0.58);
@@ -7261,7 +7261,7 @@ body[data-page="details"] .detail-panel-title-row-compact p {
   line-height: 1.45;
 }
 
-body[data-page="details"] .detail-panel-title-mark {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-panel-title-mark {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -7270,7 +7270,7 @@ body[data-page="details"] .detail-panel-title-mark {
   font-weight: 800;
 }
 
-body[data-page="details"] .detail-panel-title-mark svg {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-panel-title-mark svg {
   width: 22px;
   height: 22px;
   stroke: currentColor;
@@ -7280,12 +7280,12 @@ body[data-page="details"] .detail-panel-title-mark svg {
   stroke-linejoin: round;
 }
 
-body[data-page="details"] .detail-header-search-shell {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-search-shell {
   display: grid;
   gap: 22px;
 }
 
-body[data-page="details"] .detail-header-search-field {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-search-field {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -7296,7 +7296,7 @@ body[data-page="details"] .detail-header-search-field {
   background: rgba(255, 255, 255, 0.035);
 }
 
-body[data-page="details"] .detail-header-search-field svg {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-search-field svg {
   width: 24px;
   height: 24px;
   color: rgba(255, 255, 255, 0.55);
@@ -7305,7 +7305,7 @@ body[data-page="details"] .detail-header-search-field svg {
   stroke-width: 2;
 }
 
-body[data-page="details"] .detail-header-search-field input {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-search-field input {
   flex: 1 1 auto;
   border: 0;
   outline: 0;
@@ -7314,12 +7314,12 @@ body[data-page="details"] .detail-header-search-field input {
   font-size: 1rem;
 }
 
-body[data-page="details"] .detail-header-search-field input::placeholder {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-search-field input::placeholder {
   color: rgba(255, 255, 255, 0.42);
 }
 
-body[data-page="details"] .detail-header-tab-row,
-body[data-page="details"] .detail-header-pill-row {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-tab-row,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-pill-row {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -7327,35 +7327,35 @@ body[data-page="details"] .detail-header-pill-row {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-body[data-page="details"] .detail-header-tab,
-body[data-page="details"] .detail-header-pill,
-body[data-page="details"] .detail-schedule-menu-btn,
-body[data-page="details"] .detail-space-topic,
-body[data-page="details"] .detail-space-filter-card,
-body[data-page="details"] .detail-search-chip,
-body[data-page="details"] .detail-search-clear {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-tab,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-pill,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-schedule-menu-btn,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-topic,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-filter-card,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-search-chip,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-search-clear {
   border: 0;
   background: transparent;
   color: rgba(255, 255, 255, 0.72);
   cursor: pointer;
 }
 
-body[data-page="details"] .detail-header-tab {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-tab {
   padding: 0 0 10px;
   font-size: 0.95rem;
   font-weight: 700;
 }
 
-body[data-page="details"] .detail-header-tab.active {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-tab.active {
   color: #fff;
   box-shadow: inset 0 -2px 0 #fff;
 }
 
-body[data-page="details"] .detail-header-search-results {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-search-results {
   min-height: 160px;
 }
 
-body[data-page="details"] .detail-search-panel-meta {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-search-panel-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -7363,25 +7363,25 @@ body[data-page="details"] .detail-search-panel-meta {
   margin-bottom: 14px;
 }
 
-body[data-page="details"] .detail-search-panel-meta strong,
-body[data-page="details"] .detail-search-panel-meta span {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-search-panel-meta strong,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-search-panel-meta span {
   color: rgba(255, 255, 255, 0.9);
   font-size: 0.95rem;
   font-weight: 700;
 }
 
-body[data-page="details"] .detail-search-panel-meta.compact {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-search-panel-meta.compact {
   margin-top: 18px;
 }
 
-body[data-page="details"] .detail-search-chip-row {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-search-chip-row {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 22px;
 }
 
-body[data-page="details"] .detail-search-chip {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-search-chip {
   min-height: 40px;
   padding: 0 16px;
   border-radius: 999px;
@@ -7391,35 +7391,35 @@ body[data-page="details"] .detail-search-chip {
   font-weight: 700;
 }
 
-body[data-page="details"] .detail-search-clear {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-search-clear {
   color: rgba(255, 255, 255, 0.62);
   font-size: 0.9rem;
 }
 
-body[data-page="details"] .detail-search-empty-copy {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-search-empty-copy {
   color: rgba(255, 255, 255, 0.64);
   font-size: 0.95rem;
 }
 
-body[data-page="details"] .detail-header-card-grid {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 18px;
 }
 
-body[data-page="details"] .detail-header-card-grid-search {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-card-grid-search {
   grid-template-columns: repeat(auto-fit, minmax(160px, 188px));
 }
 
-body[data-page="details"] .detail-person-result-list,
-body[data-page="details"] .detail-collection-result-list,
-body[data-page="details"] .detail-header-interest-list {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-person-result-list,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-collection-result-list,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-interest-list {
   display: grid;
   gap: 12px;
 }
 
-body[data-page="details"] .detail-person-result,
-body[data-page="details"] .detail-collection-result {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-person-result,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-collection-result {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -7430,7 +7430,7 @@ body[data-page="details"] .detail-collection-result {
   text-decoration: none;
 }
 
-body[data-page="details"] .detail-person-result-avatar {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-person-result-avatar {
   width: 46px;
   height: 46px;
   display: grid;
@@ -7442,65 +7442,65 @@ body[data-page="details"] .detail-person-result-avatar {
   font-weight: 800;
 }
 
-body[data-page="details"] .detail-person-result strong,
-body[data-page="details"] .detail-collection-result strong {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-person-result strong,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-collection-result strong {
   display: block;
   color: #fff;
   font-size: 0.98rem;
 }
 
-body[data-page="details"] .detail-person-result small,
-body[data-page="details"] .detail-collection-result small {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-person-result small,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-collection-result small {
   color: rgba(255, 255, 255, 0.62);
   font-size: 0.86rem;
 }
 
-body[data-page="details"] .detail-collection-result img {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-collection-result img {
   width: 56px;
   height: 56px;
   border-radius: 12px;
   object-fit: cover;
 }
 
-body[data-page="details"] .detail-header-schedule-shell,
-body[data-page="details"] .detail-header-spaces-shell,
-body[data-page="details"] .detail-header-collections-shell {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-schedule-shell,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-shell,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-collections-shell {
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 28px;
   min-height: 0;
 }
 
-body[data-page="details"] .detail-header-schedule-sidebar,
-body[data-page="details"] .detail-header-spaces-sidebar,
-body[data-page="details"] .detail-header-collections-sidebar {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-schedule-sidebar,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-sidebar,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-collections-sidebar {
   display: grid;
   align-content: start;
   gap: 12px;
 }
 
-body[data-page="details"] .detail-header-collections-main {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-collections-main {
   min-width: 0;
 }
 
-body[data-page="details"] .detail-header-schedule-main,
-body[data-page="details"] .detail-header-spaces-feed {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-schedule-main,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-feed {
   min-width: 0;
   min-height: 0;
 }
 
-body[data-page="details"] .detail-header-collections-grid {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-collections-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 22px;
 }
 
-body[data-page="details"] .detail-header-collections-empty {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-collections-empty {
   display: grid;
   align-items: center;
 }
 
-body[data-page="details"] .detail-schedule-menu-btn {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-schedule-menu-btn {
   min-height: 60px;
   padding: 0 18px;
   border-radius: 16px;
@@ -7511,14 +7511,14 @@ body[data-page="details"] .detail-schedule-menu-btn {
   text-align: left;
 }
 
-body[data-page="details"] .detail-schedule-menu-btn.active,
-body[data-page="details"] .detail-space-filter-card:hover,
-body[data-page="details"] .detail-space-topic:hover {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-schedule-menu-btn.active,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-filter-card:hover,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-topic:hover {
   background: rgba(255, 255, 255, 0.11);
   color: #fff;
 }
 
-body[data-page="details"] .detail-header-pill {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-pill {
   min-height: 42px;
   padding: 0 18px;
   border-radius: 999px;
@@ -7528,89 +7528,89 @@ body[data-page="details"] .detail-header-pill {
   font-weight: 700;
 }
 
-body[data-page="details"] .detail-header-pill.active {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-pill.active {
   background: #fff;
   color: #0b0b0f;
 }
 
-body[data-page="details"] .detail-header-schedule-grid {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-schedule-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 18px;
   margin-top: 20px;
 }
 
-body[data-page="details"] .detail-header-explore-shell {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-explore-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
   gap: 28px;
 }
 
-body[data-page="details"] .detail-header-explore-main {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-explore-main {
   display: grid;
   gap: 28px;
 }
 
-body[data-page="details"] .detail-header-feature-block {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-feature-block {
   display: grid;
   gap: 18px;
 }
 
-body[data-page="details"] .detail-header-feature-block h3,
-body[data-page="details"] .detail-header-spaces-topics span {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-feature-block h3,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-topics span {
   margin: 0;
   color: #fff;
   font-size: 1rem;
   font-weight: 800;
 }
 
-body[data-page="details"] .detail-header-ad-card,
-body[data-page="details"] .detail-header-most-card {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-ad-card,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-most-card {
   padding: 18px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.045);
 }
 
-body[data-page="details"] .detail-header-ad-card {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-ad-card {
   display: grid;
   gap: 10px;
   min-height: 240px;
   background: radial-gradient(circle at top right, rgba(118, 39, 255, 0.42), transparent 42%), rgba(33, 15, 64, 0.94);
 }
 
-body[data-page="details"] .detail-header-ad-badge {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-ad-badge {
   color: #ff8c2b;
   font-size: 0.95rem;
   font-weight: 800;
 }
 
-body[data-page="details"] .detail-header-ad-card strong {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-ad-card strong {
   color: #fff1e7;
   font-size: clamp(2.4rem, 3vw, 4rem);
   line-height: 0.92;
   letter-spacing: 0;
 }
 
-body[data-page="details"] .detail-header-ad-card small {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-ad-card small {
   color: rgba(255, 255, 255, 0.76);
   font-size: 0.88rem;
 }
 
-body[data-page="details"] .detail-header-spaces-shell {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-shell {
   grid-template-columns: 220px minmax(0, 700px);
   justify-content: center;
   align-items: start;
   gap: clamp(42px, 7vw, 92px);
 }
 
-body[data-page="details"] .detail-header-spaces-topics {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-topics {
   display: grid;
   gap: 10px;
   padding-top: 18px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-body[data-page="details"] .detail-space-topic {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-topic {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -7622,7 +7622,7 @@ body[data-page="details"] .detail-space-topic {
   font-weight: 700;
 }
 
-body[data-page="details"] .detail-space-topic span {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-topic span {
   width: 26px;
   height: 26px;
   display: grid;
@@ -7633,21 +7633,21 @@ body[data-page="details"] .detail-space-topic span {
   font-size: 0.82rem;
 }
 
-body[data-page="details"] .detail-space-topic:not(.active) span {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-topic:not(.active) span {
   color: transparent;
   background: rgba(255, 255, 255, 0.07);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
-body[data-page="details"] .detail-space-topic.active {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-topic.active {
   color: #fff;
 }
 
-body[data-page="details"] .detail-space-topic.active span {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-topic.active span {
   background: rgba(255, 255, 255, 0.2);
 }
 
-body[data-page="details"] .detail-space-mode-btn {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-mode-btn {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -7656,7 +7656,7 @@ body[data-page="details"] .detail-space-mode-btn {
   border-radius: 8px;
 }
 
-body[data-page="details"] .detail-space-mode-icon {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-mode-icon {
   width: 24px;
   display: inline-grid;
   place-items: center;
@@ -7664,14 +7664,14 @@ body[data-page="details"] .detail-space-mode-icon {
   font-size: 1rem;
 }
 
-body[data-page="details"] .detail-header-spaces-feed {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-feed {
   display: grid;
   align-content: start;
   gap: 26px;
   padding-bottom: 18px;
 }
 
-body[data-page="details"] .detail-space-story-card {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-card {
   display: grid;
   gap: 14px;
   overflow: hidden;
@@ -7681,7 +7681,7 @@ body[data-page="details"] .detail-space-story-card {
   text-decoration: none;
 }
 
-body[data-page="details"] .detail-space-story-card img {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-card img {
   width: 100%;
   height: 280px;
   display: block;
@@ -7689,11 +7689,11 @@ body[data-page="details"] .detail-space-story-card img {
   object-fit: cover;
 }
 
-body[data-page="details"] .detail-space-story-media {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-media {
   position: relative;
 }
 
-body[data-page="details"] .detail-space-play {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-play {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -7708,14 +7708,14 @@ body[data-page="details"] .detail-space-play {
   transform: translate(-50%, -50%);
 }
 
-body[data-page="details"] .detail-space-story-copy {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-copy {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px 18px;
   padding: 0;
 }
 
-body[data-page="details"] .detail-space-story-copy span {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-copy span {
   grid-column: 1 / -1;
   color: #ff9b73;
   font-size: 0.82rem;
@@ -7723,7 +7723,7 @@ body[data-page="details"] .detail-space-story-copy span {
   text-transform: uppercase;
 }
 
-body[data-page="details"] .detail-space-story-copy h3 {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-copy h3 {
   grid-column: 1;
   margin: 0;
   color: #fff;
@@ -7731,7 +7731,7 @@ body[data-page="details"] .detail-space-story-copy h3 {
   line-height: 1.25;
 }
 
-body[data-page="details"] .detail-space-story-copy p {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-copy p {
   grid-column: 1;
   margin: 0;
   color: rgba(255, 255, 255, 0.68);
@@ -7739,13 +7739,13 @@ body[data-page="details"] .detail-space-story-copy p {
   line-height: 1.45;
 }
 
-body[data-page="details"] .detail-space-story-copy small {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-copy small {
   grid-column: 1;
   color: rgba(255, 255, 255, 0.48);
   font-size: 0.86rem;
 }
 
-body[data-page="details"] .detail-space-story-copy::after {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-copy::after {
   content: "▱";
   grid-column: 2;
   grid-row: 2 / 5;
@@ -7759,12 +7759,12 @@ body[data-page="details"] .detail-space-story-copy::after {
   color: rgba(255, 255, 255, 0.86);
 }
 
-body[data-page="details"] .detail-header-browse-shell {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-browse-shell {
   display: grid;
   gap: 12px;
 }
 
-body[data-page="details"] .detail-header-browse-copy p {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-browse-copy p {
   margin: 0 0 4px;
   color: #ffaf9c;
   font-size: 0.76rem;
@@ -7773,20 +7773,20 @@ body[data-page="details"] .detail-header-browse-copy p {
   text-transform: uppercase;
 }
 
-body[data-page="details"] .detail-header-browse-copy h3 {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-browse-copy h3 {
   margin: 0;
   color: #fff;
   font-size: 1.35rem;
   font-weight: 800;
 }
 
-body[data-page="details"] .detail-header-browse-grid {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-browse-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
-body[data-page="details"] .detail-space-filter-card {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-filter-card {
   min-height: 76px;
   padding: 10px 8px;
   border-radius: 14px;
@@ -7796,7 +7796,7 @@ body[data-page="details"] .detail-space-filter-card {
   font-weight: 700;
 }
 
-body[data-page="details"] .detail-browse-filter-card {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-browse-filter-card {
   display: grid;
   justify-items: center;
   align-content: center;
@@ -7807,7 +7807,7 @@ body[data-page="details"] .detail-browse-filter-card {
   transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
 }
 
-body[data-page="details"] .detail-browse-filter-icon {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-browse-filter-icon {
   display: inline-grid;
   place-items: center;
   width: 30px;
@@ -7819,40 +7819,40 @@ body[data-page="details"] .detail-browse-filter-icon {
   line-height: 1;
 }
 
-body[data-page="details"] .detail-browse-filter-card span:last-child {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-browse-filter-card span:last-child {
   color: rgba(255, 255, 255, 0.96);
   font-size: 0.86rem;
   font-weight: 700;
   line-height: 1.2;
 }
 
-body[data-page="details"] .detail-browse-filter-card:hover {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-browse-filter-card:hover {
   transform: translateY(-2px);
   border-color: rgba(126, 70, 255, 0.36);
   background: rgba(126, 70, 255, 0.08);
 }
 
-body[data-page="details"] .detail-browse-filter-card.active {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-browse-filter-card.active {
   background: rgba(77, 49, 153, 0.42);
   border: 1px solid rgba(143, 109, 255, 0.34);
   box-shadow: inset 0 0 0 1px rgba(143, 109, 255, 0.2);
 }
 
-body[data-page="details"] .detail-browse-filter-card.active .detail-browse-filter-icon {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-browse-filter-card.active .detail-browse-filter-icon {
   background: rgba(17, 12, 36, 0.36);
 }
 
-body[data-page="details"] .detail-header-notification-feed {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-notification-feed {
   max-height: min(62vh, 560px);
   overflow: auto;
 }
 
-body[data-page="details"] .detail-header-panel .featured-card,
-body[data-page="details"] .detail-header-panel .movie-card {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel .featured-card,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel .movie-card {
   min-width: 0;
 }
 
-body[data-page="details"] .detail-header-panel .collection-card {
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel .collection-card {
   min-width: 0;
 }
 
@@ -9225,7 +9225,50 @@ body[data-page="home"] #collections.home-section-panel-open {
   background:
     radial-gradient(circle at 75% 0%, rgba(132, 92, 255, 0.16), transparent 38%),
     linear-gradient(180deg, rgba(8, 8, 10, 0.98), #050505 42%, #020202);
+  isolation: isolate;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body[data-page="home"] #browse.home-section-panel-open::before,
+body[data-page="home"] #schedule.home-section-panel-open::before,
+body[data-page="home"] #collections.home-section-panel-open::before {
+  content: "";
+  position: fixed;
+  inset: 86px 0 0;
+  z-index: -1;
+  background: #050505;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]).detail-header-panel-open {
+  overflow: hidden;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel {
+  top: 64px;
+  bottom: 0;
+  z-index: 180;
+  padding: 0;
+  background: #050505;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel.hidden {
+  display: none !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-floating,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-spaces {
+  width: 100%;
+  max-width: none;
+  min-height: calc(100vh - 64px);
+  max-height: calc(100vh - 64px);
+  margin: 0;
+  overflow: auto;
+  padding: clamp(28px, 4vw, 54px) clamp(22px, 5vw, 76px) 64px;
+  border: 0;
+  border-radius: 0;
+  background: #050505;
+  box-shadow: none;
 }
 
 body[data-page="home"] #browse.home-section-panel-open .section-heading,
@@ -9261,6 +9304,24 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] #collections.home-section-panel-open {
     inset: 72px 0 60px;
     padding: 20px 14px 36px;
+  }
+
+  body[data-page="home"] #browse.home-section-panel-open::before,
+  body[data-page="home"] #schedule.home-section-panel-open::before,
+  body[data-page="home"] #collections.home-section-panel-open::before {
+    inset: 72px 0 60px;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel {
+    top: 72px;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface,
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-floating,
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-spaces {
+    min-height: calc(100vh - 72px);
+    max-height: calc(100vh - 72px);
+    padding: 22px 14px 44px;
   }
 
   body[data-page="home"] #browse.home-section-panel-open .section-heading,
