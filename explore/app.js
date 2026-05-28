@@ -2646,6 +2646,126 @@ function renderScheduleGrid(titles) {
   emptyState.classList.toggle("hidden", items.length > 0);
 }
 
+function getTitleSpacesTopics(title) {
+  const text = [
+    title.title,
+    title.type,
+    title.genre,
+    title.description,
+    title.country,
+    ...(title.language || []),
+    ...(title.importBuckets || []),
+    ...(title.platforms || [])
+  ]
+    .join(" ")
+    .toLowerCase();
+  const topics = new Set(["International"]);
+
+  if (/(india|indian|hindi|tamil|telugu|malayalam|kannada|bollywood|south|nepal|nepali)/.test(text)) {
+    topics.add("Indian");
+    topics.delete("International");
+  }
+
+  if (/(anime|animation|crunchyroll|manga)/.test(text)) {
+    topics.add("Anime");
+  }
+
+  if (/(sport|football|cricket|basketball|baseball|wrestling|racing)/.test(text)) {
+    topics.add("Sports");
+  }
+
+  if (/(game|gaming|player|quest|arcade|esports)/.test(text)) {
+    topics.add("Games");
+  }
+
+  return topics;
+}
+
+function getHomeSpacesPostLabel(title, mode) {
+  if (mode === "discussion") {
+    return "Discussion";
+  }
+
+  if (title.releaseDate && title.releaseDate > new Date().toISOString().slice(0, 10)) {
+    return "Upcoming Report";
+  }
+
+  if (title.platforms?.length) {
+    return "OTT Report";
+  }
+
+  return "Details Report";
+}
+
+function getHomeSpacesPostCopy(title, mode) {
+  if (mode === "discussion") {
+    const count = title.comments?.length || 0;
+    return count
+      ? `${count} viewer ${count === 1 ? "comment" : "comments"} on this ${title.type.toLowerCase()}.`
+      : `Open the discussion for ${title.title}.`;
+  }
+
+  return title.description || `${title.title} is getting attention from MovieMate viewers.`;
+}
+
+function getHomeSpacesTitles(titles, mode, activeTopics) {
+  const topicSet = new Set(activeTopics || []);
+
+  return [...titles]
+    .filter((title) => {
+      if (!topicSet.size) {
+        return false;
+      }
+
+      if (mode === "discussion" && !(title.comments?.length || title.trending || getInterestedCount(title) > 0)) {
+        return false;
+      }
+
+      return [...getTitleSpacesTopics(title)].some((topic) => topicSet.has(topic));
+    })
+    .sort((left, right) => {
+      if (mode === "discussion") {
+        return (right.comments?.length || 0) - (left.comments?.length || 0) || getInterestScore(right) - getInterestScore(left);
+      }
+
+      return getInterestScore(right) - getInterestScore(left);
+    })
+    .slice(0, 14);
+}
+
+function getHomeSpacesActiveTopics() {
+  const active = Array.from(document.querySelectorAll("[data-home-spaces-topic].active"))
+    .map((button) => button.dataset.homeSpacesTopic)
+    .filter(Boolean);
+  return active.length ? active : ["Indian", "International", "Anime", "Sports", "Games"];
+}
+
+function homeSpacesCardTemplate(title, mode) {
+  return `
+    <a class="home-space-card" href="${buildTitleUrl(title.id)}${mode === "discussion" ? "#discussions" : ""}">
+      <img src="${getOptimizedImageUrl(title.backdrop || title.image, 900)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+      <span>${escapeHtml(getHomeSpacesPostLabel(title, mode))}</span>
+      <h3>${escapeHtml(title.title)}</h3>
+      <p>${escapeHtml(getHomeSpacesPostCopy(title, mode))}</p>
+      <small>${escapeHtml(title.type)} • ${escapeHtml(formatPlatforms(title.platforms || []))}</small>
+    </a>
+  `;
+}
+
+function renderHomeSpacesFeed(titles) {
+  const feed = document.querySelector("#homeSpacesFeed");
+
+  if (!feed) {
+    return;
+  }
+
+  const mode = document.querySelector("[data-home-spaces-mode].active")?.dataset.homeSpacesMode || "feed";
+  const items = getHomeSpacesTitles(titles, mode, getHomeSpacesActiveTopics());
+  feed.innerHTML = items.length
+    ? items.map((title) => homeSpacesCardTemplate(title, mode)).join("")
+    : '<p class="empty-state">No spaces match these filters yet.</p>';
+}
+
 function collectionCardTemplate(collection) {
   return `
     <a class="collection-card" href="../collection.html?mode=${encodeURIComponent(collection.mode || "discover")}&slug=${encodeURIComponent(collection.slug || slugify(collection.title))}">
