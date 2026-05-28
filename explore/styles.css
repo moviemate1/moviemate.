@@ -7019,7 +7019,18 @@ body[data-page="home"] #collections.home-section-panel-open {
   background:
     radial-gradient(circle at 75% 0%, rgba(132, 92, 255, 0.16), transparent 38%),
     linear-gradient(180deg, rgba(8, 8, 10, 0.98), #050505 42%, #020202);
+  isolation: isolate;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body[data-page="home"] #browse.home-section-panel-open::before,
+body[data-page="home"] #schedule.home-section-panel-open::before,
+body[data-page="home"] #collections.home-section-panel-open::before {
+  content: "";
+  position: fixed;
+  inset: 86px 0 0;
+  z-index: -1;
+  background: #050505;
 }
 
 body[data-page="home"] #browse.home-section-panel-open .section-heading,
@@ -7055,6 +7066,12 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] #collections.home-section-panel-open {
     inset: 72px 0 60px;
     padding: 20px 14px 36px;
+  }
+
+  body[data-page="home"] #browse.home-section-panel-open::before,
+  body[data-page="home"] #schedule.home-section-panel-open::before,
+  body[data-page="home"] #collections.home-section-panel-open::before {
+    inset: 72px 0 60px;
   }
 
   body[data-page="home"] #browse.home-section-panel-open .section-heading,
