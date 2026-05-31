@@ -3432,6 +3432,7 @@ async function renderHomePage() {
   renderTrendingTitles(visibleTitles);
   renderCuratedExploreRows(visibleTitles);
   renderMostInterestedList(visibleTitles);
+  renderHomeSpacesFeed(visibleTitles);
   renderHeroStats(visibleTitles);
   updateOwnerToggle();
 
@@ -5469,7 +5470,7 @@ function setExploreHeaderActive(hash) {
   setActiveInGroup(".mobile-dock-link[href]");
 }
 
-const HOME_FULLSCREEN_SECTION_IDS = new Set(["browse", "schedule", "collections"]);
+const HOME_FULLSCREEN_SECTION_IDS = new Set(["browse", "schedule", "spaces", "collections"]);
 const HOME_BROWSE_POPUP_LINKS = [
   { icon: "◫", label: "Category", href: "#browse" },
   { icon: "◎", label: "Genre", href: "#browse" },
@@ -5658,6 +5659,39 @@ function setupHomeBrowsePopover() {
   }
 }
 
+function setupHomeSpacesControls() {
+  if (document.body.dataset.page !== "home") {
+    return;
+  }
+
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+
+    if (!target) {
+      return;
+    }
+
+    const modeButton = target.closest("[data-home-spaces-mode]");
+
+    if (modeButton) {
+      event.preventDefault();
+      document.querySelectorAll("[data-home-spaces-mode]").forEach((button) => {
+        button.classList.toggle("active", button === modeButton);
+      });
+      renderHomeSpacesFeed(getVisibleTitles(titlesCache));
+      return;
+    }
+
+    const topicButton = target.closest("[data-home-spaces-topic]");
+
+    if (topicButton) {
+      event.preventDefault();
+      topicButton.classList.toggle("active");
+      renderHomeSpacesFeed(getVisibleTitles(titlesCache));
+    }
+  });
+}
+
 function setupHomeFullscreenSections() {
   if (document.body.dataset.page !== "home") {
     return;
@@ -5755,7 +5789,7 @@ function setupExploreHeaderNav() {
     setExploreHeaderActive(window.location.hash || "#trending");
   });
 
-  const sections = ["#trending", "#browse", "#schedule", "#collections"]
+  const sections = ["#trending", "#browse", "#schedule", "#spaces", "#collections"]
     .map((selector) => document.querySelector(selector))
     .filter(Boolean);
 
@@ -6807,6 +6841,7 @@ async function init() {
     setupCollectionTabs();
     setupInterestWindow();
     setupHomeBrowsePopover();
+    setupHomeSpacesControls();
     setupHomeFullscreenSections();
     setupExploreHeaderNav();
     setupTopSearch();
