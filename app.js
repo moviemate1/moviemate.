@@ -6081,7 +6081,7 @@ function setupNotificationTabs() {
       button.setAttribute("aria-selected", String(isActive));
     });
     renderNotificationPopover(card);
-  });
+  }, true);
 }
 
 function filterTitles(titles) {
