@@ -1,10 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import {
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
   getDoc,
+  getDocFromServer,
   getDocs,
+  getDocsFromServer,
   getFirestore,
   increment,
   onSnapshot,
@@ -24,11 +27,12 @@ import {
   signInWithEmailAndPassword,
   signOut
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
+import { firebaseConfig } from "/firebase-config.js";
 
 const TITLES_COLLECTION = "moviemate_titles";
 const SETTINGS_COLLECTION = "moviemate_settings";
 const USERS_COLLECTION = "moviemate_users";
+const TITLE_COMMENTS_SUBCOLLECTION = "comments";
 const HOMEPAGE_DOC_ID = "homepage";
 const REACTIONS_STORAGE_KEY = "moviemate_reactions";
 const SAVED_TITLES_STORAGE_KEY = "moviemate_saved_titles";
@@ -39,7 +43,7 @@ const LAST_AUTH_SEEN_AT_KEY = "moviemate_last_auth_seen_at";
 const USER_PROFILE_CACHE_PREFIX = "moviemate_user_profile_cache_";
 const TITLES_CACHE_KEY = "moviemate_titles_cache_v1";
 const HOMEPAGE_CONTENT_CACHE_KEY = "moviemate_homepage_content_cache_v1";
-const INSTALL_BANNER_DISMISSED_KEY = "moviemate_install_banner_dismissed_v3";
+const DETAIL_HEADER_SEARCH_HISTORY_KEY = "moviemate_detail_header_search_history_v1";
 const GLOBAL_SEARCH_HISTORY_KEY = "moviemate_global_search_history_v1";
 const SEARCH_PAGE_SIZE = 24;
 const OWNER_PASSCODE = "1A2b3456@";
@@ -51,6 +55,45 @@ const REACTION_OPTIONS = {
   timepass: { label: "Timepass", className: "timepass" },
   skip: { label: "Skip", className: "skip" }
 };
+const REACTION_METER_COLORS = {
+  perfect: { solid: "#b06cff", glow: "rgba(176, 108, 255, 0.42)" },
+  goForIt: { solid: "#39e2a4", glow: "rgba(57, 226, 164, 0.4)" },
+  timepass: { solid: "#ffbf47", glow: "rgba(255, 191, 71, 0.32)" },
+  skip: { solid: "#ff6b6b", glow: "rgba(255, 107, 107, 0.3)" }
+};
+
+function getReactionMeterGradient(stats) {
+  const segments = [
+    { color: REACTION_METER_COLORS.skip.solid, percent: stats.skipPercent },
+    { color: REACTION_METER_COLORS.timepass.solid, percent: stats.timepassPercent },
+    { color: REACTION_METER_COLORS.goForIt.solid, percent: stats.goForItPercent },
+    { color: REACTION_METER_COLORS.perfect.solid, percent: stats.perfectPercent }
+  ].filter((segment) => segment.percent > 0);
+
+  if (!segments.length) {
+    return "conic-gradient(from 270deg at 50% 100%, rgba(255,255,255,0.12) 0deg 180deg, transparent 180deg 360deg)";
+  }
+
+  const gap = segments.length > 1 ? 4 : 0;
+  const usableDegrees = 180 - gap * (segments.length - 1);
+  let cursor = 0;
+  const parts = [];
+
+  segments.forEach((segment, index) => {
+    const size = index === segments.length - 1 ? 180 - cursor : (segment.percent / 100) * usableDegrees;
+    const end = Math.min(180, cursor + size);
+    parts.push(`${segment.color} ${cursor.toFixed(2)}deg ${end.toFixed(2)}deg`);
+    cursor = end;
+
+    if (index < segments.length - 1) {
+      const gapEnd = Math.min(180, cursor + gap);
+      parts.push(`transparent ${cursor.toFixed(2)}deg ${gapEnd.toFixed(2)}deg`);
+      cursor = gapEnd;
+    }
+  });
+
+  return `conic-gradient(from 270deg at 50% 100%, ${parts.join(", ")}, transparent ${cursor.toFixed(2)}deg 360deg)`;
+}
 const DEFAULT_HOMEPAGE_CONTENT = {
   heroEyebrow: "MoviemateHub picks for every mood",
   heroTitle: "Discover movies and series worth your time.",
@@ -190,15 +233,34 @@ let titlesCache = [];
 let titlesCachePromise = null;
 let homepageContentCache = { ...DEFAULT_HOMEPAGE_CONTENT };
 let homepageContentPromise = null;
+let usersCache = [];
+let usersCachePromise = null;
 let currentUser = null;
 let currentUserProfile = null;
 let hasResolvedAuthState = false;
+let viewedProfileUid = null;
+let viewedProfileData = null;
+const userProfilesCache = new Map();
 let browseVisibleCount = SEARCH_PAGE_SIZE;
-let deferredInstallPrompt = null;
-let exploreNavLockUntil = 0;
+let detailTitleRealtime = {
+  titleId: null,
+  unsubscribe: null
+};
+const detailWatchRequestsInFlight = new Set();
 let pendingNotificationState = {
   count: null,
   unsubscribe: null
+};
+let detailHeaderPanelState = {
+  mode: "",
+  searchTab: "content",
+  searchQuery: "",
+  scheduleWindow: "released",
+  scheduleType: "all",
+  collectionsMode: "discover",
+  spacesFeed: "feed",
+  spacesTopics: ["Indian", "International", "Anime", "Sports", "Games"],
+  titles: []
 };
 
 const DEFAULT_USER_PROFILE = {
@@ -412,6 +474,54 @@ function buildAuthActionSettings() {
   };
 }
 
+function getVerificationEmailErrorMessage(error) {
+  const code = error?.code || "";
+  if (code === "auth/too-many-requests") {
+    return "Too many tries just now. Please wait a bit and try again.";
+  }
+  if (code === "auth/user-token-expired" || code === "auth/requires-recent-login") {
+    return "Please sign in again, then send the verification email.";
+  }
+  if (
+    code === "auth/unauthorized-continue-uri" ||
+    code === "auth/invalid-continue-uri" ||
+    code === "auth/missing-continue-uri"
+  ) {
+    return "Verification email could not be prepared for this website URL. Check Firebase authorized domains.";
+  }
+  return "Could not send verification email right now.";
+}
+
+function getVerificationSuccessMessage(email) {
+  const safeEmail = String(email || "").trim();
+  if (!safeEmail) {
+    return "Verification email sent. Check inbox, spam, promotions, and all mail.";
+  }
+
+  return `Verification email sent to ${safeEmail}. Check that inbox, spam, promotions, and all mail. If it does not arrive in 5 minutes, try again after signing in once more.`;
+}
+
+async function sendVerificationEmailSafely(user) {
+  try {
+    await sendEmailVerification(user, buildAuthActionSettings());
+    return;
+  } catch (error) {
+    const code = error?.code || "";
+    const shouldFallback =
+      code === "auth/unauthorized-continue-uri" ||
+      code === "auth/invalid-continue-uri" ||
+      code === "auth/missing-continue-uri";
+
+    if (!shouldFallback) {
+      throw error;
+    }
+
+    console.warn("Verification with action settings failed, retrying with Firebase default flow.", error);
+  }
+
+  await sendEmailVerification(user);
+}
+
 function createGeneratedAvatarDataUrl(source = getProfileInitials()) {
   const initials = String(source || "MM")
     .trim()
@@ -470,6 +580,82 @@ function getUserDocRef(uid = currentUser?.uid) {
   return uid ? doc(db, USERS_COLLECTION, uid) : null;
 }
 
+function normalizeRelationshipEntry(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    return value.trim()
+      ? {
+          uid: value.trim(),
+          createdAt: null
+        }
+      : null;
+  }
+
+  const uid = String(value.uid || value.id || "").trim();
+
+  if (!uid) {
+    return null;
+  }
+
+  return {
+    uid,
+    createdAt: value.createdAt || null
+  };
+}
+
+function dedupeRelationshipEntries(entries = []) {
+  const seen = new Map();
+
+  (entries || []).forEach((entry) => {
+    const normalized = normalizeRelationshipEntry(entry);
+
+    if (!normalized) {
+      return;
+    }
+
+    const existing = seen.get(normalized.uid);
+
+    if (!existing) {
+      seen.set(normalized.uid, normalized);
+      return;
+    }
+
+    const existingMs = getCreatedAtMs(existing.createdAt);
+    const nextMs = getCreatedAtMs(normalized.createdAt);
+    seen.set(normalized.uid, nextMs > existingMs ? normalized : existing);
+  });
+
+  return [...seen.values()];
+}
+
+function normalizeNotificationEntry(value) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const id = String(value.id || `${value.type || "notice"}-${value.titleId || value.uid || Date.now()}`).trim();
+
+  if (!id) {
+    return null;
+  }
+
+  return {
+    id,
+    type: String(value.type || "notice").trim() || "notice",
+    label: String(value.label || "Update").trim() || "Update",
+    title: String(value.title || "").trim(),
+    copy: String(value.copy || "").trim(),
+    href: String(value.href || "").trim(),
+    titleId: String(value.titleId || "").trim(),
+    uid: String(value.uid || "").trim(),
+    createdAt: value.createdAt || null,
+    seen: Boolean(value.seen)
+  };
+}
+
 function normalizeUserProfile(data = {}) {
   const normalizedWatchStatus =
     data.watchStatus && typeof data.watchStatus === "object"
@@ -496,9 +682,35 @@ function normalizeUserProfile(data = {}) {
     reactions: data.reactions && typeof data.reactions === "object" ? data.reactions : {},
     watchStatus: normalizedWatchStatus,
     collections: Array.isArray(data.collections) ? data.collections : [],
-    followers: Array.isArray(data.followers) ? data.followers : [],
-    following: Array.isArray(data.following) ? data.following : [],
-    notifications: Array.isArray(data.notifications) ? data.notifications : []
+    followers: Array.isArray(data.followers) ? data.followers.map(normalizeRelationshipEntry).filter(Boolean) : [],
+    following: Array.isArray(data.following) ? data.following.map(normalizeRelationshipEntry).filter(Boolean) : [],
+    notifications: Array.isArray(data.notifications) ? data.notifications.map(normalizeNotificationEntry).filter(Boolean) : []
+  };
+}
+
+function getCommentSectionCopy(title) {
+  if (isUpcomingTitle(title)) {
+    return {
+      eyebrow: "Discussion",
+      title: `${getDisplayTypeLabel(title)} Discussion`,
+      helper: "Only MovieMate members can join the discussion. Everyone can still read it.",
+      fieldLabel: "Your discussion",
+      placeholder: "Share what you expect from this title",
+      buttonLabel: "Post Discussion",
+      emptyLabel: "No discussion yet. Be the first to start it.",
+      successLabel: "Your discussion is now live."
+    };
+  }
+
+  return {
+    eyebrow: "Reviews",
+    title: `${getDisplayTypeLabel(title)} Reviews`,
+    helper: "Only MovieMate members can post reviews and comments. Everyone can still read them.",
+    fieldLabel: "Your review",
+    placeholder: "Share your thoughts on this title",
+    buttonLabel: "Post Review",
+    emptyLabel: "No reviews yet. Be the first to write one.",
+    successLabel: "Your review is now live."
   };
 }
 
@@ -525,12 +737,14 @@ async function ensureUserProfile(user) {
 
     await setDoc(ref, profile, { merge: true });
     currentUserProfile = normalizeUserProfile(profile);
+    userProfilesCache.set(user.uid, currentUserProfile);
     saveUserProfileCache(user.uid, currentUserProfile);
     rememberSignedInUid(user.uid);
     return currentUserProfile;
   }
 
   currentUserProfile = normalizeUserProfile(snapshot.data());
+  userProfilesCache.set(user.uid, currentUserProfile);
   saveUserProfileCache(user.uid, currentUserProfile);
   rememberSignedInUid(user.uid);
   return currentUserProfile;
@@ -550,39 +764,235 @@ async function persistUserProfile(partial) {
   });
 
   currentUserProfile = nextProfile;
+  userProfilesCache.set(currentUser.uid, nextProfile);
   saveUserProfileCache(currentUser.uid, nextProfile);
+  usersCache = usersCache.length
+    ? usersCache.some((profile) => profile.id === currentUser.uid)
+      ? usersCache.map((profile) => (profile.id === currentUser.uid ? nextProfile : profile))
+      : [...usersCache, nextProfile]
+    : usersCache;
   await setDoc(ref, nextProfile, { merge: true });
 }
 
 function updateTitleCacheEntry(titleId, updater) {
-  let nextEntry = null;
+  let nextTitle = null;
 
   titlesCache = titlesCache.map((title) => {
     if (title.id !== titleId) {
       return title;
     }
 
-    nextEntry = normalizeTitle(updater(title));
-    return nextEntry;
+    nextTitle = normalizeTitle(updater(title));
+    return nextTitle;
   });
 
-  if (nextEntry) {
+  if (nextTitle) {
     saveTitlesCacheToStorage(titlesCache);
   }
 
-  return nextEntry;
+  return nextTitle;
+}
+
+function getCachedTitleById(titleId) {
+  return titlesCache.find((title) => title.id === titleId) || null;
+}
+
+function replaceTitleCacheEntry(titleLike) {
+  const nextTitle = normalizeTitle(titleLike);
+  const existingIndex = titlesCache.findIndex((title) => title.id === nextTitle.id);
+
+  if (existingIndex === -1) {
+    titlesCache = [...titlesCache, nextTitle];
+  } else {
+    titlesCache = titlesCache.map((title, index) => (index === existingIndex ? nextTitle : title));
+  }
+
+  saveTitlesCacheToStorage(titlesCache);
+  return nextTitle;
 }
 
 function patchTitleCounters(titleId, counters = {}) {
-  updateTitleCacheEntry(titleId, (title) => {
-    const nextTitle = { ...title };
+  return updateTitleCacheEntry(titleId, (title) => {
+    const next = { ...title };
 
-    Object.entries(counters).forEach(([key, delta]) => {
-      nextTitle[key] = Math.max(0, Number(nextTitle[key] || 0) + Number(delta || 0));
+    Object.entries(counters).forEach(([field, delta]) => {
+      const currentValue = Number(next[field] || 0);
+      next[field] = Math.max(0, currentValue + Number(delta || 0));
     });
 
-    return nextTitle;
+    return next;
   });
+}
+
+function setTitleCounters(titleId, values = {}) {
+  return updateTitleCacheEntry(titleId, (title) => {
+    const next = { ...title };
+
+    Object.entries(values).forEach(([field, value]) => {
+      next[field] = Math.max(0, Number(value || 0));
+    });
+
+    return next;
+  });
+}
+
+function setButtonDisabledState(button, disabled) {
+  if (!button) {
+    return;
+  }
+
+  button.disabled = disabled;
+
+  if (disabled) {
+    button.setAttribute("aria-disabled", "true");
+  } else {
+    button.removeAttribute("aria-disabled");
+  }
+}
+
+function mergeLiveTitleCounters(title) {
+  const interestedCount = Math.max(0, Number(title.interestedCount || 0));
+  const savesCount = Math.max(0, Number(title.savesCount || 0));
+  const viewsCount = Math.max(0, Number(title.viewsCount || 0));
+  const currentStatus = getTitleWatchStatus(title.id);
+
+  return {
+    ...title,
+    interestedCount: countsTowardInterested(currentStatus)
+      ? Math.max(1, interestedCount)
+      : interestedCount,
+    savesCount,
+    viewsCount
+  };
+}
+
+async function fetchTitleSnapshot(titleId) {
+  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+
+  try {
+    return await getDocFromServer(titleRef);
+  } catch (error) {
+    console.warn("Falling back to cached title read.", error);
+    return getDoc(titleRef);
+  }
+}
+
+function insertTitleCommentInCache(titleId, comment) {
+  return updateTitleCacheEntry(titleId, (title) => ({
+    ...title,
+    comments: [comment, ...(title.comments || [])]
+  }));
+}
+
+function replaceTitleCommentInCache(titleId, commentId, partial = {}) {
+  return updateTitleCacheEntry(titleId, (title) => ({
+    ...title,
+    comments: (title.comments || []).map((comment) =>
+      comment.id === commentId
+        ? {
+            ...comment,
+            ...partial
+          }
+        : comment
+    )
+  }));
+}
+
+function removeTitleCommentFromCache(titleId, commentId) {
+  return updateTitleCacheEntry(titleId, (title) => ({
+    ...title,
+    comments: (title.comments || []).filter((comment) => comment.id !== commentId)
+  }));
+}
+
+async function fetchUserProfileByUid(uid) {
+  const normalizedUid = String(uid || "").trim();
+
+  if (!normalizedUid) {
+    return null;
+  }
+
+  if (normalizedUid === currentUser?.uid && currentUserProfile) {
+    return currentUserProfile;
+  }
+
+  if (userProfilesCache.has(normalizedUid)) {
+    return userProfilesCache.get(normalizedUid);
+  }
+
+  const snapshot = await getDoc(doc(db, USERS_COLLECTION, normalizedUid));
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  const profile = normalizeUserProfile({
+    id: normalizedUid,
+    ...snapshot.data()
+  });
+
+  userProfilesCache.set(normalizedUid, profile);
+  return profile;
+}
+
+function getProfileFollowersCount(profile = currentUserProfile) {
+  return Array.isArray(profile?.followers) ? profile.followers.length : 0;
+}
+
+function getProfileFollowingCount(profile = currentUserProfile) {
+  return Array.isArray(profile?.following) ? profile.following.length : 0;
+}
+
+function isFollowingUid(uid, profile = currentUserProfile) {
+  return Boolean(uid && Array.isArray(profile?.following) && profile.following.some((entry) => entry.uid === uid));
+}
+
+async function enqueueUserNotification(uid, entry) {
+  const targetUid = String(uid || "").trim();
+
+  if (!targetUid) {
+    return;
+  }
+
+  const profile = (await fetchUserProfileByUid(targetUid)) || normalizeUserProfile({});
+  const notifications = [normalizeNotificationEntry(entry), ...(profile.notifications || [])]
+    .filter(Boolean)
+    .filter((item, index, array) => array.findIndex((candidate) => candidate.id === item.id) === index)
+    .slice(0, 40);
+
+  const nextProfile = normalizeUserProfile({
+    ...profile,
+    notifications
+  });
+
+  userProfilesCache.set(targetUid, nextProfile);
+
+  if (targetUid === currentUser?.uid) {
+    currentUserProfile = nextProfile;
+  }
+
+  await setDoc(doc(db, USERS_COLLECTION, targetUid), { notifications }, { merge: true });
+}
+
+function createActionTimeoutError(label) {
+  const error = new Error(`${label} timed out.`);
+  error.code = "deadline-exceeded";
+  return error;
+}
+
+async function withActionTimeout(promise, label, timeoutMs = 8000) {
+  let timeoutId;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(createActionTimeoutError(label)), timeoutMs);
+      })
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function slugify(value) {
@@ -612,7 +1022,12 @@ function normalizePersonEntry(person, fallbackRole) {
   return {
     name,
     role: String(person.role || fallbackRole || "").trim(),
-    image: String(person.image || "").trim()
+    image: String(person.image || "").trim(),
+    tmdbPersonId: Number(person.tmdbPersonId || 0),
+    biography: String(person.biography || "").trim(),
+    birthday: String(person.birthday || "").trim(),
+    birthplace: String(person.birthplace || "").trim(),
+    knownForDepartment: String(person.knownForDepartment || "").trim()
   };
 }
 
@@ -658,12 +1073,24 @@ function normalizePersonName(name) {
   return String(name || "").trim().toLowerCase();
 }
 
-function buildPersonUrl(name) {
-  return `/person.html?name=${encodeURIComponent(String(name || "").trim())}`;
+function buildPersonUrl(name, tmdbPersonId = "") {
+  const personName = String(name || "").trim();
+  const search = new URLSearchParams();
+  search.set("name", personName);
+
+  if (tmdbPersonId) {
+    search.set("tmdb", String(tmdbPersonId));
+  }
+
+  return `/person.html?${search.toString()}`;
 }
 
 function buildTitleUrl(id) {
   return `/details.html?id=${encodeURIComponent(id)}`;
+}
+
+function buildSeasonUrl(titleId, seasonNumber) {
+  return `/season.html?id=${encodeURIComponent(titleId)}&season=${encodeURIComponent(String(seasonNumber))}`;
 }
 
 function collectPersonCredits(personName, titles = titlesCache) {
@@ -679,6 +1106,11 @@ function collectPersonCredits(personName, titles = titlesCache) {
   }
 
   let profileImage = "";
+  let biography = "";
+  let birthday = "";
+  let birthplace = "";
+  let knownForDepartment = "";
+  let tmdbPersonId = 0;
   const credits = titles
     .map((title) => {
       const roles = [];
@@ -701,6 +1133,21 @@ function collectPersonCredits(personName, titles = titlesCache) {
           if (!profileImage && person.image) {
             profileImage = person.image;
           }
+          if (!biography && person.biography) {
+            biography = person.biography;
+          }
+          if (!birthday && person.birthday) {
+            birthday = person.birthday;
+          }
+          if (!birthplace && person.birthplace) {
+            birthplace = person.birthplace;
+          }
+          if (!knownForDepartment && person.knownForDepartment) {
+            knownForDepartment = person.knownForDepartment;
+          }
+          if (!tmdbPersonId && person.tmdbPersonId) {
+            tmdbPersonId = Number(person.tmdbPersonId);
+          }
         }
       });
 
@@ -709,6 +1156,21 @@ function collectPersonCredits(personName, titles = titlesCache) {
           roles.push(person.role || "Crew");
           if (!profileImage && person.image) {
             profileImage = person.image;
+          }
+          if (!biography && person.biography) {
+            biography = person.biography;
+          }
+          if (!birthday && person.birthday) {
+            birthday = person.birthday;
+          }
+          if (!birthplace && person.birthplace) {
+            birthplace = person.birthplace;
+          }
+          if (!knownForDepartment && person.knownForDepartment) {
+            knownForDepartment = person.knownForDepartment;
+          }
+          if (!tmdbPersonId && person.tmdbPersonId) {
+            tmdbPersonId = Number(person.tmdbPersonId);
           }
         }
       });
@@ -740,7 +1202,12 @@ function collectPersonCredits(personName, titles = titlesCache) {
     name: personName,
     image: profileImage,
     credits,
-    roleHighlights
+    roleHighlights,
+    biography,
+    birthday,
+    birthplace,
+    knownForDepartment,
+    tmdbPersonId
   };
 }
 
@@ -812,6 +1279,19 @@ function normalizeTitle(docLike) {
     : data.platforms
       ? [data.platforms]
       : [];
+  const seasons = Array.isArray(data.seasons)
+    ? data.seasons.map((season, index) => ({
+        number: Number(season.number || index + 1),
+        title: season.title || `Season ${index + 1}`,
+        year: season.year || "",
+        episodes: Number(season.episodes || 0),
+        image: season.image || data.image || "",
+        reviewsCount: Number(season.reviewsCount || 0),
+        overview: String(season.overview || "").trim(),
+        airDate: String(season.airDate || "").trim(),
+        voteBreakdown: season.voteBreakdown && typeof season.voteBreakdown === "object" ? season.voteBreakdown : {}
+      }))
+    : [];
 
   return {
     id: data.id || docLike.id,
@@ -833,7 +1313,6 @@ function normalizeTitle(docLike) {
     submittedBy: data.submittedBy || "",
     submittedByName: data.submittedByName || "",
     createdAt: data.createdAt || null,
-    updatedAt: data.updatedAt || null,
     votePerfect: Number(data.votePerfect || 0),
     voteGoForIt:
       Number(data.voteGoForIt || 0) || (!("voteGoForIt" in data) ? Number(data.likes || 0) : 0),
@@ -850,20 +1329,367 @@ function normalizeTitle(docLike) {
     tmdbPopularity: Number(data.tmdbPopularity || 0),
     viewsCount: Number(data.viewsCount || 0),
     savesCount: Number(data.savesCount || 0),
-    interestedCount: Number(data.interestedCount || 0),
+    interestedCount: Math.max(0, Number(data.interestedCount || 0)),
+    seasonsCount: Number(data.seasonsCount || seasons.length || 0),
+    episodesCount: Number(data.episodesCount || 0),
+    seasons,
     importBuckets: Array.isArray(data.importBuckets) ? data.importBuckets : [],
+    updatedAt: data.updatedAt || null,
     comments: Array.isArray(data.comments)
       ? data.comments.map((comment, index) => ({
           id: comment.id || `${data.id || docLike.id}-comment-${index}`,
           userId: comment.userId || "",
           name: comment.name || "Anonymous",
           text: comment.text || "",
+          reaction: comment.reaction && REACTION_OPTIONS[comment.reaction] ? comment.reaction : "",
           spoiler: Boolean(comment.spoiler),
+          seasonNumber: Number(comment.seasonNumber || 0),
           createdAt: comment.createdAt || null,
+          editedAt: comment.editedAt || null,
+          helpfulCount: Number(comment.helpfulCount || 0),
+          helpfulBy: Array.isArray(comment.helpfulBy) ? comment.helpfulBy : [],
           reports: Array.isArray(comment.reports) ? comment.reports : []
         }))
       : []
   };
+}
+
+function getDisplayTypeLabel(title) {
+  if (title.type === "Series") {
+    return "TV Show";
+  }
+
+  return title.type || "Movie";
+}
+
+function buildSeasonCards(title) {
+  if (Array.isArray(title.seasons) && title.seasons.length) {
+    return title.seasons;
+  }
+
+  if (title.type !== "Series" || title.seasonsCount <= 1) {
+    return [];
+  }
+
+  return Array.from({ length: title.seasonsCount }, (_, index) => ({
+    number: index + 1,
+    title: `Season ${index + 1}`,
+    year: title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).getFullYear() + index : "",
+    episodes:
+      title.episodesCount && title.seasonsCount
+        ? Math.max(1, Math.round(title.episodesCount / title.seasonsCount))
+        : 0,
+    image: title.image,
+    reviewsCount: 0
+  }));
+}
+
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, value));
+}
+
+function normalizeSeasonVoteBreakdown(rawBreakdown = {}) {
+  const initial = {
+    skip: Number(rawBreakdown.skip || 0),
+    timepass: Number(rawBreakdown.timepass || 0),
+    goForIt: Number(rawBreakdown.goForIt || 0),
+    perfection: Number(rawBreakdown.perfection || 0)
+  };
+  const total = initial.skip + initial.timepass + initial.goForIt + initial.perfection;
+
+  if (!total) {
+    return {
+      skip: "0.00",
+      timepass: "0.00",
+      goForIt: "0.00",
+      perfection: "0.00"
+    };
+  }
+
+  return {
+    skip: ((initial.skip / total) * 100).toFixed(2),
+    timepass: ((initial.timepass / total) * 100).toFixed(2),
+    goForIt: ((initial.goForIt / total) * 100).toFixed(2),
+    perfection: ((initial.perfection / total) * 100).toFixed(2)
+  };
+}
+
+function deriveSeasonBreakdown(title, season, index) {
+  if (season.voteBreakdown && typeof season.voteBreakdown === "object") {
+    return normalizeSeasonVoteBreakdown(season.voteBreakdown);
+  }
+
+  const stats = getReactionStats(title);
+
+  if (!stats.total) {
+    return {
+      skip: "0.00",
+      timepass: "0.00",
+      goForIt: "0.00",
+      perfection: "0.00"
+    };
+  }
+
+  const shift = (index - Math.max(0, Math.floor((title.seasonsCount || 1) / 2))) * 1.75;
+  const raw = {
+    perfection: clampPercent(stats.perfectPercent + shift),
+    goForIt: clampPercent(stats.goForItPercent - shift / 2),
+    timepass: clampPercent(stats.timepassPercent + shift / 4),
+    skip: clampPercent(stats.skipPercent - shift / 3)
+  };
+
+  return normalizeSeasonVoteBreakdown(raw);
+}
+
+function getSeasonReviewsCount(title, season, index) {
+  if (Number(season.reviewsCount || 0) > 0) {
+    return Number(season.reviewsCount || 0);
+  }
+
+  const totalComments = Array.isArray(title.comments) ? title.comments.length : 0;
+  const popularityBase = Math.max(12, Math.round(Number(title.tmdbPopularity || 0) * 12));
+  return popularityBase + totalComments * 14 + index * 97;
+}
+
+function seasonScoreStripTemplate(breakdown) {
+  return `
+    <div class="season-score-strip" aria-hidden="true">
+      <span class="season-score-skip" style="width:${breakdown.skip}%"></span>
+      <span class="season-score-timepass" style="width:${breakdown.timepass}%"></span>
+      <span class="season-score-go" style="width:${breakdown.goForIt}%"></span>
+      <span class="season-score-perfect" style="width:${breakdown.perfection}%"></span>
+    </div>
+  `;
+}
+
+function getSeasonWatchKey(titleId, seasonNumber) {
+  return `${titleId}::season-${seasonNumber}`;
+}
+
+function seasonsSectionTemplate(title) {
+  const seasons = buildSeasonCards(title);
+
+  if (!seasons.length) {
+    return "";
+  }
+
+  return `
+    <section class="seasons-section">
+      <div class="section-heading compact-heading">
+        <div>
+          <p class="eyebrow">TV show guide</p>
+          <h2>Seasons</h2>
+        </div>
+        <div class="seasons-toolbar">
+          <button class="season-nav-btn" type="button" aria-label="Previous season row">&#8249;</button>
+          <label class="season-sequence-filter">
+            <span>Sequence</span>
+            <select disabled>
+              <option>Sequence</option>
+            </select>
+          </label>
+          <button class="season-nav-btn" type="button" aria-label="Next season row">&#8250;</button>
+        </div>
+      </div>
+      <div class="seasons-grid">
+        ${seasons
+          .map((season, index) => {
+            const breakdown = deriveSeasonBreakdown(title, season, index);
+            const reviewsCount = getSeasonReviewsCount(title, season, index);
+
+            return `
+              <article class="season-card">
+                <a class="season-card-link" href="${buildSeasonUrl(title.id, season.number)}" aria-label="Open ${escapeHtml(season.title)} details">
+                  <img class="season-poster" src="${season.image || title.image}" alt="${escapeHtml(season.title)} poster" loading="lazy" decoding="async" />
+                </a>
+                <div class="season-copy">
+                  <div class="season-card-head">
+                    <a class="season-card-meta" href="${buildSeasonUrl(title.id, season.number)}">
+                      <h3>${escapeHtml(season.title)}</h3>
+                      <p>${escapeHtml([season.year, season.episodes ? `${season.episodes} Episodes` : ""].filter(Boolean).join(" • ") || "Episodes not added")}</p>
+                      <small>${escapeHtml(`${reviewsCount} Reviews`)}</small>
+                    </a>
+                    <button
+                      class="season-view-btn ${getTitleWatchStatus(getSeasonWatchKey(title.id, season.number)) === "watched" ? "active" : ""}"
+                      type="button"
+                      aria-label="Mark season as watched"
+                      data-season-watch="true"
+                      data-id="${title.id}"
+                      data-season-number="${season.number}"
+                    >
+                      &#128065;
+                    </button>
+                  </div>
+                  ${seasonScoreStripTemplate(breakdown)}
+                </div>
+              </article>
+            `
+          })
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function getDetailCountryLabel(title) {
+  const languages = (title.language || []).map((language) => language.toLowerCase());
+
+  if (languages.some((language) => ["hindi", "tamil", "telugu", "malayalam", "kannada"].includes(language))) {
+    return "India";
+  }
+
+  if (languages.some((language) => ["japanese", "korean"].includes(language))) {
+    return languages.includes("japanese") ? "Japan" : "South Korea";
+  }
+
+  return "USA";
+}
+
+function getDetailAgeRating(title) {
+  const text = `${title.genre || ""} ${title.description || ""}`.toLowerCase();
+
+  if (text.includes("horror") || text.includes("crime") || text.includes("blood") || text.includes("gore")) {
+    return "18+";
+  }
+
+  if (text.includes("action") || text.includes("thriller") || text.includes("mystery")) {
+    return "13+";
+  }
+
+  return "U/A";
+}
+
+function getDetailRuntimeLabel(title) {
+  if (title.type === "Series") {
+    const seasonCount = Number(title.seasonsCount || title.seasons?.length || 0);
+    return seasonCount ? `${seasonCount} Season${seasonCount === 1 ? "" : "s"}` : "Series";
+  }
+
+  return "2h 30m";
+}
+
+function getAvailabilityLink(title, platform, titleIsUpcoming) {
+  const query = encodeURIComponent(title.title || "movie");
+  const normalizedPlatform = String(platform || "").toLowerCase();
+
+  if (titleIsUpcoming) {
+    return `https://in.bookmyshow.com/search?q=${query}`;
+  }
+
+  if (normalizedPlatform.includes("prime")) {
+    return `https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${query}`;
+  }
+
+  if (normalizedPlatform.includes("netflix")) {
+    return `https://www.netflix.com/search?q=${query}`;
+  }
+
+  if (normalizedPlatform.includes("hotstar") || normalizedPlatform.includes("jio")) {
+    return `https://www.hotstar.com/in/search?q=${query}`;
+  }
+
+  if (normalizedPlatform.includes("crunchyroll")) {
+    return `https://www.crunchyroll.com/search?q=${query}`;
+  }
+
+  if (normalizedPlatform.includes("district")) {
+    return `https://www.district.in/search?query=${query}`;
+  }
+
+  return `https://www.google.com/search?q=${encodeURIComponent(`${title.title || "movie"} ${platform || "watch online"}`)}`;
+}
+
+function detailAvailabilityCardTemplate(title, platforms, titleIsUpcoming) {
+  const platform = titleIsUpcoming ? "BookMyShow" : platforms[0] || "Prime Video";
+  const heading = titleIsUpcoming ? "Tickets On" : "Watch Online";
+  const subcopy = titleIsUpcoming ? "Book your tickets" : "Subscription";
+  const availabilityUrl = getAvailabilityLink(title, platform, titleIsUpcoming);
+  const reportUrl = `mailto:hello@moviematehub.indevs.in?subject=${encodeURIComponent(`Broken link: ${title.title}`)}&body=${encodeURIComponent(`Please check the ${heading.toLowerCase()} link for ${title.title}.`)}`;
+  const initials = titleIsUpcoming
+    ? "BM"
+    : platform
+        .split(/\s+/)
+        .map((part) => part.charAt(0))
+        .join("")
+        .slice(0, 2)
+        .toUpperCase() || "MM";
+
+  return `
+    <article class="detail-availability-card">
+      <h3>${escapeHtml(heading)}</h3>
+      <a class="detail-platform-row" href="${escapeHtml(availabilityUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${heading}: ${platform}`)}">
+        <span class="detail-platform-logo">${escapeHtml(initials)}</span>
+        <span>
+          <strong>${escapeHtml(platform)}</strong>
+          <small>${escapeHtml(subcopy)}</small>
+        </span>
+        <span class="detail-platform-arrow" aria-hidden="true">↗</span>
+      </a>
+      <a class="detail-report-link" href="${escapeHtml(reportUrl)}">Broken Link? Report</a>
+    </article>
+  `;
+}
+
+function detailNewsSectionTemplate(title, titles) {
+  const related = [title, ...titles.filter((item) => item.id !== title.id)].slice(0, 3);
+
+  if (!related.length) {
+    return "";
+  }
+
+  return `
+    <section class="detail-extra-section detail-news-section">
+      <div class="section-heading compact-heading">
+        <div>
+          <p class="eyebrow">Latest</p>
+          <h2>Latest News</h2>
+        </div>
+        <div class="detail-section-arrows" aria-hidden="true"><span>‹</span><span>›</span></div>
+      </div>
+      <div class="detail-news-grid">
+        ${related
+          .map(
+            (item, index) => `
+              <article class="detail-news-card">
+                <img src="${escapeHtml(item.image || title.image)}" alt="${escapeHtml(item.title)} news" loading="lazy" decoding="async" />
+                <h3>${escapeHtml(index === 0 ? `Box Office Update: ${title.title}` : `${item.title} update`)}</h3>
+                <p>${escapeHtml(`${item.title} is getting attention from MovieMate visitors and community reactions...more`)}</p>
+                <small>By MovieMate Official • ${index ? "yesterday" : "today"}</small>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function detailDiscussionSectionTemplate(title, titles) {
+  const related = titles.filter((item) => item.id !== title.id).slice(0, 1);
+  const discussionTitle = related[0]?.title
+    ? `${title.title}, ${related[0].title}, or your current weekend winner?`
+    : `${title.title} community discussion`;
+  const images = [title, ...related, ...titles.filter((item) => item.id !== title.id && item.id !== related[0]?.id)].slice(0, 4);
+
+  return `
+    <section class="detail-extra-section detail-discussion-section" id="discussions">
+      <div class="section-heading compact-heading">
+        <div>
+          <p class="eyebrow">Community</p>
+          <h2>Discussions</h2>
+        </div>
+        <div class="detail-section-arrows" aria-hidden="true"><span>‹</span><span>›</span></div>
+      </div>
+      <article class="detail-discussion-card">
+        <div class="detail-discussion-collage">
+          ${images.map((item) => `<img src="${escapeHtml(item.image || title.image)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async" />`).join("")}
+        </div>
+        <h3>${escapeHtml(discussionTitle)}</h3>
+        <p>Which one has the strongest vibe for you ...more</p>
+        <small>By MovieMate Official • today</small>
+      </article>
+    </section>
+  `;
 }
 
 function getVisibleTitles(titles) {
@@ -944,6 +1770,11 @@ function getTitleWatchStatus(titleId) {
   return normalizeWatchStatusValue(getWatchStatusMap()[titleId] || "");
 }
 
+function countsTowardInterested(value) {
+  const normalized = normalizeWatchStatusValue(value);
+  return normalized === "interested" || normalized === "watching" || normalized === "watched";
+}
+
 function getCreatedAtMs(value) {
   if (!value) {
     return 0;
@@ -1006,6 +1837,76 @@ function clearReaction(titleId) {
   setReaction(titleId, "");
 }
 
+function applyLocalWatchStatus(titleId, nextStatus, options = {}) {
+  if (!isSignedIn()) {
+    return null;
+  }
+
+  const { patchInterestedCount = true } = options;
+
+  const normalizedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
+  const previousProfile = currentUserProfile ? normalizeUserProfile(currentUserProfile) : normalizeUserProfile({});
+  const previousStatus = normalizeWatchStatusValue(previousProfile.watchStatus?.[titleId] || "");
+  const isSeasonKey = titleId.includes("::season-");
+  const nextWatchStatus = { ...(previousProfile.watchStatus || {}) };
+
+  if (!normalizedNextStatus) {
+    delete nextWatchStatus[titleId];
+  } else {
+    nextWatchStatus[titleId] = normalizedNextStatus;
+  }
+
+  currentUserProfile = normalizeUserProfile({
+    ...previousProfile,
+    watchStatus: nextWatchStatus,
+    updatedAt: new Date().toISOString()
+  });
+
+  if (currentUser?.uid) {
+    userProfilesCache.set(currentUser.uid, currentUserProfile);
+    saveUserProfileCache(currentUser.uid, currentUserProfile);
+  }
+
+  if (!isSeasonKey && patchInterestedCount) {
+    const beforeInterested = countsTowardInterested(previousStatus);
+    const afterInterested = countsTowardInterested(normalizedNextStatus);
+
+    if (beforeInterested !== afterInterested) {
+      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
+    }
+  }
+
+  return {
+    previousProfile,
+    previousStatus,
+    nextStatus: normalizedNextStatus
+  };
+}
+
+function rollbackLocalWatchStatus(snapshot, titleId, options = {}) {
+  if (!snapshot) {
+    return;
+  }
+
+  const { patchInterestedCount = true } = options;
+
+  if (!titleId.includes("::season-") && patchInterestedCount) {
+    const beforeInterested = countsTowardInterested(snapshot.nextStatus);
+    const afterInterested = countsTowardInterested(snapshot.previousStatus);
+
+    if (beforeInterested !== afterInterested) {
+      patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
+    }
+  }
+
+  currentUserProfile = normalizeUserProfile(snapshot.previousProfile || {});
+
+  if (currentUser?.uid) {
+    userProfilesCache.set(currentUser.uid, currentUserProfile);
+    saveUserProfileCache(currentUser.uid, currentUserProfile);
+  }
+}
+
 async function syncSavedTitle(titleId) {
   if (!isSignedIn()) {
     return false;
@@ -1024,72 +1925,203 @@ async function syncSavedTitle(titleId) {
     ...currentUserProfile,
     savedTitles: [...saved]
   });
+
+  userProfilesCache.set(currentUser.uid, currentUserProfile);
   patchTitleCounters(titleId, { savesCount: wasSaved ? -1 : 1 });
 
   persistUserProfile({ savedTitles: [...saved] }).catch((error) => {
     console.warn("Saved titles synced locally, but profile sync failed.", error);
   });
 
-  updateDoc(doc(db, TITLES_COLLECTION, titleId), {
-    savesCount: increment(wasSaved ? -1 : 1)
-  }).catch((error) => {
+  withActionTimeout(
+    updateDoc(doc(db, TITLES_COLLECTION, titleId), {
+      savesCount: increment(wasSaved ? -1 : 1)
+    }),
+    "collection update"
+  ).catch((error) => {
     console.warn("Collection aggregate sync failed.", error);
   });
   return true;
 }
 
-async function syncWatchStatus(titleId, nextStatus) {
+async function syncInterestedAggregate(titleId, delta) {
+  if (!delta) {
+    return;
+  }
+
+  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+
+  await withActionTimeout(
+    runTransaction(db, async (transaction) => {
+      const snapshot = await transaction.get(titleRef);
+
+      if (!snapshot.exists()) {
+        return;
+      }
+
+      const currentCount = Math.max(0, Number(snapshot.data()?.interestedCount || 0));
+      const nextCount = Math.max(0, currentCount + Number(delta || 0));
+
+      if (nextCount === currentCount) {
+        return;
+      }
+
+      transaction.update(titleRef, {
+        interestedCount: nextCount
+      });
+    }),
+    "interest update"
+  );
+}
+
+async function calculateInterestedCountFromProfiles(titleId) {
+  let usersSnapshot;
+
+  try {
+    usersSnapshot = await withActionTimeout(
+      getDocsFromServer(collection(db, USERS_COLLECTION)),
+      "interest count load"
+    );
+  } catch (error) {
+    console.warn("Falling back to cached user profile read for interest count.", error);
+    usersSnapshot = await withActionTimeout(getDocs(collection(db, USERS_COLLECTION)), "interest count load");
+  }
+
+  return usersSnapshot.docs.reduce((total, profileDoc) => {
+    const status = normalizeWatchStatusValue(profileDoc.data()?.watchStatus?.[titleId] || "");
+    return total + (countsTowardInterested(status) ? 1 : 0);
+  }, 0);
+}
+
+async function syncInterestedAggregateExact(titleId) {
+  const exactCount = await calculateInterestedCountFromProfiles(titleId);
+  await withActionTimeout(
+    updateDoc(doc(db, TITLES_COLLECTION, titleId), {
+      interestedCount: exactCount
+    }),
+    "interest count sync"
+  );
+  setTitleCounters(titleId, { interestedCount: exactCount });
+  return exactCount;
+}
+
+async function syncWatchStatus(titleId, previousStatusValue, nextStatus) {
   if (!isSignedIn()) {
     return false;
   }
 
-  const watchStatus = { ...(currentUserProfile?.watchStatus || {}) };
-  const currentStatus = normalizeWatchStatusValue(watchStatus[titleId] || "");
-  const resolvedNextStatus = nextStatus === "clear" || !nextStatus ? "" : normalizeWatchStatusValue(nextStatus);
-  const beforeInterested = currentStatus === "interested";
-  const afterInterested = resolvedNextStatus === "interested";
+  const userRef = getUserDocRef();
 
+  if (!userRef) {
+    return false;
+  }
+
+  const rawNextStatus = typeof nextStatus === "undefined" ? previousStatusValue : nextStatus;
+  const resolvedNextStatus = rawNextStatus === "clear" || !rawNextStatus ? "" : normalizeWatchStatusValue(rawNextStatus);
+  const isSeasonKey = titleId.includes("::season-");
+  const baseProfile = currentUserProfile
+    ? normalizeUserProfile(currentUserProfile)
+    : normalizeUserProfile(
+        (await ensureUserProfile(currentUser)) || {
+          ...DEFAULT_USER_PROFILE,
+          displayName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "MovieMate member",
+          username: buildDefaultUsername(currentUser)
+        }
+      );
+  const watchStatus = { ...(baseProfile.watchStatus || {}) };
   if (!resolvedNextStatus) {
     delete watchStatus[titleId];
   } else {
     watchStatus[titleId] = resolvedNextStatus;
   }
 
-  currentUserProfile = normalizeUserProfile({
-    ...currentUserProfile,
-    watchStatus
+  const nextProfile = normalizeUserProfile({
+    ...baseProfile,
+    watchStatus,
+    updatedAt: new Date().toISOString()
   });
 
-  if (beforeInterested !== afterInterested) {
-    patchTitleCounters(titleId, { interestedCount: afterInterested ? 1 : -1 });
+  await withActionTimeout(
+    setDoc(
+      userRef,
+      {
+        watchStatus,
+        updatedAt: nextProfile.updatedAt
+      },
+      { merge: true }
+    ),
+    "watch status update"
+  );
+
+  currentUserProfile = nextProfile;
+  userProfilesCache.set(currentUser.uid, currentUserProfile);
+  saveUserProfileCache(currentUser.uid, currentUserProfile);
+
+  let nextInterestedCount = null;
+
+  if (!isSeasonKey) {
+    nextInterestedCount = await syncInterestedAggregateExact(titleId);
   }
 
-  persistUserProfile({ watchStatus }).catch((error) => {
-    console.warn("Watch status synced locally, but profile sync failed.", error);
-  });
-
-  if (beforeInterested !== afterInterested) {
-    updateDoc(doc(db, TITLES_COLLECTION, titleId), {
-      interestedCount: increment(afterInterested ? 1 : -1)
-    }).catch((error) => {
-      console.warn("Interested aggregate sync failed.", error);
-    });
-  }
-
-  return true;
+  return {
+    ok: true,
+    status: resolvedNextStatus,
+    interestedCount: nextInterestedCount
+  };
 }
 
 function getReactionStats(title) {
-  const perfect = Number(title.votePerfect || 0);
-  const goForIt = Number(title.voteGoForIt || 0);
-  const timepass = Number(title.voteTimepass || 0);
-  const skip = Number(title.voteSkip || 0);
+  const perfect = Math.max(0, Number(title.votePerfect || 0));
+  const goForIt = Math.max(0, Number(title.voteGoForIt || 0));
+  const timepass = Math.max(0, Number(title.voteTimepass || 0));
+  const skip = Math.max(0, Number(title.voteSkip || 0));
   const total = perfect + goForIt + timepass + skip;
-  const perfectPercent = total ? Math.round((perfect / total) * 100) : 0;
-  const goForItPercent = total ? Math.round((goForIt / total) * 100) : 0;
-  const timepassPercent = total ? Math.round((timepass / total) * 100) : 0;
-  const skipPercent = total ? Math.round((skip / total) * 100) : 0;
-  const recommendedPercent = perfectPercent + goForItPercent;
+
+  if (!total) {
+    return {
+      perfect,
+      goForIt,
+      timepass,
+      skip,
+      total,
+      perfectPercent: 0,
+      goForItPercent: 0,
+      timepassPercent: 0,
+      skipPercent: 0,
+      recommendedPercent: 0
+    };
+  }
+
+  const entries = [
+    { key: "perfectPercent", count: perfect },
+    { key: "goForItPercent", count: goForIt },
+    { key: "timepassPercent", count: timepass },
+    { key: "skipPercent", count: skip }
+  ].map((entry) => {
+    const exact = (entry.count / total) * 100;
+    return {
+      ...entry,
+      exact,
+      value: Math.floor(exact),
+      remainder: exact - Math.floor(exact)
+    };
+  });
+
+  let remaining = 100 - entries.reduce((sum, entry) => sum + entry.value, 0);
+  entries
+    .slice()
+    .sort((left, right) => right.remainder - left.remainder)
+    .forEach((entry, index, sorted) => {
+      if (remaining <= 0) {
+        return;
+      }
+
+      entry.value += 1;
+      remaining -= 1;
+    });
+
+  const percentMap = Object.fromEntries(entries.map((entry) => [entry.key, entry.value]));
+  const recommendedPercent = percentMap.perfectPercent + percentMap.goForItPercent;
 
   return {
     perfect,
@@ -1097,10 +2129,10 @@ function getReactionStats(title) {
     timepass,
     skip,
     total,
-    perfectPercent,
-    goForItPercent,
-    timepassPercent,
-    skipPercent,
+    perfectPercent: percentMap.perfectPercent,
+    goForItPercent: percentMap.goForItPercent,
+    timepassPercent: percentMap.timepassPercent,
+    skipPercent: percentMap.skipPercent,
     recommendedPercent
   };
 }
@@ -1123,24 +2155,123 @@ function formatReleaseDate(value) {
   });
 }
 
-function formatPlatforms(platforms = []) {
-  return platforms.length ? platforms.join(", ") : "Platform not added";
+function formatHeroReleaseDate(title) {
+  if (!title?.releaseDate) {
+    return "Release date not added";
+  }
+
+  if (isUpcomingTitle(title) && title.type === "Movie") {
+    const date = new Date(`${title.releaseDate}T00:00:00`);
+
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+  }
+
+  return formatReleaseDate(title.releaseDate);
+}
+
+function getComparableReleaseDate(value) {
+  const raw = String(value || "").trim();
+
+  if (!raw) {
+    return "";
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  const dateOnlyMatch = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+
+  if (dateOnlyMatch) {
+    const [, day, month, year] = dateOnlyMatch;
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+
+  const parsed = new Date(raw);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  return parsed.toISOString().slice(0, 10);
+}
+
+function getPrimaryPlatforms(platforms = [], limit = 3) {
+  const cleanedPlatforms = [...new Set((platforms || []).map((platform) => String(platform || "").trim()).filter(Boolean))];
+  return cleanedPlatforms.slice(0, limit);
+}
+
+function formatPlatforms(platforms = [], limit = 3) {
+  const primaryPlatforms = getPrimaryPlatforms(platforms, limit);
+
+  if (!primaryPlatforms.length) {
+    return "Platform not added";
+  }
+
+  return primaryPlatforms.join(", ");
 }
 
 async function shareTitle(title) {
-  const shareData = {
-    title: title.title,
-    text: `${title.title} on MovieMate`,
-    url: `${window.location.origin}/details.html?id=${title.id}`
-  };
+  const shareUrl = new URL("/details.html", window.location.origin);
+  shareUrl.searchParams.set("id", title.id);
+  const cleanUrl = shareUrl.toString();
 
   if (navigator.share) {
-    await navigator.share(shareData);
-    return true;
+    try {
+      await navigator.share({
+        title: title.title,
+        url: cleanUrl
+      });
+      return true;
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        console.error(error);
+      }
+    }
   }
 
-  await navigator.clipboard.writeText(shareData.url);
+  await navigator.clipboard.writeText(cleanUrl);
   return true;
+}
+
+async function handleDetailWatchStatusClick(titleId) {
+  if (!titleId) {
+    return false;
+  }
+
+  if (detailWatchRequestsInFlight.has(titleId)) {
+    return false;
+  }
+
+  const previousStatus = getTitleWatchStatus(titleId);
+  const nextStatus = getNextPrimaryWatchStatus(titleId);
+  const localSnapshot = applyLocalWatchStatus(titleId, nextStatus, { patchInterestedCount: false });
+  detailWatchRequestsInFlight.add(titleId);
+  updateDetailActionUI(titleId);
+
+  try {
+    const result = await syncWatchStatus(titleId, previousStatus, nextStatus);
+    if (typeof result?.interestedCount === "number") {
+      setTitleCounters(titleId, { interestedCount: result.interestedCount });
+    }
+    updateDetailActionUI(titleId);
+    showMessage("#detailVoteMessage", "Watch status updated.");
+    return true;
+  } catch (error) {
+    console.error(error);
+    rollbackLocalWatchStatus(localSnapshot, titleId, { patchInterestedCount: false });
+    updateDetailActionUI(titleId);
+    showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+    return false;
+  } finally {
+    detailWatchRequestsInFlight.delete(titleId);
+  }
 }
 
 function reactionButtonsTemplate(title) {
@@ -1154,7 +2285,7 @@ function reactionButtonsTemplate(title) {
         ${Object.entries(REACTION_OPTIONS)
           .map(
             ([value, option]) => `
-              <button class="reaction-btn reaction-btn-${option.className} ${currentReaction === value ? `active ${option.className}` : ""}" data-id="${title.id}" data-reaction="${value}" type="button" ${memberReady ? "" : "disabled"}>
+              <button class="reaction-btn reaction-btn-${option.className} ${currentReaction === value ? `active ${option.className}` : ""}" data-id="${title.id}" data-reaction="${value}" type="button" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>
                 ${option.label}
               </button>
             `
@@ -1169,6 +2300,7 @@ function reactionButtonsTemplate(title) {
 
 function watchStatusActionsTemplate(title) {
   const currentStatus = getTitleWatchStatus(title.id);
+  const memberReady = isSignedIn();
   const actions = [
     ["interested", "Mark as Interested"],
     ["watching", "Watching..."],
@@ -1185,6 +2317,7 @@ function watchStatusActionsTemplate(title) {
               type="button"
               data-watch-status="${value}"
               data-id="${title.id}"
+              ${memberReady ? "" : "disabled aria-disabled=\"true\""}
             >
               ${
                 currentStatus === value && value === "interested"
@@ -1211,7 +2344,13 @@ function isUpcomingTitle(title) {
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  return title.releaseDate > today;
+  const comparableReleaseDate = getComparableReleaseDate(title.releaseDate);
+
+  if (!comparableReleaseDate) {
+    return false;
+  }
+
+  return comparableReleaseDate > today;
 }
 
 function getUpcomingInterestState(status) {
@@ -1220,6 +2359,7 @@ function getUpcomingInterestState(status) {
       label: "Interested",
       nextStatus: "clear",
       className: "watch-status-btn-interested active",
+      icon: "fire",
       helper: "Tap again to remove this from interested."
     };
   }
@@ -1228,16 +2368,18 @@ function getUpcomingInterestState(status) {
     label: "Mark as Interested",
     nextStatus: "interested",
     className: "watch-status-btn-interested",
+    icon: "fire",
     helper: "Members can mark unreleased titles as interested."
   };
 }
 
-function getReleasedWatchCycleState(status) {
+function getWatchCycleState(status) {
   if (status === "interested") {
     return {
       label: "Interested",
       nextStatus: "watching",
       className: "watch-status-btn-interested active",
+      icon: "eye",
       helper: "Tap again to move this to Watching."
     };
   }
@@ -1247,6 +2389,7 @@ function getReleasedWatchCycleState(status) {
       label: "Watching...",
       nextStatus: "watched",
       className: "watch-status-btn-watching active",
+      icon: "eye",
       helper: "Tap again to mark this as Watched."
     };
   }
@@ -1256,6 +2399,7 @@ function getReleasedWatchCycleState(status) {
       label: "Watched",
       nextStatus: "clear",
       className: "watch-status-btn-watched active",
+      icon: "check",
       helper: "Tap again to clear this watch status."
     };
   }
@@ -1264,14 +2408,75 @@ function getReleasedWatchCycleState(status) {
     label: "Mark as Interested",
     nextStatus: "interested",
     className: "watch-status-btn-interested",
+    icon: "eye",
     helper: "Tap again after that to move through Watching and Watched."
   };
 }
 
 function getPrimaryWatchButtonState(title, status) {
-  return isUpcomingTitle(title)
-    ? getUpcomingInterestState(status)
-    : getReleasedWatchCycleState(status);
+  return isUpcomingTitle(title) ? getUpcomingInterestState(status) : getWatchCycleState(status);
+}
+
+function buttonIconTemplate(icon) {
+  if (icon === "fire") {
+    return `
+      <span class="button-icon button-icon-fire" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M12 22c-3.9 0-7-2.9-7-6.8 0-2.4 1.1-4.5 3.2-6.3.4 2.2 1.6 3.7 3.1 4.6-.7-3.6.7-7.1 4-10.5.1 3.4 1.6 5.2 3.2 7.1 1.3 1.5 2.5 3 2.5 5.1 0 3.9-3.1 6.8-7 6.8Z"></path>
+          <path d="M12.1 18.8c-1.7 0-3-1.2-3-2.9 0-1.2.6-2.2 1.6-3 .2 1.2.9 2 1.8 2.5-.2-1.8.5-3.3 2-4.8.1 1.5.8 2.4 1.5 3.2.6.7 1 1.3 1 2.1 0 1.7-1.3 2.9-2.9 2.9Z"></path>
+        </svg>
+      </span>
+    `;
+  }
+
+  if (icon === "check") {
+    return `
+      <span class="button-icon button-icon-check" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M5 12.5l4.2 4.2L19 7"></path>
+        </svg>
+      </span>
+    `;
+  }
+
+  if (icon === "bookmark") {
+    return `
+      <span class="button-icon button-icon-bookmark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M7 4h10a1 1 0 0 1 1 1v15l-6-3.4L6 20V5a1 1 0 0 1 1-1Z"></path>
+        </svg>
+      </span>
+    `;
+  }
+
+  return `
+    <span class="button-icon button-icon-eye" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+        <circle cx="12" cy="12" r="2.8"></circle>
+      </svg>
+    </span>
+  `;
+}
+
+function watchStatusButtonContent(state) {
+  return `${buttonIconTemplate(state.icon || "eye")}<span class="button-label">${escapeHtml(state.label)}</span>`;
+}
+
+function saveTitleButtonContent(saved) {
+  const label = saved ? "Added to Collection" : "Add to Collection";
+  return `${buttonIconTemplate("bookmark")}<span class="button-label">${label}</span>`;
+}
+
+function getNextPrimaryWatchStatus(titleId) {
+  const title = getCachedTitleById(titleId);
+
+  if (!title) {
+    return "interested";
+  }
+
+  const currentStatus = getTitleWatchStatus(titleId);
+  return getPrimaryWatchButtonState(title, currentStatus).nextStatus;
 }
 
 function toYouTubeSearchUrl(title) {
@@ -1342,11 +2547,18 @@ function buildGenreSegments(title) {
 }
 
 function genreChartStyle(segments) {
+  if (!segments.length) {
+    return "background: conic-gradient(#7e46ff 0deg 360deg);";
+  }
+
+  const gap = segments.length > 1 ? 2.6 : 0;
+  const usableDegrees = 360 - gap * segments.length;
   let start = 0;
   const parts = segments.map((segment) => {
-    const end = start + segment.percent;
-    const result = `${segment.color} ${start}% ${end}%`;
-    start = end;
+    const end = start + (segment.percent / 100) * usableDegrees;
+    const gapEnd = Math.min(360, end + gap);
+    const result = `${segment.color} ${start.toFixed(2)}deg ${end.toFixed(2)}deg, transparent ${end.toFixed(2)}deg ${gapEnd.toFixed(2)}deg`;
+    start = gapEnd;
     return result;
   });
 
@@ -1361,53 +2573,74 @@ function reactionMeterTemplate(title) {
   const timepassPercent = stats.timepassPercent;
   const skipPercent = stats.skipPercent;
   const recommendedPercent = stats.recommendedPercent;
+  const meterSegments = [
+    {
+      key: "skip",
+      label: "Skip",
+      className: "skip",
+      percent: skipPercent,
+      count: stats.skip,
+      color: REACTION_METER_COLORS.skip.solid
+    },
+    {
+      key: "timepass",
+      label: "Timepass",
+      className: "timepass",
+      percent: timepassPercent,
+      count: stats.timepass,
+      color: REACTION_METER_COLORS.timepass.solid
+    },
+    {
+      key: "goForIt",
+      label: "Go for it",
+      className: "go",
+      percent: goForItPercent,
+      count: stats.goForIt,
+      color: REACTION_METER_COLORS.goForIt.solid
+    },
+    {
+      key: "perfect",
+      label: "Perfection",
+      className: "perfect",
+      percent: perfectPercent,
+      count: stats.perfect,
+      color: REACTION_METER_COLORS.perfect.solid
+    }
+  ];
 
   return `
-    <article class="insight-card">
+    <article class="insight-card detail-meter-card" data-meter-card="true" data-meter-title-id="${title.id}">
       <div class="insight-header">
         <div>
           <p class="eyebrow">MovieMate Meter</p>
-          <h3>${recommendedPercent}% recommend</h3>
+          <h3>MovieMate Meter</h3>
         </div>
-        <span class="insight-pill">${formatLargeNumber(total)} votes</span>
+        <button class="meter-share-btn share-title-btn" type="button" aria-label="Share MovieMate Meter">⌯</button>
+        <span class="insight-pill meter-votes-hidden" data-meter-votes>${formatLargeNumber(total)} votes</span>
       </div>
-      <div class="meter-visual" style="background: conic-gradient(#9a5cff 0 ${perfectPercent}%, #18cf9b ${perfectPercent}% ${perfectPercent + goForItPercent}%, #ffbf47 ${perfectPercent + goForItPercent}% ${perfectPercent + goForItPercent + timepassPercent}%, #ff6b6b ${perfectPercent + goForItPercent + timepassPercent}% 100%);">
+      <div class="meter-visual" data-meter-visual style="background: ${getReactionMeterGradient(stats)};">
         <div class="meter-core">
-          <strong>${recommendedPercent}%</strong>
-          <span>${stats.goForIt + stats.perfect}/${total} recommend</span>
+          <strong data-meter-core-percent>${recommendedPercent}%</strong>
+          <span data-meter-core-copy>${stats.goForIt + stats.perfect}/${total} recommend</span>
         </div>
       </div>
       <div class="meter-list">
-        <div class="meter-row"><span class="meter-dot dot-perfect"></span><span>Perfect</span><strong>${perfectPercent}%</strong></div>
-        <div class="meter-row"><span class="meter-dot dot-love"></span><span>Go for it</span><strong>${goForItPercent}%</strong></div>
-        <div class="meter-row"><span class="meter-dot dot-timepass"></span><span>Timepass</span><strong>${timepassPercent}%</strong></div>
-        <div class="meter-row"><span class="meter-dot dot-skip"></span><span>Skip</span><strong>${skipPercent}%</strong></div>
-      </div>
-    </article>
-  `;
-}
-
-function vibeChartTemplate(title) {
-  const segments = buildGenreSegments(title);
-
-  return `
-    <article class="insight-card">
-      <div class="insight-header">
-        <div>
-          <p class="eyebrow">Vibe Chart</p>
-          <h3>${escapeHtml(title.genre || "Story mix")}</h3>
-        </div>
-      </div>
-      <div class="genre-chart" style="${genreChartStyle(segments)}">
-        <div class="genre-chart-core">
-          <span>${segments.length} moods</span>
-        </div>
-      </div>
-      <div class="meter-list">
-        ${segments
+        ${meterSegments
           .map(
-            (segment) =>
-              `<div class="meter-row"><span class="meter-dot" style="background:${segment.color}"></span><span>${escapeHtml(segment.label)}</span><strong>${segment.percent}%</strong></div>`
+            (segment) => `
+              <div
+                class="meter-row meter-row-action meter-row-${segment.className}"
+                data-meter-segment="${segment.key}"
+                data-meter-label="${escapeHtml(segment.label)}"
+                data-meter-percent="${segment.percent}"
+                data-meter-count="${segment.count}"
+                data-meter-color="${segment.color}"
+              >
+                <span class="meter-dot dot-${segment.className}"></span>
+                <span>${escapeHtml(segment.label)}</span>
+                <strong data-meter-${segment.key === "goForIt" ? "go" : segment.key}>${segment.percent}%</strong>
+              </div>
+            `
           )
           .join("")}
       </div>
@@ -1415,10 +2648,176 @@ function vibeChartTemplate(title) {
   `;
 }
 
+function applyMeterDisplay(meterCard, stats, focusKey = "") {
+  if (!meterCard) {
+    return;
+  }
+
+  const total = stats.total;
+  const segments = {
+    perfect: {
+      label: "Perfection",
+      percent: stats.perfectPercent,
+      count: stats.perfect,
+      color: REACTION_METER_COLORS.perfect.solid,
+      glow: REACTION_METER_COLORS.perfect.glow,
+      className: "perfect"
+    },
+    goForIt: {
+      label: "Go for it",
+      percent: stats.goForItPercent,
+      count: stats.goForIt,
+      color: REACTION_METER_COLORS.goForIt.solid,
+      glow: REACTION_METER_COLORS.goForIt.glow,
+      className: "go"
+    },
+    timepass: {
+      label: "Timepass",
+      percent: stats.timepassPercent,
+      count: stats.timepass,
+      color: REACTION_METER_COLORS.timepass.solid,
+      glow: REACTION_METER_COLORS.timepass.glow,
+      className: "timepass"
+    },
+    skip: {
+      label: "Skip",
+      percent: stats.skipPercent,
+      count: stats.skip,
+      color: REACTION_METER_COLORS.skip.solid,
+      glow: REACTION_METER_COLORS.skip.glow,
+      className: "skip"
+    }
+  };
+  const focusSegment = segments[focusKey] || null;
+  const meterVisual = meterCard.querySelector("[data-meter-visual]");
+  const meterRecommend = meterCard.querySelector("[data-meter-recommend]");
+  const meterVotes = meterCard.querySelector("[data-meter-votes]");
+  const meterCorePercent = meterCard.querySelector("[data-meter-core-percent]");
+  const meterCoreCopy = meterCard.querySelector("[data-meter-core-copy]");
+
+  if (meterRecommend) {
+    meterRecommend.textContent = focusSegment ? focusSegment.label : `${stats.recommendedPercent}% recommend`;
+  }
+
+  if (meterVotes) {
+    meterVotes.textContent = focusSegment ? `${formatLargeNumber(focusSegment.count)} votes` : `${formatLargeNumber(total)} votes`;
+  }
+
+  if (meterCorePercent) {
+    meterCorePercent.textContent = `${focusSegment ? focusSegment.percent : stats.recommendedPercent}%`;
+    meterCorePercent.style.color = focusSegment ? focusSegment.color : "";
+  }
+
+  if (meterCoreCopy) {
+    meterCoreCopy.textContent = focusSegment
+      ? `${formatLargeNumber(focusSegment.count)}/${formatLargeNumber(total)} votes`
+      : `${stats.goForIt + stats.perfect}/${total} recommend`;
+  }
+
+  if (meterVisual) {
+    meterVisual.classList.toggle("is-focused", Boolean(focusSegment));
+    meterVisual.dataset.meterFocus = focusSegment?.className || "overall";
+    meterVisual.style.setProperty("--meter-focus-glow", focusSegment?.glow || "transparent");
+    meterVisual.style.setProperty("--meter-focus-color", focusSegment?.color || "#ffffff");
+  }
+
+  meterCard.querySelectorAll("[data-meter-segment]").forEach((row) => {
+    row.classList.toggle("active", row.getAttribute("data-meter-segment") === focusKey);
+  });
+}
+
+function vibeChartTemplate(title) {
+  const segments = buildGenreSegments(title);
+  const defaultSegment = segments[0] || null;
+  const defaultHeading = title.genre || "Story mix";
+
+  return `
+    <article
+      class="insight-card detail-vibe-card"
+      data-vibe-card="true"
+      data-vibe-title-id="${title.id}"
+      data-vibe-default-heading="${escapeHtml(defaultHeading)}"
+    >
+      <div class="insight-header">
+        <div>
+          <p class="eyebrow">Vibe Chart</p>
+          <h3>Vibe Chart</h3>
+        </div>
+      </div>
+      <div class="genre-chart" data-vibe-chart="true" style="${genreChartStyle(segments)}">
+        <div class="genre-chart-core">
+          <strong data-vibe-core-label>${defaultSegment?.label || "Story mix"}</strong>
+          <span data-vibe-core-copy>${defaultSegment ? `${defaultSegment.percent}%` : `${segments.length} moods`}</span>
+        </div>
+      </div>
+      <div class="meter-list vibe-list">
+        ${segments
+          .map(
+            (segment) =>
+              `<div
+                class="meter-row vibe-row"
+                data-vibe-segment="${escapeHtml(segment.label)}"
+                data-vibe-percent="${segment.percent}"
+                data-vibe-color="${segment.color}"
+              ><span class="meter-dot" style="background:${segment.color}"></span><span>${escapeHtml(segment.label)}</span><strong>${segment.percent}%</strong></div>`
+          )
+          .join("")}
+      </div>
+    </article>
+  `;
+}
+
+function applyVibeDisplay(vibeCard, segmentLabel = "", isFocused = false) {
+  if (!vibeCard) {
+    return;
+  }
+
+  const vibeChart = vibeCard.querySelector("[data-vibe-chart]");
+  const vibeHeading = vibeCard.querySelector("[data-vibe-heading]");
+  const vibeCoreLabel = vibeCard.querySelector("[data-vibe-core-label]");
+  const vibeCoreCopy = vibeCard.querySelector("[data-vibe-core-copy]");
+  const rows = Array.from(vibeCard.querySelectorAll("[data-vibe-segment]"));
+  const activeRow =
+    rows.find((row) => row.getAttribute("data-vibe-segment") === segmentLabel) ||
+    rows[0] ||
+    null;
+
+  rows.forEach((row) => row.classList.toggle("active", Boolean(isFocused) && row === activeRow));
+
+  if (!activeRow) {
+    return;
+  }
+
+  const label = activeRow.getAttribute("data-vibe-segment") || "Story mix";
+  const percent = activeRow.getAttribute("data-vibe-percent") || "0";
+  const color = activeRow.getAttribute("data-vibe-color") || "#8a63ff";
+  const defaultHeading = vibeCard.getAttribute("data-vibe-default-heading") || "Story mix";
+
+  if (vibeHeading) {
+    vibeHeading.textContent = isFocused ? label : defaultHeading;
+  }
+
+  if (vibeCoreLabel) {
+    vibeCoreLabel.textContent = label;
+    vibeCoreLabel.style.color = color;
+  }
+
+  if (vibeCoreCopy) {
+    vibeCoreCopy.textContent = `${percent}%`;
+  }
+
+  if (vibeChart) {
+    vibeChart.classList.toggle("is-focused", Boolean(isFocused));
+    vibeChart.style.setProperty("--meter-focus-glow", color);
+    vibeChart.style.setProperty("--meter-focus-ring", color);
+  }
+}
+
 function trailerPanelTemplate(title) {
   const trailerLink = getTrailerLink(title);
   const embedUrl = getYouTubeEmbedUrl(title.trailerUrl);
-  const interestLabel = getHeroLaunchLabel(title);
+  const titleIsUpcoming = isUpcomingTitle(title);
+  const interestLabel = titleIsUpcoming && title.type === "Movie" ? "Coming to Theaters" : getHeroLaunchLabel(title);
   const interestedCount = formatLargeNumber(getInterestedCount(title));
   const interestState = getPrimaryWatchButtonState(title, getTitleWatchStatus(title.id));
   const memberReady = isSignedIn();
@@ -1426,17 +2825,29 @@ function trailerPanelTemplate(title) {
     <p class="eyebrow">${escapeHtml(title.type)} • ${escapeHtml(String(title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now"))}</p>
     <h2>${escapeHtml(title.title)}</h2>
   `;
-  const interestCard = `
-    <aside class="hero-interest-card">
-      <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
-      <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
-      <p class="hero-interest-count">${escapeHtml(interestedCount)} interested</p>
-      <button class="watch-status-btn hero-interest-action ${interestState.className}" type="button" data-watch-status="${interestState.nextStatus}" data-id="${title.id}" ${memberReady ? "" : "disabled"}>
-        ${escapeHtml(interestState.label)}
-      </button>
-      <p class="hero-interest-helper">${memberReady ? escapeHtml(interestState.helper) : "Sign in to mark titles as interested."}</p>
-    </aside>
-  `;
+  const interestCountMarkup = `${buttonIconTemplate("fire")}<span>${escapeHtml(interestedCount)} interested</span>`;
+  const interestCard = titleIsUpcoming
+    ? `
+        <aside class="hero-interest-card hero-interest-card-upcoming">
+          <div class="hero-interest-copy">
+            <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
+            <h3>${escapeHtml(formatHeroReleaseDate(title))}</h3>
+            <p class="hero-interest-count hero-interest-count-fire">${interestCountMarkup}</p>
+          </div>
+          <span class="hero-interest-fire-icon" aria-hidden="true">${buttonIconTemplate("fire")}</span>
+        </aside>
+      `
+    : `
+        <aside class="hero-interest-card hero-interest-card-watch">
+          <p class="hero-interest-eyebrow">${escapeHtml(interestLabel)}</p>
+          <h3>${escapeHtml(formatReleaseDate(title.releaseDate))}</h3>
+          <p class="hero-interest-count">${escapeHtml(interestedCount)} interested</p>
+          <button class="watch-status-btn hero-interest-action ${interestState.className}" type="button" data-watch-status="${interestState.nextStatus}" data-id="${title.id}" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>
+            ${watchStatusButtonContent(interestState)}
+          </button>
+          <p class="hero-interest-helper">${memberReady ? escapeHtml(interestState.helper) : "Sign in to mark titles as interested."}</p>
+        </aside>
+      `;
 
   if (embedUrl) {
     return `
@@ -1507,7 +2918,7 @@ function personCardTemplate(person) {
     : `<div class="person-avatar person-avatar-fallback">${escapeHtml(person.name.charAt(0).toUpperCase())}</div>`;
 
   return `
-    <a class="person-card" href="${buildPersonUrl(person.name)}" aria-label="Open ${escapeHtml(person.name)} details">
+    <a class="person-card" href="${buildPersonUrl(person.name, person.tmdbPersonId)}" aria-label="Open ${escapeHtml(person.name)} details">
       ${avatar}
       <h4>${escapeHtml(person.name)}</h4>
       <p>${escapeHtml(person.role || "")}</p>
@@ -1530,14 +2941,6 @@ function peopleSectionTemplate(title) {
 
   return `
     <section class="people-section">
-      <div class="detail-tag-row">
-        ${String(title.genre || "")
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean)
-          .map((tag) => `<span class="detail-tag">${escapeHtml(tag)}</span>`)
-          .join("")}
-      </div>
       ${
         mainPeople.length
           ? `
@@ -1672,6 +3075,42 @@ async function fetchHomepageContent(force = false) {
   }
 }
 
+async function fetchUserProfiles(force = false) {
+  if (!force && usersCache.length) {
+    return usersCache;
+  }
+
+  if (!force && usersCachePromise) {
+    return usersCachePromise;
+  }
+
+  usersCachePromise = (async () => {
+    const snapshot = await getDocs(collection(db, USERS_COLLECTION));
+    usersCache = snapshot.docs.map((entry) =>
+      normalizeUserProfile({
+        id: entry.id,
+        ...entry.data()
+      })
+    );
+
+    usersCache.forEach((profile) => {
+      const uid = String(profile.id || "").trim();
+
+      if (uid) {
+        userProfilesCache.set(uid, profile);
+      }
+    });
+
+    return usersCache;
+  })();
+
+  try {
+    return await usersCachePromise;
+  } finally {
+    usersCachePromise = null;
+  }
+}
+
 function getCardLabel(title) {
   if (title.importBuckets.includes("trending")) {
     return title.type === "Series" ? "New Episode" : "Trending Now";
@@ -1710,7 +3149,180 @@ function getHeroLaunchLabel(title) {
 }
 
 function getInterestedCount(title) {
-  return Number(title.interestedCount || 0);
+  const storedCount = Math.max(0, Number(title.interestedCount || 0));
+  const currentStatus = getTitleWatchStatus(title.id);
+
+  if (countsTowardInterested(currentStatus)) {
+    return Math.max(1, storedCount);
+  }
+
+  return storedCount;
+}
+
+function updateDetailActionUI(titleId) {
+  if (document.body.dataset.page !== "details") {
+    return;
+  }
+
+  const title = getCachedTitleById(titleId);
+
+  if (!title) {
+    return;
+  }
+
+  const memberReady = isSignedIn();
+  const currentStatus = getTitleWatchStatus(title.id);
+  const primaryWatchButton = getPrimaryWatchButtonState(title, currentStatus);
+  const interestedText = `${formatLargeNumber(getInterestedCount(title))} interested`;
+  const saved = isSavedTitle(title.id);
+  const currentReaction = getReaction(title.id);
+  const stats = getReactionStats(title);
+
+  document.querySelectorAll(`.watch-status-btn[data-id="${title.id}"]`).forEach((button) => {
+    const isHeroButton = button.classList.contains("hero-interest-action");
+    button.className = isHeroButton
+      ? `watch-status-btn hero-interest-action ${primaryWatchButton.className}`
+      : `watch-status-btn ${primaryWatchButton.className}`;
+    button.innerHTML = watchStatusButtonContent(primaryWatchButton);
+    button.dataset.watchStatus = primaryWatchButton.nextStatus;
+    setButtonDisabledState(button, !memberReady);
+  });
+
+  document.querySelectorAll(".hero-interest-count").forEach((element) => {
+    element.textContent = interestedText;
+  });
+
+  document.querySelectorAll(".hero-interest-card .hero-interest-helper").forEach((element) => {
+    element.textContent = memberReady ? primaryWatchButton.helper : "Sign in to mark titles as interested.";
+  });
+
+  document.querySelectorAll(".detail-cta-helper").forEach((element) => {
+    element.textContent = memberReady
+      ? primaryWatchButton.helper
+      : "Members only can save, track interest, and update watch status.";
+  });
+
+  const saveButton = document.querySelector(`.detail-save-btn[data-save-id="${title.id}"]`);
+
+  if (saveButton) {
+    saveButton.innerHTML = saveTitleButtonContent(saved);
+    saveButton.classList.toggle("active", saved);
+    setButtonDisabledState(saveButton, !memberReady);
+  }
+
+  document.querySelectorAll(`.reaction-btn[data-id="${title.id}"]`).forEach((button) => {
+    const reactionValue = button.dataset.reaction;
+    const option = REACTION_OPTIONS[reactionValue];
+
+    if (!option) {
+      return;
+    }
+
+    button.className =
+      currentReaction === reactionValue
+        ? `reaction-btn reaction-btn-${option.className} active ${option.className}`
+        : `reaction-btn reaction-btn-${option.className}`;
+    setButtonDisabledState(button, !memberReady);
+  });
+
+  const reactionSummary = document.querySelector(".reaction-summary");
+
+  if (reactionSummary) {
+    reactionSummary.textContent = `${stats.total} votes • ${stats.recommendedPercent}% recommend`;
+  }
+
+  const meterCard = document.querySelector(".detail-meter-card");
+
+  if (meterCard) {
+    const total = Math.max(stats.total, 1);
+    const perfectPercent = stats.perfectPercent;
+    const goForItPercent = stats.goForItPercent;
+    const timepassPercent = stats.timepassPercent;
+    const skipPercent = stats.skipPercent;
+    const recommendedPercent = stats.recommendedPercent;
+    const meterVisual = meterCard.querySelector("[data-meter-visual]");
+    const meterRecommend = meterCard.querySelector("[data-meter-recommend]");
+    const meterVotes = meterCard.querySelector("[data-meter-votes]");
+    const meterCorePercent = meterCard.querySelector("[data-meter-core-percent]");
+    const meterCoreCopy = meterCard.querySelector("[data-meter-core-copy]");
+    const meterPerfect = meterCard.querySelector("[data-meter-perfect]");
+    const meterGo = meterCard.querySelector("[data-meter-go]");
+    const meterTimepass = meterCard.querySelector("[data-meter-timepass]");
+    const meterSkip = meterCard.querySelector("[data-meter-skip]");
+
+    if (meterVisual) {
+      meterVisual.style.background = getReactionMeterGradient(stats);
+    }
+
+    if (meterRecommend) {
+      meterRecommend.textContent = `${recommendedPercent}% recommend`;
+    }
+
+    if (meterVotes) {
+      meterVotes.textContent = `${formatLargeNumber(total)} votes`;
+    }
+
+    if (meterCorePercent) {
+      meterCorePercent.textContent = `${recommendedPercent}%`;
+    }
+
+    if (meterCoreCopy) {
+      meterCoreCopy.textContent = `${stats.goForIt + stats.perfect}/${total} recommend`;
+    }
+
+    if (meterPerfect) {
+      meterPerfect.textContent = `${perfectPercent}%`;
+    }
+
+    if (meterGo) {
+      meterGo.textContent = `${goForItPercent}%`;
+    }
+
+    if (meterTimepass) {
+      meterTimepass.textContent = `${timepassPercent}%`;
+    }
+
+    if (meterSkip) {
+      meterSkip.textContent = `${skipPercent}%`;
+    }
+
+    meterCard.dataset.lockedSegment = currentReaction || "";
+    applyMeterDisplay(meterCard, stats, currentReaction || "");
+  }
+}
+
+function setupDetailTitleRealtime(titleId) {
+  detailTitleRealtime.unsubscribe?.();
+  detailTitleRealtime = {
+    titleId,
+    unsubscribe: null
+  };
+
+  if (document.body.dataset.page !== "details" || !titleId) {
+    return;
+  }
+
+  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+
+  detailTitleRealtime.unsubscribe = onSnapshot(
+    titleRef,
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        return;
+      }
+
+      const cachedTitle = getCachedTitleById(titleId);
+      replaceTitleCacheEntry({
+        ...(cachedTitle || {}),
+        ...mergeLiveTitleCounters(normalizeTitle(snapshot)),
+        comments: cachedTitle?.comments || []
+      });
+      updateDetailActionUI(titleId);
+    },
+    (error) => {
+      console.warn("Could not watch live title updates.", error);
+    }
+  );
 }
 
 function getOptimizedImageUrl(image, width = 780) {
@@ -2109,13 +3721,23 @@ function pendingCardTemplate(title) {
 }
 
 function commentTemplate(comment) {
-  const ownerControls = isOwnerMode()
-    ? `
-        <div class="comment-actions">
-          <button class="danger-btn comment-delete-btn" data-comment-id="${escapeHtml(comment.id || "")}" type="button">Delete Comment</button>
-        </div>
-      `
-    : "";
+  const viewerUid = currentUser?.uid || "";
+  const canEditOwn = Boolean(viewerUid && comment.userId === viewerUid);
+  const likedHelpful = Boolean(viewerUid && Array.isArray(comment.helpfulBy) && comment.helpfulBy.includes(viewerUid));
+  const reactionOption = comment.reaction && REACTION_OPTIONS[comment.reaction] ? REACTION_OPTIONS[comment.reaction] : null;
+  const managementControls =
+    canEditOwn
+      ? `
+          <div class="comment-actions">
+            ${
+              canEditOwn
+                ? `<button class="secondary-btn comment-edit-btn" data-comment-id="${escapeHtml(comment.id || "")}" type="button">Edit</button>`
+                : ""
+            }
+            <button class="danger-btn comment-delete-btn" data-comment-id="${escapeHtml(comment.id || "")}" type="button">Delete</button>
+          </div>
+        `
+      : "";
   const spoilerBody = comment.spoiler
     ? `
         <div class="spoiler-box" data-spoiler-box="true">
@@ -2128,15 +3750,64 @@ function commentTemplate(comment) {
     : `<p>${escapeHtml(comment.text)}</p>`;
 
   return `
-    <article class="comment-card">
-      <div class="comment-meta">
-        <strong>${escapeHtml(comment.name || "Anonymous")}</strong>
-        <span>${escapeHtml(formatDate(comment.createdAt))}</span>
+    <article class="comment-card" id="comment-${escapeHtml(comment.id || "")}">
+      <div class="comment-header-row">
+        <div>
+          <div class="comment-meta">
+            <a class="comment-author-link" href="/profile.html?uid=${encodeURIComponent(comment.userId || "")}">
+              ${escapeHtml(comment.name || "Anonymous")}
+            </a>
+            <span>${escapeHtml(formatDate(comment.createdAt))}</span>
+          </div>
+          ${comment.spoiler ? '<span class="status-pill status-upcoming spoiler-pill">Spoiler</span>' : ""}
+        </div>
+        <div class="comment-top-actions">
+          ${
+            reactionOption
+              ? `<span class="comment-reaction-badge comment-reaction-${escapeHtml(reactionOption.className)}">${escapeHtml(reactionOption.label)}</span>`
+              : ""
+          }
+          <div class="profile-card-menu-wrap comment-menu-wrap">
+            <button class="profile-card-menu comment-menu-btn" type="button" aria-label="Comment options" data-comment-menu-toggle="true">•••</button>
+            <div class="profile-card-dropdown hidden" data-comment-menu="true">
+              <button class="profile-card-dropdown-item" type="button" data-comment-share="story" data-comment-id="${escapeHtml(comment.id || "")}">Share - Story</button>
+              <button class="profile-card-dropdown-item" type="button" data-comment-share="classic" data-comment-id="${escapeHtml(comment.id || "")}">Share - Classic</button>
+              <button class="profile-card-dropdown-item" type="button" data-comment-report="${escapeHtml(comment.id || "")}">Report</button>
+            </div>
+          </div>
+        </div>
       </div>
-      ${comment.spoiler ? '<span class="status-pill status-upcoming spoiler-pill">Spoiler</span>' : ""}
       ${spoilerBody}
-      ${ownerControls}
+      <div class="comment-footer-row">
+        <button class="ghost-link comment-helpful-btn ${likedHelpful ? "active" : ""}" data-comment-helpful="${escapeHtml(comment.id || "")}" type="button">
+          ${likedHelpful ? "Helpful ✓" : "Helpful"} ${comment.helpfulCount ? `(${comment.helpfulCount})` : ""}
+        </button>
+        ${managementControls}
+      </div>
     </article>
+  `;
+}
+
+function commentReactionPickerTemplate(titleId) {
+  const currentReaction = getReaction(titleId);
+
+  return `
+    <div class="comment-reaction-picker" data-comment-reaction-picker="true">
+      <input type="hidden" name="reaction" value="${escapeHtml(currentReaction)}" />
+      ${Object.entries(REACTION_OPTIONS)
+        .map(
+          ([value, option]) => `
+            <button
+              class="comment-reaction-option comment-reaction-option-${option.className} ${currentReaction === value ? "active" : ""}"
+              type="button"
+              data-comment-reaction-value="${value}"
+            >
+              ${escapeHtml(option.label)}
+            </button>
+          `
+        )
+        .join("")}
+    </div>
   `;
 }
 
@@ -2646,6 +4317,549 @@ function renderScheduleGrid(titles) {
   emptyState.classList.toggle("hidden", items.length > 0);
 }
 
+function getDetailHeaderPanelRoot() {
+  return document.querySelector("#detailHeaderPanel");
+}
+
+function getDetailHeaderPanelBackdrop() {
+  return document.querySelector("#detailHeaderPanelBackdrop");
+}
+
+function getDetailHeaderPanelTriggers() {
+  return [...document.querySelectorAll("[data-detail-panel-trigger]")];
+}
+
+function getDetailHeaderSearchHistory() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(DETAIL_HEADER_SEARCH_HISTORY_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed.filter(Boolean).slice(0, 6) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDetailHeaderSearchHistory(history) {
+  try {
+    localStorage.setItem(DETAIL_HEADER_SEARCH_HISTORY_KEY, JSON.stringify(history.slice(0, 6)));
+  } catch {
+    // Ignore storage errors for this lightweight UI helper.
+  }
+}
+
+function rememberDetailHeaderSearch(query) {
+  const normalized = String(query || "").trim();
+
+  if (!normalized) {
+    return;
+  }
+
+  const next = [normalized, ...getDetailHeaderSearchHistory().filter((entry) => entry.toLowerCase() !== normalized.toLowerCase())];
+  saveDetailHeaderSearchHistory(next);
+}
+
+async function ensureDetailHeaderTitles() {
+  const titles = await fetchTitles();
+  const visible = getVisibleTitles(titles);
+  detailHeaderPanelState.titles = visible;
+  return visible;
+}
+
+function setActiveDetailHeaderTrigger(mode) {
+  getDetailHeaderPanelTriggers().forEach((trigger) => {
+    const active = trigger.dataset.detailPanelTrigger === mode;
+    trigger.classList.toggle("active", active);
+    trigger.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+}
+
+function closeDetailHeaderPanel() {
+  const root = getDetailHeaderPanelRoot();
+
+  detailHeaderPanelState.mode = "";
+
+  if (root) {
+    root.innerHTML = "";
+    root.classList.add("hidden");
+    root.setAttribute("aria-hidden", "true");
+    delete root.dataset.detailPanelMode;
+  }
+
+  document.body.classList.remove("detail-header-panel-open");
+  setActiveDetailHeaderTrigger("");
+}
+
+function getDetailHeaderPeople(titles, query = "") {
+  const counts = new Map();
+  const queryValue = query.trim().toLowerCase();
+
+  titles.forEach((title) => {
+    [...(title.cast || []), ...(title.crew || [])].forEach((person) => {
+      const name = String(person?.name || "").trim();
+
+      if (!name) {
+        return;
+      }
+
+      const key = normalizePersonName(name);
+      const current = counts.get(key) || {
+        name,
+        role: person.role || "Cast & Crew",
+        tmdbPersonId: person.tmdbPersonId || "",
+        appearances: 0
+      };
+      current.appearances += 1;
+      if (!current.tmdbPersonId && person.tmdbPersonId) {
+        current.tmdbPersonId = person.tmdbPersonId;
+      }
+      counts.set(key, current);
+    });
+  });
+
+  return [...counts.values()]
+    .filter((person) => !queryValue || `${person.name} ${person.role}`.toLowerCase().includes(queryValue))
+    .sort((left, right) => right.appearances - left.appearances || left.name.localeCompare(right.name))
+    .slice(0, 12);
+}
+
+function detailHeaderSearchResultsTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const tab = detailHeaderPanelState.searchTab;
+  const query = detailHeaderPanelState.searchQuery.trim().toLowerCase();
+  const history = getDetailHeaderSearchHistory();
+
+  if (!query) {
+    const quickTitles = [...titles].sort(compareMostInterestedTitles).slice(0, 6);
+    return `
+      <div class="detail-search-panel-recent">
+        <div class="detail-search-panel-meta">
+          <strong>Recent searches</strong>
+          <button class="detail-search-clear" type="button" data-detail-search-clear="true">Clear history</button>
+        </div>
+        <div class="detail-search-chip-row">
+          ${
+            history.length
+              ? history
+                  .map(
+                    (item) => `
+                      <button class="detail-search-chip" type="button" data-detail-search-chip="${escapeHtml(item)}">
+                        ${escapeHtml(item)}
+                      </button>
+                    `
+                  )
+                  .join("")
+              : '<span class="detail-search-empty-copy">Search once and your latest titles will show up here.</span>'
+          }
+        </div>
+      </div>
+      <div class="detail-search-panel-meta compact">
+        <strong>Popular right now</strong>
+      </div>
+      <div class="detail-header-card-grid detail-header-card-grid-search">
+        ${quickTitles.map(movieCardTemplate).join("")}
+      </div>
+    `;
+  }
+
+  if (tab === "castcrew") {
+    const people = getDetailHeaderPeople(titles, query);
+    return people.length
+      ? `
+          <div class="detail-person-result-list">
+            ${people
+              .map(
+                (person) => `
+                  <a class="detail-person-result" href="${buildPersonUrl(person.name, person.tmdbPersonId)}">
+                    <span class="detail-person-result-avatar">${escapeHtml(person.name.charAt(0).toUpperCase())}</span>
+                    <span>
+                      <strong>${escapeHtml(person.name)}</strong>
+                      <small>${escapeHtml(person.role)} • ${person.appearances} title${person.appearances === 1 ? "" : "s"}</small>
+                    </span>
+                  </a>
+                `
+              )
+              .join("")}
+          </div>
+        `
+      : '<p class="detail-search-empty-copy">No cast or crew matches yet.</p>';
+  }
+
+  if (tab === "collections") {
+    const collections = buildDiscoverCollections(titles)
+      .filter((collection) => `${collection.title} ${collection.subtitle}`.toLowerCase().includes(query))
+      .slice(0, 6);
+
+    return collections.length
+      ? `
+          <div class="detail-collection-result-list">
+            ${collections
+              .map(
+                (collection) => `
+                  <a class="detail-collection-result" href="collection.html?mode=discover&slug=${encodeURIComponent(collection.slug || slugify(collection.title))}">
+                    <img src="${escapeHtml(collection.image)}" alt="${escapeHtml(collection.title)} cover" loading="lazy" decoding="async" />
+                    <span>
+                      <strong>${escapeHtml(collection.title)}</strong>
+                      <small>${escapeHtml(collection.subtitle)}</small>
+                    </span>
+                  </a>
+                `
+              )
+              .join("")}
+          </div>
+        `
+      : '<p class="detail-search-empty-copy">No collection matches yet.</p>';
+  }
+
+  if (tab === "users") {
+    const currentName = getProfileDisplayName(currentUserProfile, currentUser);
+    const username = getProfileUsername(currentUserProfile, currentUser);
+    const matchesCurrent =
+      currentUser &&
+      `${currentName} ${username} ${currentUser?.email || ""}`.toLowerCase().includes(query);
+
+    return matchesCurrent
+      ? `
+          <div class="detail-person-result-list">
+            <a class="detail-person-result" href="/profile.html">
+              <span class="detail-person-result-avatar">${escapeHtml((username || currentName || "MM").slice(0, 2).toUpperCase())}</span>
+              <span>
+                <strong>${escapeHtml(currentName || "MovieMate Member")}</strong>
+                <small>@${escapeHtml(username || "member")} • Your profile</small>
+              </span>
+            </a>
+          </div>
+        `
+      : '<p class="detail-search-empty-copy">User search is ready for signed-in profiles. Try your own username here.</p>';
+  }
+
+  const matches = titles
+    .filter((title) => {
+      const haystack = [
+        title.title,
+        title.description,
+        title.genre,
+        title.type,
+        title.language.join(" "),
+        formatPlatforms(title.platforms),
+        title.director,
+        title.mainLead,
+        title.heroine,
+        ...(title.cast || []).map((person) => `${person.name} ${person.role || ""}`),
+        ...(title.crew || []).map((person) => `${person.name} ${person.role || ""}`)
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(query);
+    })
+    .slice(0, 8);
+
+  return matches.length
+    ? `
+        <div class="detail-header-card-grid detail-header-card-grid-search">
+          ${matches.map(movieCardTemplate).join("")}
+        </div>
+      `
+    : '<p class="detail-search-empty-copy">No title matches yet. Try a different movie, show, anime, cast, or crew name.</p>';
+}
+
+function detailHeaderSearchPanelTemplate() {
+  const tabs = [
+    ["content", "Content"],
+    ["collections", "Collections"],
+    ["castcrew", "Cast & Crew"],
+    ["users", "Users"]
+  ];
+
+  return `
+    <div class="detail-header-panel-surface detail-header-panel-search-surface">
+      <div class="detail-header-search-shell">
+        <label class="detail-header-search-field">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="5.5"></circle><path d="m16 16 4 4"></path></svg>
+          <input id="detailHeaderSearchInput" type="search" value="${escapeHtml(detailHeaderPanelState.searchQuery)}" placeholder="Search for Movies, Shows, Anime, Cast & Crew or Users..." />
+        </label>
+        <div class="detail-header-tab-row">
+          ${tabs
+            .map(
+              ([value, label]) => `
+                <button class="detail-header-tab ${detailHeaderPanelState.searchTab === value ? "active" : ""}" type="button" data-detail-search-tab="${value}">
+                  ${label}
+                </button>
+              `
+            )
+            .join("")}
+        </div>
+        <div class="detail-header-search-results" id="detailHeaderSearchResults">
+          ${detailHeaderSearchResultsTemplate()}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getDetailSchedulePanelTitles(titles, windowKey, typeKey) {
+  const today = new Date().toISOString().slice(0, 10);
+  const futureThreshold = new Date();
+  futureThreshold.setDate(futureThreshold.getDate() + 45);
+
+  let items = titles.filter((title) => (typeKey === "all" ? true : title.type === typeKey));
+
+  if (windowKey === "released") {
+    items = items
+      .filter((title) => title.releaseDate && getComparableReleaseDate(title.releaseDate) && getComparableReleaseDate(title.releaseDate) <= today)
+      .sort((left, right) => (right.releaseDate || "").localeCompare(left.releaseDate || ""));
+  } else if (windowKey === "upcoming") {
+    items = items
+      .filter((title) => title.releaseDate && getComparableReleaseDate(title.releaseDate) > today)
+      .sort((left, right) => (left.releaseDate || "").localeCompare(right.releaseDate || ""));
+  } else {
+    items = items
+      .filter((title) => {
+        if (title.status !== "Upcoming") {
+          return false;
+        }
+
+        if (!title.releaseDate) {
+          return true;
+        }
+
+        const comparable = getComparableReleaseDate(title.releaseDate);
+        return !comparable || new Date(`${comparable}T00:00:00`) > futureThreshold;
+      })
+      .sort((left, right) => (left.releaseDate || "9999-12-31").localeCompare(right.releaseDate || "9999-12-31"));
+  }
+
+  return items.slice(0, 18);
+}
+
+function detailHeaderSchedulePanelTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const items = getDetailSchedulePanelTitles(titles, detailHeaderPanelState.scheduleWindow, detailHeaderPanelState.scheduleType);
+  const windows = [
+    ["released", "Released"],
+    ["upcoming", "Upcoming"],
+    ["announced", "Announced"]
+  ];
+  const types = [
+    ["all", "All"],
+    ["Movie", "Movies"],
+    ["Series", "Shows"]
+  ];
+
+  return `
+    <div class="detail-header-panel-surface">
+      <div class="detail-panel-title-row">
+        <span class="detail-panel-title-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2"></rect><path d="M8 3.5v4M16 3.5v4M4 9.5h16"></path></svg>
+          <span>Schedule</span>
+        </span>
+      </div>
+      <div class="detail-header-schedule-shell">
+        <aside class="detail-header-schedule-sidebar">
+          ${windows
+            .map(
+              ([value, label]) => `
+                <button class="detail-schedule-menu-btn ${detailHeaderPanelState.scheduleWindow === value ? "active" : ""}" type="button" data-detail-schedule-window="${value}">
+                  ${label}
+                </button>
+              `
+            )
+            .join("")}
+        </aside>
+        <section class="detail-header-schedule-main">
+          <div class="detail-header-pill-row">
+            ${types
+              .map(
+                ([value, label]) => `
+                  <button class="detail-header-pill ${detailHeaderPanelState.scheduleType === value ? "active" : ""}" type="button" data-detail-schedule-type="${value}">
+                    ${label}
+                  </button>
+                `
+              )
+              .join("")}
+          </div>
+          <div class="detail-header-schedule-grid">
+            ${items.length ? items.map(scheduleCardTemplate).join("") : '<p class="detail-search-empty-copy">No schedule items match this filter right now.</p>'}
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+}
+
+function detailHeaderExplorePanelTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const talkTitles = getCuratedTitles(
+    titles,
+    (title) => title.trending || title.importBuckets.includes("trending") || getInterestScore(title) > 120,
+    (left, right) => getInterestScore(right) - getInterestScore(left),
+    10
+  );
+  const districtTitles = getCuratedTitles(
+    titles,
+    (title) => title.pinned || getReactionStats(title).recommendedPercent >= 65,
+    (left, right) => getReactionStats(right).recommendedPercent - getReactionStats(left).recommendedPercent,
+    6
+  );
+  const mostInterested = [...titles].sort(compareMostInterestedTitles).slice(0, 5);
+
+  return `
+    <div class="detail-header-panel-surface">
+      <div class="detail-panel-title-row">
+        <span class="detail-panel-title-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.25"></circle><circle cx="12" cy="12" r="2.25"></circle></svg>
+          <span>Explore</span>
+        </span>
+      </div>
+      <div class="detail-header-explore-shell">
+        <section class="detail-header-explore-main">
+          <div class="detail-header-feature-block">
+            <h3>Talk Of The Town</h3>
+            <div class="detail-header-card-grid">
+              ${talkTitles.map(featuredCardTemplate).join("")}
+            </div>
+          </div>
+          <div class="detail-header-feature-block">
+            <h3>Watch It With District</h3>
+            <div class="detail-header-card-grid">
+              ${districtTitles.map(featuredCardTemplate).join("")}
+            </div>
+          </div>
+        </section>
+        <aside class="detail-header-explore-side">
+          <div class="detail-header-ad-card">
+            <span class="detail-header-ad-badge">Crunchyroll</span>
+            <strong>ANi-MAY</strong>
+            <small>Mega fan offer and anime season picks.</small>
+          </div>
+          <div class="detail-header-most-card">
+            <div class="detail-search-panel-meta compact">
+              <strong>Most Interested</strong>
+              <span>This Week</span>
+            </div>
+            <div class="detail-header-interest-list">
+              ${mostInterested.map(mostInterestedItemTemplate).join("")}
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  `;
+}
+
+function detailHeaderCollectionsPanelTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const mode = detailHeaderPanelState.collectionsMode || "discover";
+  const modes = [
+    ["discover", "Discover"],
+    ["mine", "My Collections"],
+    ["saved", "Saved"]
+  ];
+
+  if ((mode === "mine" || mode === "saved") && !isSignedIn()) {
+    return `
+      <div class="detail-header-panel-surface">
+        <div class="detail-panel-title-row">
+          <span class="detail-panel-title-mark">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v14l-6.5-3.8L5.5 20V6A1.5 1.5 0 0 1 7 4.5Z"></path></svg>
+            <span>Collections</span>
+          </span>
+        </div>
+        <div class="detail-header-collections-shell">
+          <aside class="detail-header-collections-sidebar">
+            ${modes
+              .map(
+                ([value, label]) => `
+                  <button class="detail-schedule-menu-btn ${mode === value ? "active" : ""}" type="button" data-detail-collections-mode="${value}">
+                    ${label}
+                  </button>
+                `
+              )
+              .join("")}
+          </aside>
+          <section class="detail-header-collections-main detail-header-collections-empty">
+            <p class="detail-search-empty-copy">Sign in to open your personal collections and saved shelves here.</p>
+          </section>
+        </div>
+      </div>
+    `;
+  }
+
+  const collections = getCollectionsByMode(titles, mode);
+
+  return `
+    <div class="detail-header-panel-surface">
+      <div class="detail-panel-title-row">
+        <span class="detail-panel-title-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v14l-6.5-3.8L5.5 20V6A1.5 1.5 0 0 1 7 4.5Z"></path></svg>
+          <span>Collections</span>
+        </span>
+      </div>
+      <div class="detail-header-collections-shell">
+        <aside class="detail-header-collections-sidebar">
+          ${modes
+            .map(
+              ([value, label]) => `
+                <button class="detail-schedule-menu-btn ${mode === value ? "active" : ""}" type="button" data-detail-collections-mode="${value}">
+                  ${label}
+                </button>
+              `
+            )
+            .join("")}
+        </aside>
+        <section class="detail-header-collections-main">
+          <div class="detail-header-collections-grid">
+            ${
+              collections.length
+                ? collections.map(collectionCardTemplate).join("")
+                : '<p class="detail-search-empty-copy">No collections are ready in this section yet.</p>'
+            }
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+}
+
+function detailHeaderBrowsePanelTemplate() {
+  const cards = [
+    { label: "Category", icon: "◫", href: "/?browseFocus=category#browse" },
+    { label: "Genre", icon: "◎", href: "/?browseFocus=genre#browse" },
+    { label: "Country", icon: "◍", href: "/?browseFocus=country#browse" },
+    { label: "Language", icon: "文", href: "/?browseFocus=language#browse" },
+    { label: "Community", icon: "☺", href: "/#collections" },
+    { label: "District", icon: "★", href: "/#trending" },
+    { label: "Bollywood", icon: "हि", href: "/#bollywoodRowHeading" },
+    { label: "South", icon: "ச", href: "/#southRowHeading" },
+    { label: "Netflix", icon: "N", href: "/#netflixRowHeading" },
+    { label: "Schedule", icon: "◷", href: "/#schedule" },
+    { label: "Prime", icon: "P", href: "/#primeRowHeading" },
+    { label: "Trending", icon: "◎", href: "/#trending" }
+  ];
+
+  return `
+    <div class="detail-header-panel-surface detail-header-panel-surface-floating">
+      <div class="detail-header-browse-shell">
+        <div class="detail-header-browse-copy">
+          <p>Browse by</p>
+          <h3>Explore faster</h3>
+        </div>
+        <div class="detail-header-browse-grid">
+        ${cards
+          .map(
+            ({ label, icon, href }) => `
+              <a class="detail-space-filter-card detail-browse-filter-card ${label === "Category" ? "active" : ""}" href="${href}">
+                <span class="detail-browse-filter-icon" aria-hidden="true">${icon}</span>
+                <span>${label}</span>
+              </a>
+            `
+          )
+          .join("")}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function getTitleSpacesTopics(title) {
   const text = [
     title.title,
@@ -2654,14 +4868,15 @@ function getTitleSpacesTopics(title) {
     title.description,
     title.country,
     ...(title.language || []),
-    ...(title.importBuckets || []),
-    ...(title.platforms || [])
+    ...(title.importBuckets || [])
   ]
     .join(" ")
     .toLowerCase();
   const topics = new Set(["International"]);
 
-  if (/(india|indian|hindi|tamil|telugu|malayalam|kannada|bollywood|south|nepal|nepali)/.test(text)) {
+  if (
+    /(india|indian|hindi|tamil|telugu|malayalam|kannada|bollywood|south|nepal|nepali)/.test(text)
+  ) {
     topics.add("Indian");
     topics.delete("International");
   }
@@ -2681,43 +4896,57 @@ function getTitleSpacesTopics(title) {
   return topics;
 }
 
-function getHomeSpacesPostLabel(title, mode) {
+function getSpacesPostLabel(title, mode) {
   if (mode === "discussion") {
     return "Discussion";
   }
 
   if (title.releaseDate && title.releaseDate > new Date().toISOString().slice(0, 10)) {
-    return "Upcoming Report";
+    return "Announcement";
   }
 
-  if (title.platforms?.length) {
-    return "OTT Report";
+  if (title.description) {
+    return "Details Report";
   }
 
-  return "Details Report";
+  return "Feed Post";
 }
 
-function getHomeSpacesPostCopy(title, mode) {
+function truncateText(text, maxLength) {
+  const normalized = String(text || "").trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength - 1).trim()}…`;
+}
+
+function getSpacesPostCopy(title, mode) {
   if (mode === "discussion") {
     const count = title.comments?.length || 0;
     return count
       ? `${count} viewer ${count === 1 ? "comment" : "comments"} on this ${title.type.toLowerCase()}.`
-      : `Open the discussion for ${title.title}.`;
+      : `Start a discussion about this ${title.type.toLowerCase()}.`;
   }
 
-  return title.description || `${title.title} is getting attention from MovieMate viewers.`;
+  if (title.description) {
+    return truncateText(title.description, 150);
+  }
+
+  return `${title.type} update • ${title.genre || "MovieMate pick"}`;
 }
 
-function getHomeSpacesTitles(titles, mode, activeTopics) {
+function getDetailSpacesPanelTitles(titles, mode, activeTopics) {
   const topicSet = new Set(activeTopics || []);
 
   return [...titles]
     .filter((title) => {
-      if (!topicSet.size) {
+      if (mode === "discussion" && !(title.comments?.length || title.trending || getInterestedCount(title) > 0)) {
         return false;
       }
 
-      if (mode === "discussion" && !(title.comments?.length || title.trending || getInterestedCount(title) > 0)) {
+      if (!topicSet.size) {
         return false;
       }
 
@@ -2730,45 +4959,317 @@ function getHomeSpacesTitles(titles, mode, activeTopics) {
 
       return getInterestScore(right) - getInterestScore(left);
     })
-    .slice(0, 14);
+    .slice(0, 12);
 }
 
-function getHomeSpacesActiveTopics() {
-  const active = Array.from(document.querySelectorAll("[data-home-spaces-topic].active"))
-    .map((button) => button.dataset.homeSpacesTopic)
-    .filter(Boolean);
-  return active.length ? active : ["Indian", "International", "Anime", "Sports", "Games"];
-}
+function detailHeaderSpacesPanelTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const mode = detailHeaderPanelState.spacesFeed || "feed";
+  const topicButtons = ["Indian", "International", "Anime", "Sports", "Games"];
+  const activeTopics = Array.isArray(detailHeaderPanelState.spacesTopics)
+    ? detailHeaderPanelState.spacesTopics
+    : topicButtons;
+  const discussionTitles = getDetailSpacesPanelTitles(titles, mode, activeTopics);
 
-function homeSpacesCardTemplate(title, mode) {
   return `
-    <a class="home-space-card" href="${buildTitleUrl(title.id)}${mode === "discussion" ? "#discussions" : ""}">
-      <img src="${getOptimizedImageUrl(title.backdrop || title.image, 900)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
-      <span>${escapeHtml(getHomeSpacesPostLabel(title, mode))}</span>
-      <h3>${escapeHtml(title.title)}</h3>
-      <p>${escapeHtml(getHomeSpacesPostCopy(title, mode))}</p>
-      <small>${escapeHtml(title.type)} • ${escapeHtml(formatPlatforms(title.platforms || []))}</small>
-    </a>
+    <div class="detail-header-panel-surface detail-header-panel-surface-spaces">
+      <div class="detail-panel-title-row detail-panel-title-row-compact">
+        <span class="detail-panel-title-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-3 3v-3H5a2 2 0 0 1-2-2V8a3 3 0 0 1 3-3h1"></path><path d="M16 6h2a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-1l-2 2v-2"></path></svg>
+          <span>Spaces</span>
+        </span>
+        <p>Movie and series reports, detail updates, announcements, and viewer discussions appear here.</p>
+      </div>
+      <div class="detail-header-spaces-shell">
+        <aside class="detail-header-spaces-sidebar">
+          <button class="detail-schedule-menu-btn detail-space-mode-btn ${mode === "feed" ? "active" : ""}" type="button" data-detail-spaces-feed="feed">
+            <span class="detail-space-mode-icon" aria-hidden="true">▤</span>
+            Feed
+          </button>
+          <button class="detail-schedule-menu-btn detail-space-mode-btn ${mode === "discussion" ? "active" : ""}" type="button" data-detail-spaces-feed="discussion">
+            <span class="detail-space-mode-icon" aria-hidden="true">▱</span>
+            Discussion
+          </button>
+          <div class="detail-header-spaces-topics">
+            <span>Topics</span>
+            ${topicButtons
+              .map(
+                (label) => `
+                  <button class="detail-space-topic ${activeTopics.includes(label) ? "active" : ""}" type="button" data-detail-spaces-topic="${label}" aria-pressed="${activeTopics.includes(label) ? "true" : "false"}">
+                    <span>✓</span>
+                    ${label}
+                  </button>
+                `
+              )
+              .join("")}
+          </div>
+        </aside>
+        <section class="detail-header-spaces-feed">
+          ${discussionTitles
+            .map(
+              (title) => `
+                <a class="detail-space-story-card" href="${buildTitleUrl(title.id)}${mode === "discussion" ? "#discussions" : ""}">
+                  <div class="detail-space-story-media">
+                    <img src="${getOptimizedImageUrl(title.backdrop || title.image, 900)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+                    ${title.trailerUrl ? '<span class="detail-space-play" aria-hidden="true">▶</span>' : ""}
+                  </div>
+                  <div class="detail-space-story-copy">
+                    <span>${getSpacesPostLabel(title, mode)}</span>
+                    <h3>${escapeHtml(title.title)}</h3>
+                    <p>${escapeHtml(getSpacesPostCopy(title, mode))}</p>
+                    <small>By MovieMate • ${mode === "discussion" ? `${title.comments?.length || 0} comments` : `${getInterestedCount(title)} interested`}</small>
+                  </div>
+                </a>
+              `
+            )
+            .join("") || '<p class="detail-search-empty-copy">No space posts match the selected topics yet.</p>'}
+        </section>
+      </div>
+    </div>
   `;
 }
 
-function renderHomeSpacesFeed(titles) {
-  const feed = document.querySelector("#homeSpacesFeed");
+function detailHeaderNotificationsPanelTemplate() {
+  const titles = detailHeaderPanelState.titles || [];
+  const notifications = buildUserNotifications(titles).slice(0, 8);
 
-  if (!feed) {
+  return `
+    <div class="detail-header-panel-surface detail-header-panel-surface-floating">
+      <div class="detail-panel-title-row">
+        <span class="detail-panel-title-mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a4 4 0 0 1 4 4v2.1c0 1.2.4 2.3 1.1 3.2l1 1.2H5.9l1-1.2c.7-.9 1.1-2 1.1-3.2V8.5a4 4 0 0 1 4-4Z"></path><path d="M9.5 18a2.5 2.5 0 0 0 5 0"></path></svg>
+          <span>Notifications</span>
+        </span>
+      </div>
+      <div class="notification-feed detail-header-notification-feed">
+        ${
+          notifications.length
+            ? notifications.map(userNotificationTemplate).join("")
+            : '<p class="detail-search-empty-copy">No notifications yet. Saved titles and interested titles will show updates here.</p>'
+        }
+      </div>
+    </div>
+  `;
+}
+
+async function renderDetailHeaderPanel() {
+  const root = getDetailHeaderPanelRoot();
+  const mode = detailHeaderPanelState.mode;
+
+  if (!root || !mode) {
+    closeDetailHeaderPanel();
     return;
   }
 
-  const mode = document.querySelector("[data-home-spaces-mode].active")?.dataset.homeSpacesMode || "feed";
-  const items = getHomeSpacesTitles(titles, mode, getHomeSpacesActiveTopics());
-  feed.innerHTML = items.length
-    ? items.map((title) => homeSpacesCardTemplate(title, mode)).join("")
-    : '<p class="empty-state">No spaces match these filters yet.</p>';
+  await ensureDetailHeaderTitles();
+
+  let markup = "";
+  if (mode === "search") {
+    markup = detailHeaderSearchPanelTemplate();
+  } else if (mode === "schedule") {
+    markup = detailHeaderSchedulePanelTemplate();
+  } else if (mode === "collections") {
+    markup = detailHeaderCollectionsPanelTemplate();
+  } else if (mode === "explore") {
+    markup = detailHeaderExplorePanelTemplate();
+  } else if (mode === "spaces") {
+    markup = detailHeaderSpacesPanelTemplate();
+  } else if (mode === "browse") {
+    markup = detailHeaderBrowsePanelTemplate();
+  } else if (mode === "notifications") {
+    markup = detailHeaderNotificationsPanelTemplate();
+  }
+
+  root.innerHTML = markup;
+  root.classList.remove("hidden");
+  root.setAttribute("aria-hidden", "false");
+  root.dataset.detailPanelMode = mode;
+  document.body.classList.add("detail-header-panel-open");
+  setActiveDetailHeaderTrigger(mode);
+
+  if (mode === "search") {
+    const input = root.querySelector("#detailHeaderSearchInput");
+    window.requestAnimationFrame(() => {
+      input?.focus();
+      input?.setSelectionRange(input.value.length, input.value.length);
+    });
+  }
+}
+
+function setupDetailHeaderPanels() {
+  const panelRoot = getDetailHeaderPanelRoot();
+
+  if (!panelRoot || panelRoot.dataset.bound === "true") {
+    return;
+  }
+
+  panelRoot.dataset.bound = "true";
+
+  getDetailHeaderPanelTriggers().forEach((trigger) => {
+    trigger.addEventListener("click", async (event) => {
+      event.preventDefault();
+      const mode = trigger.dataset.detailPanelTrigger || "";
+
+      if (!mode) {
+        return;
+      }
+
+      if (mode === "search") {
+        closeDetailHeaderPanel();
+        await openGlobalSearchModal();
+        return;
+      }
+
+      if (detailHeaderPanelState.mode === mode) {
+        closeDetailHeaderPanel();
+        return;
+      }
+
+      detailHeaderPanelState.mode = mode;
+      await renderDetailHeaderPanel();
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && detailHeaderPanelState.mode) {
+      closeDetailHeaderPanel();
+    }
+  });
+
+  panelRoot.addEventListener("click", async (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+
+    if (!target) {
+      return;
+    }
+
+    const tabButton = target.closest("[data-detail-search-tab]");
+    if (tabButton) {
+      detailHeaderPanelState.searchTab = tabButton.dataset.detailSearchTab || "content";
+      await renderDetailHeaderPanel();
+      return;
+    }
+
+    const historyChip = target.closest("[data-detail-search-chip]");
+    if (historyChip) {
+      detailHeaderPanelState.searchQuery = historyChip.dataset.detailSearchChip || "";
+      rememberDetailHeaderSearch(detailHeaderPanelState.searchQuery);
+      await renderDetailHeaderPanel();
+      return;
+    }
+
+    if (target.closest("[data-detail-search-clear='true']")) {
+      saveDetailHeaderSearchHistory([]);
+      if (detailHeaderPanelState.mode === "search") {
+        await renderDetailHeaderPanel();
+      }
+      return;
+    }
+
+    const scheduleWindowButton = target.closest("[data-detail-schedule-window]");
+    if (scheduleWindowButton) {
+      detailHeaderPanelState.scheduleWindow = scheduleWindowButton.dataset.detailScheduleWindow || "released";
+      await renderDetailHeaderPanel();
+      return;
+    }
+
+    const scheduleTypeButton = target.closest("[data-detail-schedule-type]");
+    if (scheduleTypeButton) {
+      detailHeaderPanelState.scheduleType = scheduleTypeButton.dataset.detailScheduleType || "all";
+      await renderDetailHeaderPanel();
+      return;
+    }
+
+    const collectionsModeButton = target.closest("[data-detail-collections-mode]");
+    if (collectionsModeButton) {
+      detailHeaderPanelState.collectionsMode = collectionsModeButton.dataset.detailCollectionsMode || "discover";
+      await renderDetailHeaderPanel();
+      return;
+    }
+
+    const spacesFeedButton = target.closest("[data-detail-spaces-feed]");
+    if (spacesFeedButton) {
+      detailHeaderPanelState.spacesFeed = spacesFeedButton.dataset.detailSpacesFeed || "feed";
+      await renderDetailHeaderPanel();
+      return;
+    }
+
+    const spacesTopicButton = target.closest("[data-detail-spaces-topic]");
+    if (spacesTopicButton) {
+      const nextTopic = spacesTopicButton.dataset.detailSpacesTopic || "all";
+      const fallbackTopics = ["Indian", "International", "Anime", "Sports", "Games"];
+      const activeTopics = new Set(
+        Array.isArray(detailHeaderPanelState.spacesTopics) ? detailHeaderPanelState.spacesTopics : fallbackTopics
+      );
+
+      if (activeTopics.has(nextTopic)) {
+        activeTopics.delete(nextTopic);
+      } else {
+        activeTopics.add(nextTopic);
+      }
+
+      detailHeaderPanelState.spacesTopics = fallbackTopics.filter((topic) => activeTopics.has(topic));
+      await renderDetailHeaderPanel();
+    }
+  });
+
+  panelRoot.addEventListener("input", (event) => {
+    const input = event.target instanceof HTMLInputElement ? event.target : null;
+
+    if (!input || input.id !== "detailHeaderSearchInput") {
+      return;
+    }
+
+    detailHeaderPanelState.searchQuery = input.value;
+    const results = panelRoot.querySelector("#detailHeaderSearchResults");
+    if (results) {
+      results.innerHTML = detailHeaderSearchResultsTemplate();
+    }
+  });
+
+  panelRoot.addEventListener("keydown", (event) => {
+    const input = event.target instanceof HTMLInputElement ? event.target : null;
+
+    if (!input || input.id !== "detailHeaderSearchInput" || event.key !== "Enter") {
+      return;
+    }
+
+    rememberDetailHeaderSearch(input.value);
+  });
+
+  panelRoot.addEventListener("click", (event) => {
+    const link = event.target instanceof HTMLElement ? event.target.closest("a") : null;
+
+    if (!link) {
+      return;
+    }
+
+    if (detailHeaderPanelState.mode === "search") {
+      rememberDetailHeaderSearch(detailHeaderPanelState.searchQuery);
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!detailHeaderPanelState.mode) {
+      return;
+    }
+
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    if (!target) {
+      return;
+    }
+
+    if (target.closest("#detailHeaderPanel") || target.closest("[data-detail-panel-trigger]")) {
+      return;
+    }
+
+    closeDetailHeaderPanel();
+  });
 }
 
 function collectionCardTemplate(collection) {
   return `
-    <a class="collection-card" href="../collection.html?mode=${encodeURIComponent(collection.mode || "discover")}&slug=${encodeURIComponent(collection.slug || slugify(collection.title))}">
+    <a class="collection-card" href="collection.html?mode=${encodeURIComponent(collection.mode || "discover")}&slug=${encodeURIComponent(collection.slug || slugify(collection.title))}">
       <img class="collection-cover" src="${collection.image}" alt="${escapeHtml(collection.title)} cover" loading="lazy" decoding="async" />
       <div class="collection-copy">
         <h3>${escapeHtml(collection.title)}</h3>
@@ -3203,7 +5704,7 @@ function renderCollectionPage() {
           ${collections
             .map(
               (collection) => `
-                <a class="collection-link-card ${collection.slug === selected.slug ? "active" : ""}" href="../collection.html?mode=${encodeURIComponent(mode)}&slug=${encodeURIComponent(collection.slug)}">
+                <a class="collection-link-card ${collection.slug === selected.slug ? "active" : ""}" href="collection.html?mode=${encodeURIComponent(mode)}&slug=${encodeURIComponent(collection.slug)}">
                   <strong>${escapeHtml(collection.title)}</strong>
                   <small>${collection.count} items</small>
                 </a>
@@ -3248,6 +5749,7 @@ function buildUserNotifications(titles) {
     Object.entries(profile.watchStatus || {})
       .filter(([, value]) => Boolean(normalizeWatchStatusValue(value)))
       .map(([titleId]) => titleId)
+      .filter((titleId) => !titleId.includes("::season-"))
   );
   const derivedNotifications = titles
     .filter((title) => savedSet.has(title.id) || activeWatchTitles.has(title.id))
@@ -3258,19 +5760,22 @@ function buildUserNotifications(titles) {
       const savedTracked = savedSet.has(title.id);
       const interestedTracked = activeWatchTitles.has(title.id);
 
-      if (title.status === "Upcoming" && title.releaseDate) {
-        const releaseDate = new Date(`${title.releaseDate}T00:00:00`);
-        const today = new Date();
+      if (isUpcomingTitle(title) && title.releaseDate) {
+        const comparable = getComparableReleaseDate(title.releaseDate);
 
-        if (!Number.isNaN(releaseDate.getTime()) && releaseDate.getTime() <= today.getTime()) {
-          items.push({
-            id: `release-${title.id}-${title.releaseDate}`,
-            label: savedTracked ? "Saved title released" : "Interested title released",
-            title: title.title,
-            copy: `${title.type} • ${formatReleaseDate(title.releaseDate)} • now ready to watch.`,
-            href: buildTitleUrl(title.id),
-            createdAtMs: updatedAtMs || createdAtMs
-          });
+        if (comparable) {
+          const today = new Date().toISOString().slice(0, 10);
+
+          if (comparable <= today) {
+            items.push({
+              id: `release-${title.id}-${comparable}`,
+              label: savedTracked ? "Saved title released" : "Interested title released",
+              title: title.title,
+              copy: `${getDisplayTypeLabel(title)} • ${formatReleaseDate(title.releaseDate)} • now ready to watch.`,
+              href: buildTitleUrl(title.id),
+              createdAtMs: updatedAtMs || createdAtMs
+            });
+          }
         }
       }
 
@@ -3304,6 +5809,7 @@ function buildUserNotifications(titles) {
     .sort((a, b) => getCreatedAtMs(b.createdAt) - getCreatedAtMs(a.createdAt))
     .slice(0, 5)
     .map((title) => ({
+      id: `new-${title.id}`,
       label: "New title added",
       title: title.title,
       copy: `${title.type} • ${formatReleaseDate(title.releaseDate)} • now live on MovieMate.`,
@@ -3315,6 +5821,7 @@ function buildUserNotifications(titles) {
     .sort((a, b) => getInterestScore(b) - getInterestScore(a))
     .slice(0, 3)
     .map((title) => ({
+      id: `great-${title.id}`,
       label: "All-time great pick",
       title: title.title,
       copy: `${getReactionStats(title).recommendedPercent}% recommend • ${title.genre}`,
@@ -3331,7 +5838,7 @@ function buildUserNotifications(titles) {
 function renderUserNotifications(titles) {
   const list = document.querySelector("#userNotificationsList");
   const emptyState = document.querySelector("#userNotificationsEmpty");
-  const dots = document.querySelectorAll("[data-top-notification-dot]");
+  const dot = document.querySelector("#topNotificationDot");
 
   if (!list || !emptyState) {
     return;
@@ -3344,9 +5851,9 @@ function renderUserNotifications(titles) {
   list.innerHTML = items.map(userNotificationTemplate).join("");
   emptyState.classList.toggle("hidden", items.length > 0);
 
-  dots.forEach((dot) => {
+  if (dot) {
     dot.classList.toggle("visible", unseenCount > 0);
-  });
+  }
 }
 
 function filterTitles(titles) {
@@ -3380,6 +5887,150 @@ function refreshBrowseResults() {
   const filtered = filterTitles(visibleTitles);
   renderTitleGrid(filtered);
   renderSearchSuggestions(visibleTitles);
+}
+
+function focusBrowseTargetFromUrl() {
+  if (document.body.dataset.page !== "home") {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const focusTarget = params.get("browseFocus");
+
+  if (!focusTarget) {
+    return;
+  }
+
+  const targetByFocus = {
+    category: "#typeFilter",
+    genre: "#genreFilter",
+    language: "#languageFilter"
+  };
+  const selector = targetByFocus[focusTarget] || "#browse";
+  const target = document.querySelector(selector) || document.querySelector("#browse");
+
+  window.setTimeout(() => {
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (target instanceof HTMLElement && typeof target.focus === "function") {
+      target.focus({ preventScroll: true });
+    }
+  }, 260);
+}
+
+const HOME_FULLSCREEN_SECTION_IDS = new Set(["browse", "schedule", "collections"]);
+
+function isHomeFullscreenSectionHash(hash) {
+  return HOME_FULLSCREEN_SECTION_IDS.has((hash || "").replace("#", ""));
+}
+
+function setHomeNavActive(hash) {
+  const normalizedHash = hash || "#trending";
+  document.querySelectorAll(".explore-nav-link[href], .mobile-dock-link[href]").forEach((link) => {
+    const linkHash = new URL(link.getAttribute("href") || "#trending", window.location.href).hash || "#trending";
+    link.classList.toggle("active", linkHash === normalizedHash);
+  });
+}
+
+function closeHomeFullscreenSection(options = {}) {
+  document.querySelectorAll(".home-section-panel-open").forEach((section) => {
+    section.classList.remove("home-section-panel-open");
+    section.setAttribute("aria-hidden", "true");
+  });
+  document.body.classList.remove("home-section-panel-active");
+
+  if (options.restoreExploreHash) {
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#trending`);
+    setHomeNavActive("#trending");
+  }
+}
+
+function ensureHomeSectionCloseButton(section) {
+  if (section.querySelector("[data-home-section-close]")) {
+    return;
+  }
+
+  const button = document.createElement("button");
+  button.className = "home-section-panel-close";
+  button.type = "button";
+  button.setAttribute("aria-label", "Close section");
+  button.dataset.homeSectionClose = "true";
+  button.textContent = "Close";
+  section.prepend(button);
+}
+
+function openHomeFullscreenSection(hashOrId) {
+  if (document.body.dataset.page !== "home") {
+    return false;
+  }
+
+  const id = (hashOrId || "").replace("#", "");
+  const section = document.getElementById(id);
+
+  if (!HOME_FULLSCREEN_SECTION_IDS.has(id) || !section) {
+    return false;
+  }
+
+  closeHomeFullscreenSection();
+  ensureHomeSectionCloseButton(section);
+  section.classList.add("home-section-panel-open");
+  section.setAttribute("aria-hidden", "false");
+  document.body.classList.add("home-section-panel-active");
+  window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
+  setHomeNavActive(`#${id}`);
+  window.setTimeout(() => {
+    section.querySelector("input, select, button, a")?.focus({ preventScroll: true });
+  }, 80);
+
+  return true;
+}
+
+function setupHomeFullscreenSections() {
+  if (document.body.dataset.page !== "home") {
+    return;
+  }
+
+  HOME_FULLSCREEN_SECTION_IDS.forEach((id) => {
+    const section = document.getElementById(id);
+    section?.setAttribute("aria-hidden", "true");
+  });
+
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+
+    if (!target) {
+      return;
+    }
+
+    if (target.closest("[data-home-section-close]")) {
+      event.preventDefault();
+      closeHomeFullscreenSection({ restoreExploreHash: true });
+      return;
+    }
+
+    const link = target.closest("a[href]");
+    const hash = link ? new URL(link.getAttribute("href") || "", window.location.href).hash : "";
+
+    if (isHomeFullscreenSectionHash(hash)) {
+      event.preventDefault();
+      openHomeFullscreenSection(hash);
+      return;
+    }
+
+    if (hash === "#trending" && document.body.classList.contains("home-section-panel-active")) {
+      event.preventDefault();
+      closeHomeFullscreenSection({ restoreExploreHash: true });
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && document.body.classList.contains("home-section-panel-active")) {
+      closeHomeFullscreenSection({ restoreExploreHash: true });
+    }
+  });
+
+  if (isHomeFullscreenSectionHash(window.location.hash)) {
+    window.setTimeout(() => openHomeFullscreenSection(window.location.hash), 120);
+  }
 }
 
 function showMessage(selector, text) {
@@ -3432,7 +6083,6 @@ async function renderHomePage() {
   renderTrendingTitles(visibleTitles);
   renderCuratedExploreRows(visibleTitles);
   renderMostInterestedList(visibleTitles);
-  renderHomeSpacesFeed(visibleTitles);
   renderHeroStats(visibleTitles);
   updateOwnerToggle();
 
@@ -3448,6 +6098,7 @@ async function renderHomePage() {
       "languages"
     );
     refreshBrowseResults();
+    focusBrowseTargetFromUrl();
     renderScheduleGrid(visibleTitles);
     renderCollectionsGrid(visibleTitles);
     renderUserNotifications(visibleTitles);
@@ -3711,9 +6362,27 @@ function updateAuthUI() {
     const avatar = button.querySelector("[data-account-avatar]");
     const label = button.querySelector("[data-account-label]");
     const avatarData = getProfileAvatar(uiProfile, uiUser);
+    const displayName = getProfileDisplayName(uiProfile, uiUser);
+    const initials = getProfileInitials(uiProfile, uiUser);
+    const isCompactAccountButton =
+      Boolean(button.closest(".explore-mobile-header-bar")) ||
+      Boolean(button.closest(".mobile-dock")) ||
+      (
+        Boolean(button.closest(".explore-topbar")) &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(max-width: 920px)").matches
+      ) ||
+      (
+        button.classList.contains("account-chip") &&
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(max-width: 920px)").matches
+      );
+    const accountLabelText = isCompactAccountButton ? initials : displayName;
 
     if (signedInForUi) {
       button.classList.add("signed-in");
+      button.dataset.accountInitials = initials;
+      button.dataset.accountName = displayName;
       if (avatar) {
         if (avatarData.image) {
           avatar.textContent = "";
@@ -3722,7 +6391,7 @@ function updateAuthUI() {
           avatar.style.backgroundPosition = "center";
           avatar.style.backgroundRepeat = "no-repeat";
         } else {
-          avatar.textContent = getProfileInitials(uiProfile, uiUser);
+          avatar.textContent = initials;
           avatar.style.backgroundImage = "";
           avatar.style.backgroundSize = "";
           avatar.style.backgroundPosition = "";
@@ -3731,12 +6400,14 @@ function updateAuthUI() {
         avatar.classList.remove("hidden");
       }
       if (label) {
-        label.textContent = getProfileDisplayName(uiProfile, uiUser);
+        label.textContent = accountLabelText;
       } else {
-        button.textContent = getProfileDisplayName(uiProfile, uiUser);
+        button.textContent = accountLabelText;
       }
     } else {
       button.classList.remove("signed-in");
+      delete button.dataset.accountInitials;
+      delete button.dataset.accountName;
       if (avatar) {
         avatar.textContent = "MM";
         avatar.style.backgroundImage = "";
@@ -3803,10 +6474,10 @@ async function handleAuthSubmit(form) {
     await persistUserProfile({
       displayName: name || email
     });
-    await sendEmailVerification(credentials.user, buildAuthActionSettings());
+    await sendVerificationEmailSafely(credentials.user);
     showMessage(
       "#authMessage",
-      "Account created. Verification email sent. Check inbox, spam, and promotions."
+      getVerificationSuccessMessage(credentials.user?.email)
     );
     closeAuthModal();
     return;
@@ -3846,7 +6517,7 @@ function setupAuthModal() {
 
   document.querySelectorAll("[data-auth-toggle]").forEach((button) => {
     button.addEventListener("click", async () => {
-      if (isSignedIn() || button.classList.contains("signed-in")) {
+      if (isSignedIn()) {
         toggleAccountMenu(button);
         return;
       }
@@ -4210,7 +6881,7 @@ async function reactToTitle(titleId, nextReaction) {
     console.warn("Reaction saved locally, but profile sync failed.", error);
   });
 
-  updateDoc(doc(db, TITLES_COLLECTION, titleId), updates).catch((error) => {
+  withActionTimeout(updateDoc(doc(db, TITLES_COLLECTION, titleId), updates), "vote save").catch((error) => {
     console.warn("Vote aggregate sync failed.", error);
   });
 
@@ -4225,7 +6896,7 @@ async function deleteTitle(titleId) {
   clearReaction(titleId);
 }
 
-async function addComment(titleId, form) {
+async function addComment(titleId, form, options = {}) {
   if (!isSignedIn()) {
     requireAccount("post reviews and comments");
     return false;
@@ -4235,41 +6906,97 @@ async function addComment(titleId, form) {
   const name = getProfileDisplayName();
   const text = formData.get("comment")?.toString().trim() || "";
   const spoiler = formData.get("spoiler") === "on";
+  const seasonNumber = Number(options.seasonNumber || 0);
+  const reactionFromForm = formData.get("reaction")?.toString().trim() || "";
+  const reaction = reactionFromForm && REACTION_OPTIONS[reactionFromForm] ? reactionFromForm : getReaction(titleId);
 
   if (!text) {
     showMessage("#commentMessage", "Please write a review or comment first.");
     return false;
   }
 
-  const titleRef = doc(db, TITLES_COLLECTION, titleId);
+  const commentId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const comment = {
+    id: commentId,
+    userId: currentUser?.uid || "",
+    name,
+    text,
+    reaction: reaction && REACTION_OPTIONS[reaction] ? reaction : "",
+    spoiler,
+    seasonNumber,
+    helpfulCount: 0,
+    helpfulBy: [],
+    createdAt: new Date().toISOString()
+  };
+  const commentRef = doc(db, TITLES_COLLECTION, titleId, TITLE_COMMENTS_SUBCOLLECTION, commentId);
 
-  await runTransaction(db, async (transaction) => {
-    const snapshot = await transaction.get(titleRef);
+  await withActionTimeout(
+    setDoc(commentRef, comment),
+    "comment post"
+  );
 
-    if (!snapshot.exists()) {
-      throw new Error("Title not found.");
-    }
-
-    const data = normalizeTitle(snapshot);
-    transaction.update(titleRef, {
-      comments: [
-        {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          userId: currentUser?.uid || "",
-          name,
-          text,
-          spoiler,
-          createdAt: new Date().toISOString()
-        },
-        ...data.comments
-      ]
-    });
-  });
+  insertTitleCommentInCache(titleId, comment);
 
   return true;
 }
 
+function getCommentErrorMessage(error) {
+  const code = String(error?.code || "").toLowerCase();
+  const message = String(error?.message || "").toLowerCase();
+
+  if (code.includes("permission-denied") || message.includes("missing or insufficient permissions")) {
+    return "Comments are blocked by Firebase rules right now.";
+  }
+
+  if (code.includes("unauthenticated")) {
+    return "Please sign in again and try posting.";
+  }
+
+  if (code.includes("deadline-exceeded")) {
+    return "The request took too long. Please try again.";
+  }
+
+  if (code.includes("unavailable")) {
+    return "The connection is busy right now. Please try again.";
+  }
+
+  return "Could not post right now.";
+}
+
+function getActionErrorMessage(error, fallback = "Could not update right now.") {
+  const code = String(error?.code || "").toLowerCase();
+  const message = String(error?.message || "").toLowerCase();
+
+  if (code.includes("permission-denied") || message.includes("missing or insufficient permissions")) {
+    return "This action is blocked by Firebase rules right now.";
+  }
+
+  if (code.includes("unauthenticated")) {
+    return "Please sign in again and try once more.";
+  }
+
+  if (code.includes("deadline-exceeded") || message.includes("timed out")) {
+    return "The request took too long. Please try again.";
+  }
+
+  if (code.includes("unavailable") || code.includes("resource-exhausted")) {
+    return "MovieMate is busy right now. Please try again in a moment.";
+  }
+
+  return fallback;
+}
+
 async function deleteComment(titleId, commentId) {
+  const commentRef = doc(db, TITLES_COLLECTION, titleId, TITLE_COMMENTS_SUBCOLLECTION, commentId);
+
+  try {
+    await deleteDoc(commentRef);
+    removeTitleCommentFromCache(titleId, commentId);
+    return;
+  } catch (error) {
+    console.warn("Could not delete from comment subcollection, trying legacy comment array.", error);
+  }
+
   const titleRef = doc(db, TITLES_COLLECTION, titleId);
 
   await runTransaction(db, async (transaction) => {
@@ -4284,6 +7011,124 @@ async function deleteComment(titleId, commentId) {
       comments: data.comments.filter((comment) => comment.id !== commentId)
     });
   });
+}
+
+async function updateComment(titleId, commentId, partial) {
+  const commentRef = doc(db, TITLES_COLLECTION, titleId, TITLE_COMMENTS_SUBCOLLECTION, commentId);
+
+  await withActionTimeout(
+    updateDoc(commentRef, {
+      ...partial,
+      editedAt: new Date().toISOString()
+    }),
+    "comment update"
+  );
+  replaceTitleCommentInCache(titleId, commentId, {
+    ...partial,
+    editedAt: new Date().toISOString()
+  });
+}
+
+async function toggleCommentHelpful(titleId, commentId) {
+  if (!isSignedIn()) {
+    requireAccount("mark reviews as helpful");
+    return false;
+  }
+
+  const commentRef = doc(db, TITLES_COLLECTION, titleId, TITLE_COMMENTS_SUBCOLLECTION, commentId);
+  const snapshot = await getDoc(commentRef);
+
+  if (!snapshot.exists()) {
+    return false;
+  }
+
+  const data = snapshot.data() || {};
+  const helpfulBy = Array.isArray(data.helpfulBy) ? data.helpfulBy.filter(Boolean) : [];
+  const helpfulSet = new Set(helpfulBy);
+  const alreadyHelpful = helpfulSet.has(currentUser.uid);
+
+  if (alreadyHelpful) {
+    helpfulSet.delete(currentUser.uid);
+  } else {
+    helpfulSet.add(currentUser.uid);
+  }
+
+  await withActionTimeout(
+    updateDoc(commentRef, {
+      helpfulBy: [...helpfulSet],
+      helpfulCount: helpfulSet.size
+    }),
+    "comment helpful"
+  );
+  replaceTitleCommentInCache(titleId, commentId, {
+    helpfulBy: [...helpfulSet],
+    helpfulCount: helpfulSet.size
+  });
+
+  return !alreadyHelpful;
+}
+
+async function fetchTitleComments(titleId, legacyComments = [], options = {}) {
+  const normalizedLegacyComments = Array.isArray(legacyComments)
+    ? legacyComments.map((comment, index) => ({
+        id: comment.id || `${titleId}-legacy-${index}`,
+        userId: comment.userId || "",
+        name: comment.name || "Anonymous",
+        text: comment.text || "",
+        reaction: comment.reaction && REACTION_OPTIONS[comment.reaction] ? comment.reaction : "",
+        spoiler: Boolean(comment.spoiler),
+        seasonNumber: Number(comment.seasonNumber || 0),
+        createdAt: comment.createdAt || null,
+        editedAt: comment.editedAt || null,
+        helpfulCount: Number(comment.helpfulCount || 0),
+        helpfulBy: Array.isArray(comment.helpfulBy) ? comment.helpfulBy : [],
+        reports: Array.isArray(comment.reports) ? comment.reports : []
+      }))
+    : [];
+
+  try {
+    const snapshot = await getDocs(collection(db, TITLES_COLLECTION, titleId, TITLE_COMMENTS_SUBCOLLECTION));
+    const subcollectionComments = snapshot.docs.map((commentDoc) => {
+      const data = commentDoc.data() || {};
+
+      return {
+        id: data.id || commentDoc.id,
+        userId: data.userId || "",
+        name: data.name || "Anonymous",
+        text: data.text || "",
+        reaction: data.reaction && REACTION_OPTIONS[data.reaction] ? data.reaction : "",
+        spoiler: Boolean(data.spoiler),
+        seasonNumber: Number(data.seasonNumber || 0),
+        createdAt: data.createdAt || null,
+        editedAt: data.editedAt || null,
+        helpfulCount: Number(data.helpfulCount || 0),
+        helpfulBy: Array.isArray(data.helpfulBy) ? data.helpfulBy : [],
+        reports: Array.isArray(data.reports) ? data.reports : []
+      };
+    });
+
+    const merged = [...subcollectionComments, ...normalizedLegacyComments.filter((legacyComment) => !subcollectionComments.some((comment) => comment.id === legacyComment.id))]
+      .filter((comment) => {
+        if (!options.seasonNumber) {
+          return true;
+        }
+
+        return Number(comment.seasonNumber || 0) === Number(options.seasonNumber);
+      });
+
+    return merged.sort((left, right) => getCreatedAtMs(right.createdAt) - getCreatedAtMs(left.createdAt));
+  } catch (error) {
+    console.warn("Could not load comment subcollection, using legacy comments only.", error);
+    return normalizedLegacyComments
+      .filter((comment) => {
+        if (!options.seasonNumber) {
+          return true;
+        }
+
+        return Number(comment.seasonNumber || 0) === Number(options.seasonNumber);
+      })
+      .sort((left, right) => getCreatedAtMs(right.createdAt) - getCreatedAtMs(left.createdAt));
+  }
 }
 
 async function renderDetailsPage() {
@@ -4302,15 +7147,16 @@ async function renderDetailsPage() {
   }
 
   try {
-    const snapshot = await getDoc(doc(db, TITLES_COLLECTION, titleId));
+    const snapshot = await fetchTitleSnapshot(titleId);
 
     if (!snapshot.exists()) {
       target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
       return;
     }
 
-    const title = normalizeTitle(snapshot);
-    titlesCache = [...titlesCache.filter((item) => item.id !== title.id), title];
+    const title = replaceTitleCacheEntry(mergeLiveTitleCounters(normalizeTitle(snapshot)));
+    title.comments = await fetchTitleComments(title.id, title.comments);
+    replaceTitleCacheEntry(title);
 
     if (!title.approved && !isOwnerMode()) {
       target.innerHTML = `<section class="not-found"><h1>Title not found</h1></section>`;
@@ -4323,12 +7169,54 @@ async function renderDetailsPage() {
     const saved = isSavedTitle(title.id);
     const embeddedTrailerUrl = getYouTubeEmbedUrl(title.trailerUrl);
     const releaseYear = title.releaseDate ? new Date(title.releaseDate).getFullYear() : "Now";
+    const displayTypeLabel = getDisplayTypeLabel(title);
     const leadDirector = title.director || "MovieMate";
+    const leadCreditLabel = title.type === "Series" ? "Showrunner" : "Directed by";
+    const commentSectionCopy = getCommentSectionCopy(title);
     const primaryLanguage = title.language?.[0] || "Not added";
-    const primaryPlatform = formatPlatforms(title.platforms);
+    const primaryPlatforms = getPrimaryPlatforms(title.platforms);
+    const titleIsUpcoming = isUpcomingTitle(title);
+    const primaryPlatformMarkup = primaryPlatforms.length
+      ? `
+          <div class="detail-platform-list">
+            ${primaryPlatforms
+              .map((platform) => `<span class="detail-platform-chip">${escapeHtml(platform)}</span>`)
+              .join("")}
+          </div>
+        `
+      : '<strong class="detail-platform-empty">Platform not added</strong>';
+    const genreTagsMarkup = String(title.genre || "")
+      .split(",")
+      .map((genre) => genre.trim())
+      .filter(Boolean)
+      .map((genre) => `<span>${escapeHtml(genre)}</span>`)
+      .join("");
     const currentWatchStatus = getTitleWatchStatus(title.id);
     const primaryWatchButton = getPrimaryWatchButtonState(title, currentWatchStatus);
     const memberReady = isSignedIn();
+    const visibleTitles = getVisibleTitles(titlesCache);
+    const countryLabel = getDetailCountryLabel(title);
+    const ageRatingLabel = getDetailAgeRating(title);
+    const runtimeLabel = getDetailRuntimeLabel(title);
+    const heroMetaLine = titleIsUpcoming
+      ? `${displayTypeLabel} • ${releaseYear}`
+      : `${displayTypeLabel} • ${releaseYear} • ${runtimeLabel}`;
+    const availabilityCard = detailAvailabilityCardTemplate(title, primaryPlatforms, titleIsUpcoming);
+    const upcomingReleaseCard = titleIsUpcoming
+      ? `
+          <div class="detail-upcoming-mobile-card">
+            <div class="detail-upcoming-mobile-meta">
+              <span class="detail-upcoming-meta-pill">${escapeHtml(getHeroLaunchLabel(title))}</span>
+              <span class="detail-upcoming-meta-pill">${escapeHtml(formatReleaseDate(title.releaseDate))}</span>
+              <span class="detail-upcoming-meta-pill detail-upcoming-meta-interest">
+                ${buttonIconTemplate("fire")}
+                ${escapeHtml(formatLargeNumber(getInterestedCount(title)))} interested
+              </span>
+            </div>
+            <span class="hero-interest-fire-icon" aria-hidden="true">${buttonIconTemplate("fire")}</span>
+          </div>
+        `
+      : "";
     const ownerControls = isOwnerMode()
       ? `
           <div class="owner-actions">
@@ -4350,35 +7238,31 @@ async function renderDetailsPage() {
     `;
 
     target.innerHTML = `
-    <section class="detail-hero-card">
+    <section class="detail-hero-card ${titleIsUpcoming ? "detail-hero-card-upcoming" : "detail-hero-card-released"}">
       ${trailerPanelTemplate(title)}
       <div class="detail-summary">
         <div class="detail-summary-header">
           <img class="detail-poster" src="${title.image}" alt="${escapeHtml(title.title)} poster" />
           <div class="detail-copy">
-            <p class="eyebrow">${escapeHtml(title.type)} • ${escapeHtml(String(releaseYear))}</p>
+            <p class="eyebrow">${escapeHtml(heroMetaLine)}</p>
             <h1>${escapeHtml(title.title)}</h1>
             <div class="status-row">${badges}</div>
             <div class="detail-facts-grid">
-              <div class="detail-fact">
-                <span>Directed by</span>
+              <div class="detail-fact detail-fact-director">
+                <span>${escapeHtml(leadCreditLabel)}</span>
                 <strong>${escapeHtml(leadDirector)}</strong>
               </div>
-              <div class="detail-fact">
-                <span>Genre</span>
-                <strong>${escapeHtml(title.genre)}</strong>
+              <div class="detail-fact detail-fact-country">
+                <span>Country</span>
+                <strong>${escapeHtml(countryLabel)}</strong>
               </div>
-              <div class="detail-fact">
+              <div class="detail-fact detail-fact-language">
                 <span>Language</span>
                 <strong>${escapeHtml(primaryLanguage)}</strong>
               </div>
-              <div class="detail-fact">
-                <span>Platform</span>
-                <strong>${escapeHtml(primaryPlatform)}</strong>
-              </div>
-              <div class="detail-fact">
-                <span>Release</span>
-                <strong>${escapeHtml(formatReleaseDate(title.releaseDate))}</strong>
+              <div class="detail-fact detail-fact-rating">
+                <span>Age Rating</span>
+                <strong>${escapeHtml(ageRatingLabel)}</strong>
               </div>
             </div>
             <p class="detail-hero-description">${escapeHtml(title.description)}</p>
@@ -4389,96 +7273,113 @@ async function renderDetailsPage() {
               type="button"
               data-watch-status="${primaryWatchButton.nextStatus}"
               data-id="${title.id}"
-              ${memberReady ? "" : "disabled"}
+              ${memberReady ? "" : "disabled aria-disabled=\"true\""}
             >
-              ${escapeHtml(primaryWatchButton.label)}
+              ${watchStatusButtonContent(primaryWatchButton)}
             </button>
-            <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled"}>${saved ? "Saved to Collection" : "Add to Collection"}</button>
+            <button class="secondary-btn save-title-btn detail-save-btn ${saved ? "active" : ""}" data-save-id="${title.id}" type="button" ${memberReady ? "" : "disabled aria-disabled=\"true\""}>${saveTitleButtonContent(saved)}</button>
             ${memberReady ? `<p class="hero-interest-helper detail-cta-helper">${escapeHtml(primaryWatchButton.helper)}</p>` : '<p class="hero-interest-helper detail-cta-helper">Members only can save, track interest, and update watch status.</p>'}
+            <p class="form-message" id="detailVoteMessage" aria-live="polite"></p>
+          </div>
+          ${upcomingReleaseCard}
+          <div class="detail-mobile-overview">
+            <h2>Overview</h2>
+            <p>${escapeHtml(title.description)}</p>
+            ${genreTagsMarkup ? `<div class="detail-mobile-tags">${genreTagsMarkup}</div>` : ""}
           </div>
         </div>
       </div>
     </section>
 
-    <section class="detail-action-strip">
-      <div class="detail-actions">
-        ${reactionButtonsTemplate(title)}
-        ${
-          embeddedTrailerUrl
-            ? `<button class="secondary-btn trailer-btn" type="button" data-open-trailer="true" data-embed-url="${embeddedTrailerUrl}" data-trailer-title="${escapeHtml(title.title)} trailer">Watch Trailer</button>`
-            : `<a class="secondary-btn trailer-btn" href="${getTrailerLink(title)}" target="_blank" rel="noreferrer">Open Trailer</a>`
-        }
-        <button class="secondary-btn share-title-btn" data-share-id="${title.id}" type="button">Share Title</button>
-        ${ownerControls}
-        <p class="form-message" id="detailVoteMessage" aria-live="polite"></p>
-      </div>
-    </section>
+    <section class="detail-page-grid">
+      <div class="detail-main-column">
+        <section class="detail-overview-section">
+          <h2>Overview</h2>
+          <p>${escapeHtml(title.description)}</p>
+          ${genreTagsMarkup ? `<div class="detail-mobile-tags">${genreTagsMarkup}</div>` : ""}
+        </section>
 
-    <section class="detail-insights-grid">
-      ${reactionMeterTemplate(title)}
-      ${vibeChartTemplate(title)}
-      <article class="insight-card insight-overview-card">
-        <div class="insight-header">
-          <div>
-            <p class="eyebrow">Overview</p>
-            <h3>${escapeHtml(title.title)}</h3>
-          </div>
-          <span class="insight-pill">${stats.recommendedPercent}% recommend</span>
-        </div>
-        <p class="detail-overview">${escapeHtml(title.description)}</p>
-      </article>
-    </section>
+        ${seasonsSectionTemplate(title)}
 
-    ${peopleSectionTemplate(title)}
+        ${peopleSectionTemplate(title)}
 
-    ${similarSectionTemplate(title, getVisibleTitles(titlesCache), "genre")}
-    ${similarSectionTemplate(title, getVisibleTitles(titlesCache), "language")}
+        <section class="detail-meter-section">
+          ${reactionMeterTemplate(title)}
+        </section>
 
-    <section class="comment-section">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">Reviews and comments</p>
-          <h2>What viewers are saying</h2>
-        </div>
-        <p class="section-copy">Only MovieMate members can post reviews and comments. Everyone can still read them.</p>
-      </div>
-
-      ${
-        isSignedIn()
-          ? `
-            <form class="suggest-form comment-form" id="commentForm">
-              <div class="form-grid">
-                <label class="check-option spoiler-check form-span">
-                  <input name="spoiler" type="checkbox" />
-                  <span>Mark this comment as spoiler</span>
-                </label>
-                <label class="input-group form-span">
-                  <span>Your review or comment</span>
-                  <textarea name="comment" rows="4" placeholder="Share your thoughts on this title"></textarea>
-                </label>
-              </div>
-              <div class="form-actions">
-                <button class="primary-btn" type="submit">Post Review</button>
-                <p class="form-message" id="commentMessage" aria-live="polite"></p>
-              </div>
-            </form>
-          `
-          : `
-            <div class="member-lock-card">
-              <p class="section-copy">Sign in to vote, post reviews, save collections, and mark titles as interested.</p>
-              <button class="primary-btn" type="button" id="detailsCommentSignInBtn">Sign In to React</button>
+        <section class="comment-section">
+          <div class="section-heading detail-review-heading">
+            <div>
+              <p class="eyebrow">${escapeHtml(commentSectionCopy.eyebrow)}</p>
+              <h2>${escapeHtml(commentSectionCopy.title)}</h2>
             </div>
-          `
-      }
+            <div class="detail-review-tools">
+              <button class="secondary-btn" type="button">Most Liked</button>
+              <label class="detail-review-check"><input type="checkbox" /> <span>Show Spoilers</span></label>
+              <label class="detail-review-check"><input type="checkbox" /> <span>Following Only</span></label>
+            </div>
+          </div>
 
-      <div class="comment-list">
-        ${title.comments.length ? title.comments.map(commentTemplate).join("") : '<p class="empty-state">No reviews yet. Be the first to write one.</p>'}
+          ${
+            isSignedIn()
+              ? `
+                <form class="suggest-form comment-form" id="commentForm">
+                  <div class="comment-form-head">
+                    <div class="comment-form-user">
+                      ${profileAvatarTemplate(currentUserProfile, currentUser, "account-chip-avatar")}
+                      <div class="comment-form-identity">
+                        <strong>@${escapeHtml(getProfileUsername(currentUserProfile, currentUser))}</strong>
+                        <span>${escapeHtml(isUpcomingTitle(title) ? "Join the discussion" : "Share your review")}</span>
+                      </div>
+                    </div>
+                    ${commentReactionPickerTemplate(title.id)}
+                  </div>
+                  <label class="input-group form-span detail-review-textarea">
+                    <span>${escapeHtml(commentSectionCopy.fieldLabel)}</span>
+                    <textarea name="comment" rows="4" maxlength="1000" placeholder="${escapeHtml(commentSectionCopy.placeholder)}"></textarea>
+                  </label>
+                  <label class="check-option spoiler-check">
+                    <input name="spoiler" type="checkbox" />
+                    <span>Show as spoiler</span>
+                  </label>
+                  <div class="form-actions">
+                    <span class="detail-char-count">0/1000</span>
+                    <button class="primary-btn" type="submit">${escapeHtml(commentSectionCopy.buttonLabel)}</button>
+                    <p class="form-message" id="commentMessage" aria-live="polite"></p>
+                  </div>
+                </form>
+              `
+              : `
+                <div class="member-lock-card">
+                  <p class="section-copy">Sign in to vote, post reviews, save collections, and mark titles as interested.</p>
+                  <button class="primary-btn" type="button" id="detailsCommentSignInBtn">Sign In to React</button>
+                </div>
+              `
+          }
+
+          <div class="comment-list">
+            ${title.comments.length ? title.comments.map(commentTemplate).join("") : `<p class="empty-state">${escapeHtml(commentSectionCopy.emptyLabel)}</p>`}
+          </div>
+        </section>
+
+        ${detailNewsSectionTemplate(title, visibleTitles)}
+        ${detailDiscussionSectionTemplate(title, visibleTitles)}
+        ${ownerControls ? `<section class="detail-owner-section">${ownerControls}</section>` : ""}
       </div>
+
+      <aside class="detail-side-column">
+        ${vibeChartTemplate(title)}
+        ${availabilityCard}
+      </aside>
     </section>
   `;
 
-    const detailActions = target.querySelector(".detail-actions");
-    const detailHeroCard = target.querySelector(".detail-hero-card");
+    target.querySelectorAll("[data-vibe-card='true']").forEach((vibeCard) => {
+      applyVibeDisplay(vibeCard, vibeCard.dataset.lockedVibeSegment || "", false);
+    });
+
+    const detailActions = target;
+    const detailHeroCard = null;
 
     detailActions?.addEventListener("click", async (event) => {
     const actionTarget = event.target instanceof HTMLElement ? event.target : null;
@@ -4498,18 +7399,18 @@ async function renderDetailsPage() {
       showMessage("#detailVoteMessage", "Saving your vote...");
 
       try {
-        const changed = await reactToTitle(reactionButton.dataset.id, reactionButton.dataset.reaction);
+        const result = await reactToTitle(reactionButton.dataset.id, reactionButton.dataset.reaction);
 
-        if (!changed) {
-          showMessage("#detailVoteMessage", "You already picked that option.");
+        if (!result) {
+          showMessage("#detailVoteMessage", "Could not save your vote right now.");
           return;
         }
 
-        await renderDetailsPage();
-        showMessage("#detailVoteMessage", "Your vote was saved.");
+        updateDetailActionUI(reactionButton.dataset.id);
+        showMessage("#detailVoteMessage", result.cleared ? "Your vote was removed." : "Your vote was saved.");
       } catch (error) {
         console.error(error);
-        showMessage("#detailVoteMessage", "Could not save your vote right now.");
+        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not save your vote right now."));
       }
 
       return;
@@ -4523,8 +7424,14 @@ async function renderDetailsPage() {
       if (!requireAccount("save titles to your collections")) {
         return;
       }
-      await syncSavedTitle(saveButton.dataset.saveId);
-      await renderDetailsPage();
+      try {
+        await syncSavedTitle(saveButton.dataset.saveId);
+        updateDetailActionUI(saveButton.dataset.saveId);
+        showMessage("#detailVoteMessage", isSavedTitle(saveButton.dataset.saveId) ? "Saved to your collection." : "Removed from your collection.");
+      } catch (error) {
+        console.error(error);
+        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update your collection right now."));
+      }
       return;
     }
 
@@ -4538,8 +7445,33 @@ async function renderDetailsPage() {
         return;
       }
 
-      await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
+      const titleId = watchButton.dataset.id;
+      await handleDetailWatchStatusClick(titleId);
+      return;
+    }
+
+    const seasonWatchButton = actionTarget.closest("[data-season-watch='true']");
+
+    if (seasonWatchButton) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!requireAccount("mark seasons as watched")) {
+        return;
+      }
+
+      const seasonKey = getSeasonWatchKey(seasonWatchButton.dataset.id, seasonWatchButton.dataset.seasonNumber);
+      const currentStatus = getTitleWatchStatus(seasonKey);
+      const nextSeasonStatus = currentStatus === "watched" ? "clear" : "watched";
+      const localSnapshot = applyLocalWatchStatus(seasonKey, nextSeasonStatus);
       await renderDetailsPage();
+      syncWatchStatus(seasonKey, nextSeasonStatus).catch((error) => {
+        console.error(error);
+        rollbackLocalWatchStatus(localSnapshot, seasonKey);
+        renderDetailsPage().catch((renderError) => console.error(renderError));
+        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update watch status right now."));
+      });
+      showMessage("#detailVoteMessage", currentStatus === "watched" ? "Season marked as unwatched." : "Season marked as watched.");
       return;
     }
 
@@ -4574,8 +7506,14 @@ async function renderDetailsPage() {
       if (!requireAccount("save titles to your collections")) {
         return;
       }
-      await syncSavedTitle(saveButton.dataset.saveId);
-      await renderDetailsPage();
+      try {
+        await syncSavedTitle(saveButton.dataset.saveId);
+        updateDetailActionUI(saveButton.dataset.saveId);
+        showMessage("#detailVoteMessage", isSavedTitle(saveButton.dataset.saveId) ? "Saved to your collection." : "Removed from your collection.");
+      } catch (error) {
+        console.error(error);
+        showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not update your collection right now."));
+      }
       return;
     }
 
@@ -4589,8 +7527,8 @@ async function renderDetailsPage() {
         return;
       }
 
-      await syncWatchStatus(watchButton.dataset.id, watchButton.dataset.watchStatus);
-      await renderDetailsPage();
+      const titleId = watchButton.dataset.id;
+      await handleDetailWatchStatusClick(titleId);
     }
     });
 
@@ -4599,6 +7537,8 @@ async function renderDetailsPage() {
     });
 
     setupCommentForm(title.id);
+    setupSeasonControls();
+    setupDetailTitleRealtime(title.id);
   } catch (error) {
     console.error(error);
     target.innerHTML = `
@@ -4608,6 +7548,320 @@ async function renderDetailsPage() {
       </section>
     `;
   }
+}
+
+function buildSeasonEpisodeList(season) {
+  const totalEpisodes = Math.max(0, Number(season.episodes || 0));
+
+  if (!totalEpisodes) {
+    return [];
+  }
+
+  return Array.from({ length: totalEpisodes }, (_, index) => ({
+    number: index + 1,
+    title: `Episode ${index + 1}`,
+    description:
+      season.overview ||
+      `Episode ${index + 1} from ${season.title}. Episode-level metadata can be expanded later without changing the page layout.`
+  }));
+}
+
+function episodeCardTemplate(episode, season) {
+  return `
+    <article class="notification-feed-card">
+      <div>
+        <p class="eyebrow">Episode ${episode.number}</p>
+        <h3>${escapeHtml(episode.title)}</h3>
+        <p>${escapeHtml(episode.description || `${season.title} episode ${episode.number}`)}</p>
+      </div>
+    </article>
+  `;
+}
+
+async function renderSeasonPage() {
+  const target = document.querySelector("#seasonPage");
+
+  if (!target) {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const titleId = params.get("id");
+  const seasonNumber = Number(params.get("season") || 0);
+
+  if (!titleId || !seasonNumber) {
+    target.innerHTML = `<section class="account-empty-state"><h1>Season not found.</h1></section>`;
+    return;
+  }
+
+  try {
+    const snapshot = await fetchTitleSnapshot(titleId);
+
+    if (!snapshot.exists()) {
+      target.innerHTML = `<section class="account-empty-state"><h1>Season not found.</h1></section>`;
+      return;
+    }
+
+    const title = normalizeTitle(snapshot);
+    const season = buildSeasonCards(title).find((entry) => Number(entry.number) === seasonNumber);
+
+    if (!season) {
+      target.innerHTML = `<section class="account-empty-state"><h1>Season not found.</h1></section>`;
+      return;
+    }
+
+    const seasonReleaseDate = season.airDate || title.releaseDate;
+    const seasonTitle = `${title.title} • ${season.title}`;
+    const seasonContext = {
+      ...title,
+      title: seasonTitle,
+      releaseDate: seasonReleaseDate,
+      status: isUpcomingTitle({ ...title, releaseDate: seasonReleaseDate }) ? "Upcoming" : "Released",
+      description: season.overview || title.description
+    };
+    const commentSectionCopy = getCommentSectionCopy(seasonContext);
+    const seasonComments = await fetchTitleComments(title.id, title.comments, { seasonNumber });
+    const watchedKey = getSeasonWatchKey(title.id, season.number);
+    const watched = getTitleWatchStatus(watchedKey) === "watched";
+    const episodes = buildSeasonEpisodeList(season);
+    const breakdown = deriveSeasonBreakdown(title, season, Math.max(0, season.number - 1));
+
+    target.innerHTML = `
+      <section class="collection-page-shell">
+        <aside class="collection-list-card">
+          <p class="eyebrow">${escapeHtml(getDisplayTypeLabel(title))}</p>
+          <h1>${escapeHtml(season.title)}</h1>
+          <div class="profile-interest-item">
+            <img src="${season.image || title.image}" alt="${escapeHtml(season.title)} poster" loading="lazy" decoding="async" />
+            <span class="profile-interest-copy">
+              <strong>${escapeHtml(title.title)}</strong>
+              <small>${escapeHtml(formatReleaseDate(seasonReleaseDate))}</small>
+              <small>${escapeHtml(season.episodes ? `${season.episodes} Episodes` : "Episodes not added")}</small>
+            </span>
+          </div>
+          <div class="detail-actions">
+            <button
+              class="watch-status-btn ${watched ? "is-watched" : "is-interested"}"
+              type="button"
+              data-season-watch="true"
+              data-id="${title.id}"
+              data-season-number="${season.number}"
+              ${isSignedIn() ? "" : "disabled aria-disabled=\"true\""}
+            >
+              ${watched ? "Watched" : "Mark Season as Watched"}
+            </button>
+            <a class="secondary-btn" href="${buildTitleUrl(title.id)}">Back to ${escapeHtml(title.title)}</a>
+          </div>
+          ${seasonScoreStripTemplate(breakdown)}
+        </aside>
+
+        <section class="collection-detail-card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">${escapeHtml(commentSectionCopy.eyebrow)}</p>
+              <h2>${escapeHtml(seasonTitle)}</h2>
+            </div>
+            <p class="section-copy">${escapeHtml(season.overview || title.description)}</p>
+          </div>
+
+          <div class="owner-analytics-grid">
+            <article class="analytics-card">
+              <p class="eyebrow">Release</p>
+              <p class="section-copy">${escapeHtml(formatReleaseDate(seasonReleaseDate))}</p>
+            </article>
+            <article class="analytics-card">
+              <p class="eyebrow">Episodes</p>
+              <p class="section-copy">${escapeHtml(String(season.episodes || 0))}</p>
+            </article>
+            <article class="analytics-card">
+              <p class="eyebrow">Reviews</p>
+              <p class="section-copy">${escapeHtml(String(getSeasonReviewsCount(title, season, Math.max(0, season.number - 1))))}</p>
+            </article>
+          </div>
+
+          <div class="section-heading compact-section-heading">
+            <div>
+              <h2>Episodes</h2>
+            </div>
+          </div>
+          <div class="owner-analytics-grid">
+            ${episodes.length ? episodes.map((episode) => episodeCardTemplate(episode, season)).join("") : '<p class="empty-state">Episode details are not added yet.</p>'}
+          </div>
+
+          <section class="comment-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">${escapeHtml(commentSectionCopy.eyebrow)}</p>
+                <h2>${escapeHtml(commentSectionCopy.title)}</h2>
+              </div>
+              <p class="section-copy">${escapeHtml(commentSectionCopy.helper)}</p>
+            </div>
+
+            ${
+              isSignedIn()
+                ? `
+                  <form class="suggest-form comment-form" id="commentForm">
+                    <div class="form-grid">
+                      <label class="check-option spoiler-check form-span">
+                        <input name="spoiler" type="checkbox" />
+                        <span>Mark this comment as spoiler</span>
+                      </label>
+                      <label class="input-group form-span">
+                        <span>${escapeHtml(commentSectionCopy.fieldLabel)}</span>
+                        <textarea name="comment" rows="4" placeholder="${escapeHtml(commentSectionCopy.placeholder)}"></textarea>
+                      </label>
+                    </div>
+                    <div class="form-actions">
+                      <button class="primary-btn" type="submit">${escapeHtml(commentSectionCopy.buttonLabel)}</button>
+                      <p class="form-message" id="commentMessage" aria-live="polite"></p>
+                    </div>
+                  </form>
+                `
+                : `
+                  <div class="member-lock-card">
+                    <p class="section-copy">Sign in to review seasons and track what you watched.</p>
+                    <button class="primary-btn" type="button" id="detailsCommentSignInBtn">Sign In to React</button>
+                  </div>
+                `
+            }
+
+            <div class="comment-list">
+              ${seasonComments.length ? seasonComments.map(commentTemplate).join("") : `<p class="empty-state">${escapeHtml(commentSectionCopy.emptyLabel)}</p>`}
+            </div>
+          </section>
+        </section>
+      </section>
+    `;
+
+    document.querySelector("#detailsCommentSignInBtn")?.addEventListener("click", () => {
+      openAuthModal("login");
+    });
+
+    setupCommentForm(title.id, { seasonNumber: season.number });
+  } catch (error) {
+    console.error(error);
+    target.innerHTML = `
+      <section class="account-empty-state">
+        <h1>Could not open this season right now.</h1>
+        <p class="section-copy">Please refresh once. If it still fails, upload the latest site files.</p>
+      </section>
+    `;
+  }
+}
+
+function analyticsUserRowTemplate(profile, metric, value) {
+  return `
+    <a class="analytics-row" href="/profile.html?uid=${encodeURIComponent(profile.id || "")}">
+      ${profileAvatarTemplate(profile, null, "account-chip-avatar")}
+      <span>
+        <strong>${escapeHtml(getProfileDisplayName(profile, null))}</strong>
+        <small>${escapeHtml(metric)} • ${escapeHtml(String(value))}</small>
+      </span>
+    </a>
+  `;
+}
+
+async function renderAdminPage() {
+  const target = document.querySelector("#adminPage");
+
+  if (!target) {
+    return;
+  }
+
+  if (!isOwnerMode()) {
+    target.innerHTML = `
+      <section class="account-empty-state">
+        <p class="eyebrow">Owner tools</p>
+        <h1>Unlock Owner Mode first.</h1>
+        <p class="section-copy">This dashboard stays hidden until owner mode is active in your current browser.</p>
+      </section>
+    `;
+    return;
+  }
+
+  const [allTitles, profiles] = await Promise.all([fetchTitles(), fetchUserProfiles()]);
+  const titles = getVisibleTitles(allTitles);
+  const newestUsers = [...profiles]
+    .sort((left, right) => getCreatedAtMs(right.createdAt) - getCreatedAtMs(left.createdAt))
+    .slice(0, 8);
+  const mostFollowed = [...profiles]
+    .sort((left, right) => getProfileFollowersCount(right) - getProfileFollowersCount(left))
+    .slice(0, 8);
+  const mostViewed = [...titles].sort((left, right) => Number(right.viewsCount || 0) - Number(left.viewsCount || 0)).slice(0, 8);
+  const mostSaved = [...titles].sort((left, right) => Number(right.savesCount || 0) - Number(left.savesCount || 0)).slice(0, 8);
+  const mostVoted = [...titles].sort((left, right) => getReactionStats(right).total - getReactionStats(left).total).slice(0, 8);
+  const mostInterested = [...titles].sort(compareMostInterestedTitles).slice(0, 8);
+  const pendingTitles = getPendingTitles(titlesCache);
+  const adminSummary = [
+    { label: "Total titles", value: titles.length },
+    { label: "Recent users", value: newestUsers.length },
+    { label: "Pending content", value: pendingTitles.length },
+    { label: "Live interested", value: titles.reduce((total, title) => total + getInterestedCount(title), 0) }
+  ];
+
+  target.innerHTML = `
+    <section class="collection-page-shell">
+      <aside class="collection-list-card">
+        <p class="eyebrow">Owner dashboard</p>
+        <h1>MovieMate Admin</h1>
+        <div class="owner-analytics-grid owner-summary-grid">
+          ${adminSummary
+            .map(
+              (item) => `
+                <article class="analytics-card">
+                  <p class="eyebrow">${escapeHtml(item.label)}</p>
+                  <p class="section-copy">${escapeHtml(String(item.value))}</p>
+                </article>
+              `
+            )
+            .join("")}
+        </div>
+        <div class="owner-analytics-grid">
+          <article class="analytics-card">
+            <p class="eyebrow">New users</p>
+            ${newestUsers.length ? newestUsers.map((profile) => analyticsUserRowTemplate(profile, "Joined", formatDate(profile.createdAt))).join("") : '<p class="section-copy">No user data yet.</p>'}
+          </article>
+          <article class="analytics-card">
+            <p class="eyebrow">Most followed users</p>
+            ${mostFollowed.length ? mostFollowed.map((profile) => analyticsUserRowTemplate(profile, "Followers", getProfileFollowersCount(profile))).join("") : '<p class="section-copy">No follow data yet.</p>'}
+          </article>
+        </div>
+      </aside>
+
+      <section class="collection-detail-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Performance</p>
+            <h2>Live title analytics</h2>
+          </div>
+          <p class="section-copy">These cards use the same MovieMate data already powering your public pages.</p>
+        </div>
+
+        <div class="owner-analytics-grid">
+          <article class="analytics-card">
+            <p class="eyebrow">Most viewed titles</p>
+            ${mostViewed.length ? mostViewed.map((title) => analyticsRowTemplate(title, "Views", title.viewsCount)).join("") : '<p class="section-copy">No view data yet.</p>'}
+          </article>
+          <article class="analytics-card">
+            <p class="eyebrow">Most saved titles</p>
+            ${mostSaved.length ? mostSaved.map((title) => analyticsRowTemplate(title, "Saves", title.savesCount)).join("") : '<p class="section-copy">No save data yet.</p>'}
+          </article>
+          <article class="analytics-card">
+            <p class="eyebrow">Most voted titles</p>
+            ${mostVoted.length ? mostVoted.map((title) => analyticsRowTemplate(title, "Votes", getReactionStats(title).total)).join("") : '<p class="section-copy">No vote data yet.</p>'}
+          </article>
+          <article class="analytics-card">
+            <p class="eyebrow">Most interested titles</p>
+            ${mostInterested.length ? mostInterested.map((title) => analyticsRowTemplate(title, "Interested", getInterestedCount(title))).join("") : '<p class="section-copy">No interested data yet.</p>'}
+          </article>
+          <article class="analytics-card">
+            <p class="eyebrow">Pending content</p>
+            ${pendingTitles.length ? pendingTitles.slice(0, 8).map((title) => analyticsRowTemplate(title, "Pending", title.status)).join("") : '<p class="section-copy">No pending titles right now.</p>'}
+          </article>
+        </div>
+      </section>
+    </section>
+  `;
 }
 
 function personHeroAvatarTemplate(person) {
@@ -4641,6 +7895,7 @@ async function renderPersonPage() {
 
   const params = new URLSearchParams(window.location.search);
   const personName = params.get("name")?.trim() || "";
+  const personTmdbId = Number(params.get("tmdb") || 0);
 
   if (!personName) {
     target.innerHTML = `<section class="not-found"><h1>Person not found</h1></section>`;
@@ -4663,9 +7918,31 @@ async function renderPersonPage() {
     .filter(Boolean)
     .sort((left, right) => left - right)[0];
   const earliestYear = firstRelease ? new Date(firstRelease).getFullYear() : "";
-  const bornLabel = earliestYear ? `Not added • active before ${earliestYear}` : "Not added";
-  const birthplaceLabel = "Not added";
-  const biography = `${person.name} appears in ${person.credits.length} MovieMate title${person.credits.length === 1 ? "" : "s"}. Known here for ${person.roleHighlights.join(", ") || "cast and crew work"}, ${person.name} is featured across titles like ${escapeHtml(topTitle ? topTitle.title : "MovieMate")} and more. Explore the filmography below to see every title currently connected to this person on MovieMate.`;
+  let personDocData = null;
+
+  if (personTmdbId) {
+    try {
+      const personDoc = await getDoc(doc(db, "moviemate_people", `tmdb-person-${personTmdbId}`));
+      personDocData = personDoc.exists() ? personDoc.data() : null;
+    } catch (error) {
+      console.warn("Could not load person details", error);
+    }
+  }
+
+  const bornLabel =
+    personDocData?.birthday ||
+    person.birthday ||
+    (earliestYear ? `Not added • active before ${earliestYear}` : "Not added");
+  const birthplaceLabel = personDocData?.birthplace || person.birthplace || "Not added";
+  const biography =
+    personDocData?.biography ||
+    person.biography ||
+    `${person.name} appears in ${person.credits.length} MovieMate title${person.credits.length === 1 ? "" : "s"}. Known here for ${person.roleHighlights.join(", ") || "cast and crew work"}, ${person.name} is featured across titles like ${escapeHtml(topTitle ? topTitle.title : "MovieMate")} and more. Explore the filmography below to see every title currently connected to this person on MovieMate.`;
+  const knownForLabel =
+    personDocData?.knownForDepartment ||
+    person.knownForDepartment ||
+    person.roleHighlights.join(", ") ||
+    "Cast & Crew";
 
   target.innerHTML = `
     <section class="person-hero-card">
@@ -4684,7 +7961,7 @@ async function renderPersonPage() {
             </div>
             <div class="person-meta-item">
               <span>Known for</span>
-              <strong>${escapeHtml(person.roleHighlights.join(", ") || "Cast & Crew")}</strong>
+              <strong>${escapeHtml(knownForLabel)}</strong>
             </div>
             <div class="person-meta-item">
               <span>Titles on MovieMate</span>
@@ -4732,12 +8009,9 @@ function setupLikeButtons() {
     }
 
     try {
-      const changed = await reactToTitle(button.dataset.id, button.dataset.reaction);
+      const result = await reactToTitle(button.dataset.id, button.dataset.reaction);
 
-      if (!changed) {
-        if (document.body.dataset.page === "details") {
-          showMessage("#detailVoteMessage", "You already picked that option.");
-        }
+      if (!result) {
         return;
       }
 
@@ -4745,7 +8019,7 @@ function setupLikeButtons() {
         await renderHomePage();
       } else {
         await renderDetailsPage();
-        showMessage("#detailVoteMessage", "Your vote was saved.");
+        showMessage("#detailVoteMessage", result.cleared ? "Your vote was removed." : "Your vote was saved.");
       }
     } catch (error) {
       console.error(error);
@@ -4920,7 +8194,7 @@ function setupCommentDeleteButtons() {
   document.addEventListener("click", async (event) => {
     const button = event.target.closest(".comment-delete-btn");
 
-    if (!button || !isOwnerMode() || document.body.dataset.page !== "details") {
+    if (!button || document.body.dataset.page !== "details") {
       return;
     }
 
@@ -4928,6 +8202,14 @@ function setupCommentDeleteButtons() {
     const titleId = params.get("id");
 
     if (!titleId) {
+      return;
+    }
+
+    const title = titlesCache.find((entry) => entry.id === titleId);
+    const comment = title?.comments?.find((entry) => entry.id === button.dataset.commentId);
+    const canDelete = Boolean(comment?.userId && comment.userId === currentUser?.uid);
+
+    if (!canDelete) {
       return;
     }
 
@@ -4942,27 +8224,638 @@ function setupCommentDeleteButtons() {
   });
 }
 
+function setupCommentInteractionButtons() {
+  document.addEventListener("click", async (event) => {
+    const helpfulButton = event.target.closest("[data-comment-helpful]");
+
+    if (!helpfulButton || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const titleId = params.get("id");
+
+    if (!titleId) {
+      return;
+    }
+
+    try {
+      const turnedOn = await toggleCommentHelpful(titleId, helpfulButton.dataset.commentHelpful);
+
+      if (turnedOn === false && !isSignedIn()) {
+        return;
+      }
+
+      await renderDetailsPage();
+      showMessage("#commentMessage", turnedOn ? "Marked as helpful." : "Helpful mark removed.");
+    } catch (error) {
+      console.error(error);
+      showMessage("#commentMessage", getActionErrorMessage(error, "Could not update that review right now."));
+    }
+  });
+
+  document.addEventListener("click", async (event) => {
+    const reactionButton = event.target instanceof HTMLElement ? event.target.closest("[data-comment-reaction-value]") : null;
+
+    if (!reactionButton) {
+      return;
+    }
+
+    const picker = reactionButton.closest("[data-comment-reaction-picker='true']");
+    const input = picker?.querySelector("input[name='reaction']");
+
+    if (!picker || !input) {
+      return;
+    }
+
+    if (document.body.dataset.page !== "details") {
+      picker.querySelectorAll("[data-comment-reaction-value]").forEach((button) => button.classList.remove("active"));
+      reactionButton.classList.add("active");
+      input.value = reactionButton.getAttribute("data-comment-reaction-value") || "";
+      return;
+    }
+
+    if (!requireAccount("vote on movies and series")) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const titleId = params.get("id");
+    const nextReaction = reactionButton.getAttribute("data-comment-reaction-value") || "";
+
+    if (!titleId || !(nextReaction in REACTION_OPTIONS)) {
+      return;
+    }
+
+    showMessage("#detailVoteMessage", "Saving your vote...");
+
+    try {
+      const result = await reactToTitle(titleId, nextReaction);
+
+      if (!result) {
+        showMessage("#detailVoteMessage", "Could not save your vote right now.");
+        return;
+      }
+
+      const currentReaction = getReaction(titleId);
+      picker.querySelectorAll("[data-comment-reaction-value]").forEach((button) => {
+        button.classList.toggle("active", button.getAttribute("data-comment-reaction-value") === currentReaction);
+      });
+      input.value = currentReaction;
+      updateDetailActionUI(titleId);
+
+      const meterCard = document.querySelector(".detail-meter-card");
+      const title = getCachedTitleById(titleId);
+
+      if (meterCard && title) {
+        meterCard.dataset.lockedSegment = currentReaction || "";
+        applyMeterDisplay(meterCard, getReactionStats(title), currentReaction || "");
+      }
+
+      showMessage("#detailVoteMessage", result.cleared ? "Your vote was removed." : "Your vote was saved.");
+    } catch (error) {
+      console.error(error);
+      showMessage("#detailVoteMessage", getActionErrorMessage(error, "Could not save your vote right now."));
+    }
+  });
+
+  document.addEventListener("click", async (event) => {
+    const editButton = event.target.closest(".comment-edit-btn");
+
+    if (!editButton || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const titleId = params.get("id");
+
+    if (!titleId) {
+      return;
+    }
+
+    const title = titlesCache.find((entry) => entry.id === titleId);
+    const comment = title?.comments?.find((entry) => entry.id === editButton.dataset.commentId);
+
+    if (!comment || comment.userId !== currentUser?.uid) {
+      return;
+    }
+
+    const nextText = window.prompt("Edit your review or discussion", comment.text || "");
+
+    if (nextText === null) {
+      return;
+    }
+
+    const trimmed = nextText.trim();
+
+    if (!trimmed) {
+      showMessage("#commentMessage", "Your review cannot be empty.");
+      return;
+    }
+
+    try {
+      await updateComment(titleId, comment.id, { text: trimmed });
+      await renderDetailsPage();
+      showMessage("#commentMessage", "Your review was updated.");
+    } catch (error) {
+      console.error(error);
+      showMessage("#commentMessage", getActionErrorMessage(error, "Could not update your review right now."));
+    }
+  });
+
+  document.addEventListener("click", async (event) => {
+    const target = event.target instanceof HTMLElement ? event.target : null;
+
+    if (!target || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const toggle = target.closest("[data-comment-menu-toggle='true']");
+
+    if (toggle) {
+      const wrap = toggle.closest(".comment-menu-wrap");
+      const menu = wrap?.querySelector("[data-comment-menu='true']");
+      document.querySelectorAll("[data-comment-menu='true']").forEach((item) => {
+        if (item !== menu) {
+          item.classList.add("hidden");
+        }
+      });
+      menu?.classList.toggle("hidden");
+      return;
+    }
+
+    const shareButton = target.closest("[data-comment-share]");
+
+    if (shareButton) {
+      const params = new URLSearchParams(window.location.search);
+      const titleId = params.get("id") || "";
+      const title = titlesCache.find((entry) => entry.id === titleId);
+      const commentId = shareButton.getAttribute("data-comment-id") || "";
+      const comment = title?.comments?.find((entry) => entry.id === commentId);
+
+      if (title && comment) {
+        const shareUrl = `${window.location.origin}/details.html?id=${title.id}#comment-${comment.id}`;
+        const shareData = {
+          title: `${title.title} review on MovieMate`,
+          text: `${comment.name || "Member"}: ${String(comment.text || "").slice(0, 120)}`,
+          url: shareUrl
+        };
+
+        try {
+          if (navigator.share) {
+            await navigator.share(shareData);
+          } else {
+            await navigator.clipboard.writeText(shareUrl);
+            showMessage("#commentMessage", "Review link copied.");
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      shareButton.closest("[data-comment-menu='true']")?.classList.add("hidden");
+      return;
+    }
+
+    const reportButton = target.closest("[data-comment-report]");
+
+    if (reportButton) {
+      showMessage("#commentMessage", "Report option is ready. Owner review tools can be added next.");
+      reportButton.closest("[data-comment-menu='true']")?.classList.add("hidden");
+      return;
+    }
+
+    if (!target.closest(".comment-menu-wrap")) {
+      document.querySelectorAll("[data-comment-menu='true']").forEach((item) => item.classList.add("hidden"));
+    }
+  });
+}
+
+function setupDetailMeterInteractions() {
+  const applyMeterSelection = (meterCard, segment) => {
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title) {
+      return;
+    }
+
+    meterCard.dataset.lockedSegment = segment || "";
+    applyMeterDisplay(meterCard, getReactionStats(title), segment || "");
+  };
+
+  const previewMeterSelection = (meterCard, event, shouldLock = false) => {
+    if (!meterCard) {
+      return;
+    }
+
+    const segmentKey = getMeterSegmentKeyFromPointer(meterCard, event);
+
+    if (!segmentKey) {
+      return;
+    }
+
+    const titleId = meterCard.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!title) {
+      return;
+    }
+
+    if (shouldLock) {
+      meterCard.dataset.lockedSegment = segmentKey;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), segmentKey);
+  };
+
+  const getMeterSegmentKeyFromPointer = (meterCard, event) => {
+    const meterVisual = meterCard?.querySelector("[data-meter-visual]");
+
+    if (!meterVisual) {
+      return "";
+    }
+
+    const rect = meterVisual.getBoundingClientRect();
+    const point = "touches" in event && event.touches?.length ? event.touches[0] : event;
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = point.clientX - centerX;
+    const dy = point.clientY - centerY;
+    const radius = rect.width / 2;
+    const innerRadius = radius - 24;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance < innerRadius || distance > radius) {
+      return "";
+    }
+
+    let angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    angle = (angle + 90 + 360) % 360;
+    const percent = (angle / 360) * 100;
+    const titleId = meterCard.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!title) {
+      return "";
+    }
+
+    const stats = getReactionStats(title);
+    const perfectEnd = stats.perfectPercent;
+    const goEnd = perfectEnd + stats.goForItPercent;
+    const timepassEnd = goEnd + stats.timepassPercent;
+
+    if (percent <= perfectEnd) {
+      return "perfect";
+    }
+    if (percent <= goEnd) {
+      return "goForIt";
+    }
+    if (percent <= timepassEnd) {
+      return "timepass";
+    }
+    return "skip";
+  };
+
+  const previewMeterRowSelection = (row) => {
+    const meterCard = row?.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+    const segmentKey = row?.getAttribute("data-meter-segment") || "";
+
+    if (!meterCard || !title || !segmentKey) {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), segmentKey);
+  };
+
+  const restoreMeterPreview = (row) => {
+    const meterCard = row?.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title) {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), meterCard.dataset.lockedSegment || "");
+  };
+
+  document.addEventListener("touchstart", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    previewMeterRowSelection(row);
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    previewMeterRowSelection(row);
+  }, { passive: true });
+
+  document.addEventListener("touchend", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    restoreMeterPreview(row);
+  }, { passive: true });
+
+  document.addEventListener("mouseover", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    previewMeterRowSelection(row);
+  });
+
+  document.addEventListener("mouseout", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-meter-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    restoreMeterPreview(row);
+  });
+
+  document.addEventListener("click", (event) => {
+    const meterVisual = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+
+    if (!meterVisual || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = meterVisual.closest("[data-meter-card='true']");
+    applyMeterSelection(meterCard, getMeterSegmentKeyFromPointer(meterCard, event));
+  });
+
+  document.addEventListener("touchstart", (event) => {
+    const touchTarget = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+
+    if (!touchTarget || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = touchTarget.closest("[data-meter-card='true']");
+    applyMeterSelection(meterCard, getMeterSegmentKeyFromPointer(meterCard, event));
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (event) => {
+    const meterVisual = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+
+    if (!meterVisual || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = meterVisual.closest("[data-meter-card='true']");
+    previewMeterSelection(meterCard, event, false);
+  }, { passive: true });
+
+  document.addEventListener("touchend", (event) => {
+    const meterVisual = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+    const meterCard = meterVisual?.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), meterCard.dataset.lockedSegment || "");
+  }, { passive: true });
+
+  document.addEventListener("mousemove", (event) => {
+    const meterVisual = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+
+    if (!meterVisual || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const meterCard = meterVisual.closest("[data-meter-card='true']");
+    previewMeterSelection(meterCard, event, false);
+  });
+
+  document.addEventListener("mouseleave", (event) => {
+    const meterVisual = event.target instanceof HTMLElement ? event.target.closest("[data-meter-visual]") : null;
+    const meterCard = meterVisual?.closest("[data-meter-card='true']");
+    const titleId = meterCard?.getAttribute("data-meter-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!meterCard || !title || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    applyMeterDisplay(meterCard, getReactionStats(title), meterCard.dataset.lockedSegment || "");
+  }, true);
+
+  const getVibeSegmentLabelFromPointer = (vibeCard, event) => {
+    const vibeChart = vibeCard?.querySelector("[data-vibe-chart]");
+    const titleId = vibeCard?.getAttribute("data-vibe-title-id") || "";
+    const title = getCachedTitleById(titleId);
+
+    if (!vibeChart || !title) {
+      return "";
+    }
+
+    const segments = buildGenreSegments(title);
+    if (!segments.length) {
+      return "";
+    }
+
+    const rect = vibeChart.getBoundingClientRect();
+    const point = "touches" in event && event.touches?.length ? event.touches[0] : event;
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = point.clientX - centerX;
+    const dy = point.clientY - centerY;
+    const radius = rect.width / 2;
+    const innerRadius = radius - 20;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance < innerRadius || distance > radius) {
+      return "";
+    }
+
+    let angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    angle = (angle + 90 + 360) % 360;
+    const percent = (angle / 360) * 100;
+    let end = 0;
+
+    for (const segment of segments) {
+      end += segment.percent;
+      if (percent <= end) {
+        return segment.label;
+      }
+    }
+
+    return segments[segments.length - 1]?.label || "";
+  };
+
+  const previewVibeSelection = (vibeCard, event, shouldLock = false) => {
+    if (!vibeCard) {
+      return;
+    }
+
+    const segmentLabel = getVibeSegmentLabelFromPointer(vibeCard, event);
+    if (!segmentLabel) {
+      return;
+    }
+
+    if (shouldLock) {
+      vibeCard.dataset.lockedVibeSegment = segmentLabel;
+    }
+
+    applyVibeDisplay(vibeCard, segmentLabel, true);
+  };
+
+  document.addEventListener("touchstart", (event) => {
+    const vibeChart = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-chart]") : null;
+
+    if (!vibeChart || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const vibeCard = vibeChart.closest("[data-vibe-card='true']");
+    previewVibeSelection(vibeCard, event, true);
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (event) => {
+    const vibeChart = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-chart]") : null;
+
+    if (!vibeChart || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const vibeCard = vibeChart.closest("[data-vibe-card='true']");
+    previewVibeSelection(vibeCard, event, true);
+  }, { passive: true });
+
+  document.addEventListener("mousemove", (event) => {
+    const vibeChart = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-chart]") : null;
+
+    if (!vibeChart || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    const vibeCard = vibeChart.closest("[data-vibe-card='true']");
+    previewVibeSelection(vibeCard, event, false);
+  });
+
+  document.addEventListener("mouseleave", (event) => {
+    const vibeChart = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-chart]") : null;
+    const vibeCard = vibeChart?.closest("[data-vibe-card='true']");
+
+    if (!vibeCard || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    applyVibeDisplay(vibeCard, vibeCard.dataset.lockedVibeSegment || "", Boolean(vibeCard.dataset.lockedVibeSegment));
+  }, true);
+
+  const handleVibeRowSelection = (row, shouldLock = false) => {
+    const vibeCard = row?.closest("[data-vibe-card='true']");
+    const segmentLabel = row?.getAttribute("data-vibe-segment") || "";
+
+    if (!vibeCard || !segmentLabel) {
+      return;
+    }
+
+    if (shouldLock) {
+      vibeCard.dataset.lockedVibeSegment = segmentLabel;
+    }
+
+    applyVibeDisplay(vibeCard, segmentLabel, true);
+  };
+
+  const restoreVibePreview = (row) => {
+    const vibeCard = row?.closest("[data-vibe-card='true']");
+
+    if (!vibeCard) {
+      return;
+    }
+
+    const lockedSegment = vibeCard.dataset.lockedVibeSegment || "";
+    applyVibeDisplay(vibeCard, lockedSegment, Boolean(lockedSegment));
+  };
+
+  document.addEventListener("touchstart", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    handleVibeRowSelection(row, false);
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    handleVibeRowSelection(row, false);
+  }, { passive: true });
+
+  document.addEventListener("touchend", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    restoreVibePreview(row);
+  }, { passive: true });
+
+  document.addEventListener("mouseover", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    handleVibeRowSelection(row, false);
+  });
+
+  document.addEventListener("mouseout", (event) => {
+    const row = event.target instanceof HTMLElement ? event.target.closest("[data-vibe-segment]") : null;
+
+    if (!row || document.body.dataset.page !== "details") {
+      return;
+    }
+
+    restoreVibePreview(row);
+  });
+
+}
+
 function updateOwnerToggle() {
   const active = isOwnerMode();
   const pendingCount =
     pendingNotificationState.count ?? getPendingTitles(titlesCache).length;
 
-  document.querySelectorAll("[data-owner-toggle]").forEach((button) => {
-    const mobileLabel = button.classList.contains("explore-mobile-owner");
+  document.querySelectorAll("#ownerToggle").forEach((button) => {
     button.classList.toggle("active", active);
     button.textContent = active
-      ? mobileLabel
-        ? pendingCount
-          ? `On • ${pendingCount}`
-          : "On"
-        : pendingCount
+      ? pendingCount
         ? `Owner Unlocked • ${pendingCount}`
         : "Owner Unlocked"
-      : mobileLabel
-        ? pendingCount
-          ? `Owner • ${pendingCount}`
-          : "Owner"
-        : pendingCount
+      : pendingCount
         ? `Owner Mode • ${pendingCount}`
         : "Owner Mode";
   });
@@ -4973,7 +8866,7 @@ function updateOwnerToggle() {
 }
 
 function setupOwnerMode() {
-  const buttons = document.querySelectorAll("[data-owner-toggle], #ownerDockToggle");
+  const buttons = document.querySelectorAll("#ownerToggle, #ownerDockToggle");
 
   if (!buttons.length) {
     return;
@@ -5019,7 +8912,7 @@ function setupOwnerMode() {
   });
 }
 
-function setupCommentForm(titleId) {
+function setupCommentForm(titleId, options = {}) {
   const form = document.querySelector("#commentForm");
 
   if (!form) {
@@ -5028,15 +8921,37 @@ function setupCommentForm(titleId) {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const added = await addComment(titleId, form);
+    showMessage("#commentMessage", "Posting...");
 
-    if (!added) {
+    try {
+      const added = await addComment(titleId, form, options);
+
+      if (!added) {
+        return;
+      }
+    } catch (error) {
+      console.error(error);
+      showMessage("#commentMessage", getCommentErrorMessage(error));
       return;
     }
 
     form.reset();
-    showMessage("#commentMessage", "Your review is now live.");
-    await renderDetailsPage();
+    const reactionInput = form.querySelector("input[name='reaction']");
+    if (reactionInput) {
+      reactionInput.value = "";
+    }
+    form.querySelectorAll("[data-comment-reaction-value]").forEach((button) => button.classList.remove("active"));
+
+    try {
+      await renderDetailsPage();
+      const snapshot = await getDoc(doc(db, TITLES_COLLECTION, titleId));
+      const refreshedTitle = snapshot.exists() ? normalizeTitle(snapshot) : null;
+      const successLabel = refreshedTitle ? getCommentSectionCopy(refreshedTitle).successLabel : "Your comment is now live.";
+      showMessage("#commentMessage", successLabel);
+    } catch (error) {
+      console.error(error);
+      showMessage("#commentMessage", "Your post was saved. Refresh once if you do not see it yet.");
+    }
   });
 }
 
@@ -5084,6 +8999,29 @@ function setupLoadMore() {
   button?.addEventListener("click", () => {
     browseVisibleCount += SEARCH_PAGE_SIZE;
     refreshBrowseResults();
+  });
+}
+
+function setupSeasonControls() {
+  const seasonsSection = document.querySelector(".seasons-section");
+
+  if (!seasonsSection) {
+    return;
+  }
+
+  const grid = seasonsSection.querySelector(".seasons-grid");
+  const buttons = seasonsSection.querySelectorAll(".season-nav-btn");
+
+  if (!grid || buttons.length < 2) {
+    return;
+  }
+
+  buttons[0].addEventListener("click", () => {
+    grid.scrollBy({ left: -360, behavior: "smooth" });
+  });
+
+  buttons[1].addEventListener("click", () => {
+    grid.scrollBy({ left: 360, behavior: "smooth" });
   });
 }
 
@@ -5153,9 +9091,6 @@ function closeNotificationsModal() {
   }
 
   modal.classList.add("hidden");
-  document.querySelectorAll("[data-top-notifications]").forEach((button) => {
-    button.classList.remove("active");
-  });
   syncModalVisibility();
 }
 
@@ -5199,7 +9134,7 @@ function getGlobalSearchPeople(titles, query = "") {
         return;
       }
 
-      const key = name.toLowerCase();
+      const key = normalizePersonName(name);
       const current = people.get(key) || {
         name,
         role: person.role || "Cast & Crew",
@@ -5293,7 +9228,7 @@ function globalSearchResultsTemplate() {
       .slice(0, 8);
     return collections.length
       ? `<div class="global-search-collection-list">${collections.map((collection) => `
-          <a class="global-search-collection" href="../collection.html?mode=discover&slug=${encodeURIComponent(collection.slug || slugify(collection.title))}">
+          <a class="global-search-collection" href="collection.html?mode=discover&slug=${encodeURIComponent(collection.slug || slugify(collection.title))}">
             <img src="${escapeHtml(collection.image)}" alt="${escapeHtml(collection.title)} cover" loading="lazy" decoding="async" />
             <span><strong>${escapeHtml(collection.title)}</strong><small>${escapeHtml(collection.subtitle)}</small></span>
           </a>
@@ -5306,7 +9241,7 @@ function globalSearchResultsTemplate() {
     const username = getProfileUsername(currentUserProfile, currentUser);
     const matchesCurrent = currentUser && `${name} ${username} ${currentUser?.email || ""}`.toLowerCase().includes(query.toLowerCase());
     return matchesCurrent
-      ? `<div class="global-search-person-list"><a class="global-search-person" href="../profile.html"><span>${escapeHtml((username || name || "MM").slice(0, 2).toUpperCase())}</span><strong>${escapeHtml(name || "MovieMate Member")}</strong><small>@${escapeHtml(username || "member")} • Your profile</small></a></div>`
+      ? `<div class="global-search-person-list"><a class="global-search-person" href="profile.html"><span>${escapeHtml((username || name || "MM").slice(0, 2).toUpperCase())}</span><strong>${escapeHtml(name || "MovieMate Member")}</strong><small>@${escapeHtml(username || "member")} • Your profile</small></a></div>`
       : '<p class="global-search-empty">User search is ready for signed-in profiles. Try your own username here.</p>';
   }
 
@@ -5450,371 +9385,6 @@ function setupGlobalSearchModal() {
   });
 }
 
-function setExploreHeaderActive(hash) {
-  const normalizedHash = hash || "#trending";
-  const setActiveInGroup = (selector) => {
-    let hasMatched = false;
-
-    document.querySelectorAll(selector).forEach((link) => {
-      const linkHash = new URL(link.getAttribute("href") || "#trending", window.location.href).hash || "#trending";
-      const active = linkHash === normalizedHash && !hasMatched;
-      link.classList.toggle("active", active);
-
-      if (active) {
-        hasMatched = true;
-      }
-    });
-  };
-
-  setActiveInGroup(".explore-nav-center .explore-nav-link[href]");
-  setActiveInGroup(".mobile-dock-link[href]");
-}
-
-const HOME_FULLSCREEN_SECTION_IDS = new Set(["browse", "schedule", "spaces", "collections"]);
-const HOME_BROWSE_POPUP_LINKS = [
-  { icon: "◫", label: "Category", href: "#browse" },
-  { icon: "◎", label: "Genre", href: "#browse" },
-  { icon: "◍", label: "Country", href: "#browse" },
-  { icon: "文", label: "Language", href: "#browse" },
-  { icon: "☺", label: "Community", href: "#collections" },
-  { icon: "★", label: "District", href: "#trending" },
-  { icon: "हि", label: "Bollywood", href: "#bollywoodRowHeading" },
-  { icon: "ச", label: "South", href: "#southRowHeading" },
-  { icon: "N", label: "Netflix", href: "#netflixRowHeading" },
-  { icon: "◷", label: "Schedule", href: "#schedule" },
-  { icon: "P", label: "Prime", href: "#primeRowHeading" },
-  { icon: "◎", label: "Trending", href: "#trending" }
-];
-
-function isMainHomepage() {
-  return document.body.dataset.page === "home";
-}
-
-function isHomeFullscreenSectionHash(hash) {
-  const id = (hash || "").replace("#", "");
-
-  if (!id) {
-    return false;
-  }
-
-  if (id === "browse" && isMainHomepage()) {
-    return false;
-  }
-
-  return HOME_FULLSCREEN_SECTION_IDS.has(id);
-}
-
-function closeHomeFullscreenSection(options = {}) {
-  document.querySelectorAll(".home-section-panel-open").forEach((section) => {
-    section.classList.remove("home-section-panel-open");
-    section.setAttribute("aria-hidden", "true");
-  });
-  document.body.classList.remove("home-section-panel-active");
-
-  if (options.restoreExploreHash) {
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#trending`);
-    setExploreHeaderActive("#trending");
-  }
-}
-
-function ensureHomeSectionCloseButton(section) {
-  if (section.querySelector("[data-home-section-close]")) {
-    return;
-  }
-
-  const button = document.createElement("button");
-  button.className = "home-section-panel-close";
-  button.type = "button";
-  button.setAttribute("aria-label", "Close section");
-  button.dataset.homeSectionClose = "true";
-  button.textContent = "Close";
-  section.prepend(button);
-}
-
-function openHomeFullscreenSection(hashOrId) {
-  if (document.body.dataset.page !== "home") {
-    return false;
-  }
-
-  const id = (hashOrId || "").replace("#", "");
-  const section = document.getElementById(id);
-
-  if (!HOME_FULLSCREEN_SECTION_IDS.has(id) || !section) {
-    return false;
-  }
-
-  closeHomeFullscreenSection();
-  ensureHomeSectionCloseButton(section);
-  section.classList.add("home-section-panel-open");
-  section.setAttribute("aria-hidden", "false");
-  document.body.classList.add("home-section-panel-active");
-  window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
-  setExploreHeaderActive(`#${id}`);
-  window.setTimeout(() => {
-    section.querySelector("input, select, button, a")?.focus({ preventScroll: true });
-  }, 80);
-
-  return true;
-}
-
-function ensureHomeBrowsePopover() {
-  let popover = document.querySelector("#homeBrowsePopover");
-
-  if (popover) {
-    return popover;
-  }
-
-  popover = document.createElement("div");
-  popover.id = "homeBrowsePopover";
-  popover.className = "home-browse-popover hidden";
-  popover.setAttribute("aria-hidden", "true");
-  popover.innerHTML = `
-    <button class="home-browse-popover-backdrop" type="button" data-home-browse-close="true" aria-label="Close browse menu"></button>
-    <section class="home-browse-popover-panel" role="dialog" aria-modal="false" aria-label="Browse MovieMate">
-      <div class="home-browse-popover-header">
-        <div>
-          <p class="panel-label">Browse By</p>
-          <h2>Explore faster</h2>
-        </div>
-        <button class="home-browse-popover-close" type="button" data-home-browse-close="true" aria-label="Close browse menu">&times;</button>
-      </div>
-      <div class="browse-panel-grid home-browse-popover-grid">
-        ${HOME_BROWSE_POPUP_LINKS.map(
-          (item) => `
-            <a class="browse-box" href="${item.href}" data-home-browse-link="true">
-              <span class="browse-box-icon">${item.icon}</span>
-              <span>${item.label}</span>
-            </a>
-          `
-        ).join("")}
-      </div>
-    </section>
-  `;
-  document.body.appendChild(popover);
-  return popover;
-}
-
-function closeHomeBrowsePopover() {
-  const popover = document.querySelector("#homeBrowsePopover");
-  const trigger = document.querySelector("[data-home-browse-toggle]");
-
-  if (!popover) {
-    return;
-  }
-
-  popover.classList.add("hidden");
-  popover.setAttribute("aria-hidden", "true");
-  trigger?.setAttribute("aria-expanded", "false");
-}
-
-function openHomeBrowsePopover() {
-  if (!isMainHomepage()) {
-    return false;
-  }
-
-  const popover = ensureHomeBrowsePopover();
-  const trigger = document.querySelector("[data-home-browse-toggle]");
-
-  popover.classList.remove("hidden");
-  popover.setAttribute("aria-hidden", "false");
-  trigger?.setAttribute("aria-expanded", "true");
-  window.requestAnimationFrame(() => {
-    popover.querySelector("a, button")?.focus({ preventScroll: true });
-  });
-
-  return true;
-}
-
-function toggleHomeBrowsePopover(forceOpen = null) {
-  if (!isMainHomepage()) {
-    return false;
-  }
-
-  const popover = ensureHomeBrowsePopover();
-  const isOpen = !popover.classList.contains("hidden");
-  const shouldOpen = forceOpen === null ? !isOpen : forceOpen;
-
-  if (shouldOpen) {
-    return openHomeBrowsePopover();
-  }
-
-  closeHomeBrowsePopover();
-  return false;
-}
-
-function setupHomeBrowsePopover() {
-  if (!isMainHomepage()) {
-    return;
-  }
-
-  const trigger = document.querySelector("[data-home-browse-toggle]");
-
-  if (trigger) {
-    trigger.setAttribute("aria-expanded", "false");
-  }
-}
-
-function setupHomeSpacesControls() {
-  if (document.body.dataset.page !== "home") {
-    return;
-  }
-
-  document.addEventListener("click", (event) => {
-    const target = event.target instanceof Element ? event.target : null;
-
-    if (!target) {
-      return;
-    }
-
-    const modeButton = target.closest("[data-home-spaces-mode]");
-
-    if (modeButton) {
-      event.preventDefault();
-      document.querySelectorAll("[data-home-spaces-mode]").forEach((button) => {
-        button.classList.toggle("active", button === modeButton);
-      });
-      renderHomeSpacesFeed(getVisibleTitles(titlesCache));
-      return;
-    }
-
-    const topicButton = target.closest("[data-home-spaces-topic]");
-
-    if (topicButton) {
-      event.preventDefault();
-      topicButton.classList.toggle("active");
-      renderHomeSpacesFeed(getVisibleTitles(titlesCache));
-    }
-  });
-}
-
-function setupHomeFullscreenSections() {
-  if (document.body.dataset.page !== "home") {
-    return;
-  }
-
-  HOME_FULLSCREEN_SECTION_IDS.forEach((id) => {
-    const section = document.getElementById(id);
-    section?.setAttribute("aria-hidden", "true");
-  });
-
-  document.addEventListener("click", (event) => {
-    const target = event.target instanceof Element ? event.target : null;
-
-    if (!target) {
-      return;
-    }
-
-    const browseTrigger = target.closest("[data-home-browse-toggle]");
-
-    if (browseTrigger) {
-      event.preventDefault();
-      toggleHomeBrowsePopover();
-      return;
-    }
-
-    if (target.closest("[data-home-browse-close]")) {
-      event.preventDefault();
-      closeHomeBrowsePopover();
-      return;
-    }
-
-    if (target.closest("#homeBrowsePopover a[href]")) {
-      closeHomeBrowsePopover();
-    }
-
-    const popover = document.querySelector("#homeBrowsePopover");
-
-    if (popover && !popover.classList.contains("hidden") && !target.closest("#homeBrowsePopover")) {
-      closeHomeBrowsePopover();
-    }
-
-    if (target.closest("[data-home-section-close]")) {
-      event.preventDefault();
-      closeHomeFullscreenSection({ restoreExploreHash: true });
-      return;
-    }
-
-    const link = target.closest("a[href]");
-    const hash = link ? new URL(link.getAttribute("href") || "", window.location.href).hash : "";
-
-    if (isHomeFullscreenSectionHash(hash)) {
-      event.preventDefault();
-      openHomeFullscreenSection(hash);
-      return;
-    }
-
-    if (hash === "#trending" && document.body.classList.contains("home-section-panel-active")) {
-      event.preventDefault();
-      closeHomeFullscreenSection({ restoreExploreHash: true });
-    }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !document.querySelector("#homeBrowsePopover")?.classList.contains("hidden")) {
-      closeHomeBrowsePopover();
-      return;
-    }
-
-    if (event.key === "Escape" && document.body.classList.contains("home-section-panel-active")) {
-      closeHomeFullscreenSection({ restoreExploreHash: true });
-    }
-  });
-
-  if (isHomeFullscreenSectionHash(window.location.hash)) {
-    window.setTimeout(() => openHomeFullscreenSection(window.location.hash), 120);
-  }
-}
-
-function setupExploreHeaderNav() {
-  const navLinks = document.querySelectorAll(".explore-nav-link[href], .mobile-dock-link[href]");
-
-  if (!navLinks.length) {
-    return;
-  }
-
-  navLinks.forEach((link) => {
-    link.addEventListener("click", () => {
-      const hash = new URL(link.getAttribute("href") || "#trending", window.location.href).hash || "#trending";
-      exploreNavLockUntil = Date.now() + 2200;
-      setExploreHeaderActive(hash);
-    });
-  });
-
-  window.addEventListener("hashchange", () => {
-    setExploreHeaderActive(window.location.hash || "#trending");
-  });
-
-  const sections = ["#trending", "#browse", "#schedule", "#spaces", "#collections"]
-    .map((selector) => document.querySelector(selector))
-    .filter(Boolean);
-
-  if ("IntersectionObserver" in window && sections.length) {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (Date.now() < exploreNavLockUntil) {
-          return;
-        }
-
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
-
-        if (visible?.target?.id) {
-          setExploreHeaderActive(`#${visible.target.id}`);
-        }
-      },
-      {
-        rootMargin: "-34% 0px -52% 0px",
-        threshold: [0.12, 0.24, 0.42]
-      }
-    );
-
-    sections.forEach((section) => observer.observe(section));
-  }
-
-  setExploreHeaderActive(window.location.hash || "#trending");
-}
-
 function setupTopSearch() {
   document.addEventListener("click", (event) => {
     const suggestions = document.querySelector("#searchSuggestions");
@@ -5841,9 +9411,9 @@ function profileAvatarTemplate(profile = currentUserProfile, user = currentUser,
   return `<div class="${className} profile-avatar-fallback">${escapeHtml(avatar.initials || "MM")}</div>`;
 }
 
-function getProfileReviewEntries(titles) {
-  const reactionMap = getStoredReactions();
-  const uid = currentUser?.uid || "";
+function getProfileReviewEntries(titles, uid = currentUser?.uid || "") {
+  const profile = uid === currentUser?.uid ? currentUserProfile : viewedProfileData;
+  const reactionMap = profile?.reactions || {};
   const entries = titles
     .map((title) => {
       const reaction = reactionMap[title.id] || "";
@@ -5864,8 +9434,7 @@ function getProfileReviewEntries(titles) {
   return entries.sort((left, right) => getInterestScore(right.title) - getInterestScore(left.title));
 }
 
-function getProfilePosts(titles) {
-  const uid = currentUser?.uid || "";
+function getProfilePosts(titles, uid = currentUser?.uid || "") {
   return titles
     .filter((title) => title.submittedBy && title.submittedBy === uid)
     .sort((left, right) => getCreatedAtMs(right.createdAt) - getCreatedAtMs(left.createdAt));
@@ -5875,6 +9444,8 @@ function profileReviewCardTemplate(entry) {
   const stats = getReactionStats(entry.title);
   const reactionLabel = entry.reaction ? REACTION_OPTIONS[entry.reaction]?.label || entry.reaction : "";
   const firstComment = entry.comments[0]?.text || "";
+  const reviewCount = entry.comments.length;
+  const recommendCount = Number(entry.title.likes || 0);
 
   return `
     <article class="profile-review-card">
@@ -5887,12 +9458,25 @@ function profileReviewCardTemplate(entry) {
             <h3>${escapeHtml(entry.title.title)}</h3>
             <p>${escapeHtml(entry.title.type)} • ${escapeHtml(formatReleaseDate(entry.title.releaseDate))}</p>
           </div>
-          ${reactionLabel ? `<span class="profile-reaction-badge">${escapeHtml(reactionLabel)}</span>` : ""}
+          <div class="profile-review-head-actions">
+            ${reactionLabel ? `<span class="profile-reaction-badge">${escapeHtml(reactionLabel)}</span>` : ""}
+            <div class="profile-card-menu-wrap">
+              <button class="profile-card-menu" type="button" aria-label="More options" data-profile-menu-toggle="true">•••</button>
+              <div class="profile-card-dropdown hidden" data-profile-menu="true">
+                <button class="profile-card-dropdown-item" type="button" data-profile-share="story" data-title-id="${entry.title.id}">Share - Story</button>
+                <button class="profile-card-dropdown-item" type="button" data-profile-share="classic" data-title-id="${entry.title.id}">Share - Classic</button>
+                <button class="profile-card-dropdown-item" type="button" data-profile-report="${entry.title.id}">Report</button>
+              </div>
+            </div>
+          </div>
         </div>
         <p class="profile-review-meta">${escapeHtml(entry.title.genre)} • ${escapeHtml(entry.title.language.join(", "))}</p>
         ${firstComment ? `<p class="profile-review-text">${escapeHtml(firstComment)}</p>` : `<p class="profile-review-text">${stats.recommendedPercent}% recommend on MovieMate.</p>`}
         <div class="profile-inline-actions">
-          <a class="ghost-link" href="${buildTitleUrl(entry.title.id)}">Open title</a>
+          <div class="profile-inline-stats">
+            <span>♡ ${recommendCount}</span>
+            <span>◌ ${reviewCount}</span>
+          </div>
         </div>
       </div>
     </article>
@@ -5913,9 +9497,9 @@ function profilePostCardTemplate(title) {
   `;
 }
 
-function buildInterestedTitles(titles) {
-  const watchStatus = getWatchStatusMap();
-  const savedIds = new Set(getSavedTitles());
+function buildInterestedTitles(titles, profile = currentUserProfile) {
+  const watchStatus = profile?.watchStatus || {};
+  const savedIds = new Set(Array.isArray(profile?.savedTitles) ? profile.savedTitles : []);
   return titles
     .filter(
       (title) =>
@@ -5930,12 +9514,87 @@ function interestedTitleTemplate(title) {
   return `
     <a class="profile-interest-item" href="${buildTitleUrl(title.id)}">
       <img src="${title.image}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
-      <span>
+      <span class="profile-interest-copy">
         <strong>${escapeHtml(title.title)}</strong>
-        <small>${escapeHtml(formatReleaseDate(title.releaseDate))} • ${escapeHtml(title.type)}</small>
+        <small>${escapeHtml(formatReleaseDate(title.releaseDate))}</small>
+        <small>${escapeHtml(title.status === "Upcoming" ? "In Theatre" : title.type)}</small>
       </span>
     </a>
   `;
+}
+
+async function prepareViewedProfile() {
+  const params = new URLSearchParams(window.location.search);
+  const targetUid = params.get("uid") || currentUser?.uid || "";
+
+  viewedProfileUid = targetUid || null;
+  viewedProfileData = null;
+
+  if (!targetUid) {
+    return null;
+  }
+
+  if (targetUid === currentUser?.uid) {
+    viewedProfileData = currentUserProfile;
+    return viewedProfileData;
+  }
+
+  viewedProfileData = await fetchUserProfileByUid(targetUid);
+  return viewedProfileData;
+}
+
+async function toggleFollowUser(targetUid) {
+  if (!isSignedIn() || !targetUid || targetUid === currentUser.uid) {
+    return false;
+  }
+
+  const targetProfile = (await fetchUserProfileByUid(targetUid)) || normalizeUserProfile({});
+  const followingEntry = { uid: targetUid, createdAt: new Date().toISOString() };
+  const followerEntry = { uid: currentUser.uid, createdAt: new Date().toISOString() };
+  const alreadyFollowing = isFollowingUid(targetUid);
+  const nextFollowing = dedupeRelationshipEntries(
+    alreadyFollowing
+      ? currentUserProfile.following.filter((entry) => entry.uid !== targetUid)
+      : [...(currentUserProfile.following || []), followingEntry]
+  );
+  const nextFollowers = dedupeRelationshipEntries(
+    alreadyFollowing
+      ? targetProfile.followers.filter((entry) => entry.uid !== currentUser.uid)
+      : [...(targetProfile.followers || []), followerEntry]
+  );
+
+  currentUserProfile = normalizeUserProfile({
+    ...currentUserProfile,
+    following: nextFollowing
+  });
+  viewedProfileData = normalizeUserProfile({
+    ...targetProfile,
+    following: targetProfile.following || [],
+    followers: nextFollowers
+  });
+
+  userProfilesCache.set(currentUser.uid, currentUserProfile);
+  userProfilesCache.set(targetUid, viewedProfileData);
+
+  await Promise.all([
+    persistUserProfile({ following: nextFollowing }),
+    setDoc(doc(db, USERS_COLLECTION, targetUid), { followers: nextFollowers }, { merge: true })
+  ]);
+
+  if (!alreadyFollowing) {
+    await enqueueUserNotification(targetUid, {
+      id: `follow-${currentUser.uid}-${Date.now()}`,
+      type: "follow",
+      label: "New follower",
+      title: getProfileDisplayName(),
+      copy: `${getProfileDisplayName()} started following you on MovieMate.`,
+      href: `/profile.html?uid=${encodeURIComponent(currentUser.uid)}`,
+      uid: currentUser.uid,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  return !alreadyFollowing;
 }
 
 async function saveProfileAvatar(avatarUrl) {
@@ -6004,6 +9663,29 @@ function renderProfilePage() {
     return;
   }
 
+  const cachedUid = getRememberedSignedInUid();
+  const resolvedCurrentUid = currentUser?.uid || cachedUid;
+
+  if (!hasResolvedAuthState && !currentUserProfile && cachedUid) {
+    const cachedProfile = loadUserProfileCache(cachedUid);
+
+    if (cachedProfile) {
+      currentUserProfile = cachedProfile;
+      userProfilesCache.set(cachedUid, cachedProfile);
+    }
+  }
+
+  if (!hasResolvedAuthState && !currentUserProfile) {
+    target.innerHTML = `
+      <section class="account-empty-state">
+        <p class="eyebrow">MovieMate account</p>
+        <h1>Loading your profile...</h1>
+        <p class="section-copy">We are restoring your MovieMate session.</p>
+      </section>
+    `;
+    return;
+  }
+
   if (!isSignedIn() || !currentUserProfile) {
     target.innerHTML = `
       <section class="account-empty-state">
@@ -6017,53 +9699,69 @@ function renderProfilePage() {
     return;
   }
 
+  const profileParams = new URLSearchParams(window.location.search);
+  const targetUid = profileParams.get("uid") || resolvedCurrentUid;
+  const profileData = targetUid === resolvedCurrentUid ? currentUserProfile : viewedProfileData || currentUserProfile;
+  const isOwnProfile = targetUid === resolvedCurrentUid;
+
+  if (!isOwnProfile && !viewedProfileData) {
+    target.innerHTML = `
+      <section class="account-empty-state">
+        <p class="eyebrow">Profile</p>
+        <h1>This profile is not available right now.</h1>
+        <p class="section-copy">Try again after refreshing once.</p>
+      </section>
+    `;
+    return;
+  }
   const visibleTitles = getVisibleTitles(titlesCache);
-  const reviewEntries = getProfileReviewEntries(visibleTitles);
-  const submittedTitles = getProfilePosts(titlesCache);
+  const reviewEntries = getProfileReviewEntries(visibleTitles, targetUid);
   const personalCollections = buildPersonalCollections(visibleTitles);
-  const interestedTitles = buildInterestedTitles(visibleTitles);
-  const watchStatus = getWatchStatusMap();
+  const interestedTitles = buildInterestedTitles(visibleTitles, profileData);
+  const watchStatus = profileData?.watchStatus || {};
+  const followersCount = getProfileFollowersCount(profileData);
+  const followingCount = getProfileFollowingCount(profileData);
   const stats = {
     reviews: reviewEntries.length,
-    posts: submittedTitles.length,
-    collections: personalCollections.length,
-    saved: getSavedTitles().length,
+    following: followingCount,
+    collections: isOwnProfile ? personalCollections.length : 0,
+    saved: Array.isArray(profileData?.savedTitles) ? profileData.savedTitles.length : 0,
     interested: Object.values(watchStatus).filter((value) => normalizeWatchStatusValue(value) === "interested").length
   };
+  const followActive = !isOwnProfile && isFollowingUid(targetUid);
+  const profileCollections = isOwnProfile ? personalCollections : [];
 
   target.innerHTML = `
     <section class="profile-page-shell">
       <aside class="profile-side-card">
         <div class="profile-avatar-wrap">
-          ${profileAvatarTemplate(currentUserProfile, currentUser, "profile-avatar")}
+          ${profileAvatarTemplate(profileData, targetUid === resolvedCurrentUid ? currentUser : null, "profile-avatar")}
         </div>
-        <div class="profile-avatar-actions">
-          <button class="secondary-btn" type="button" id="profileAvatarUploadTrigger">Upload profile photo</button>
-          <button class="ghost-link" type="button" id="profileAvatarGenerateBtn">Create avatar</button>
-          <input class="hidden" id="profileAvatarUploadInput" type="file" accept="image/*" />
-        </div>
-        <h1>${escapeHtml(getProfileDisplayName())}</h1>
-        <p class="profile-handle">@${escapeHtml(getProfileUsername())}</p>
+        <h1 class="profile-name">${escapeHtml(getProfileDisplayName(profileData, targetUid === resolvedCurrentUid ? currentUser : null))}</h1>
+        <p class="profile-handle">@${escapeHtml(getProfileUsername(profileData, targetUid === resolvedCurrentUid ? currentUser : null))}</p>
         <div class="profile-stat-row">
-          <article><strong>${stats.reviews}</strong><span>Reviews</span></article>
-          <article><strong>${stats.posts}</strong><span>Posts</span></article>
-          <article><strong>${stats.collections}</strong><span>Collections</span></article>
+          <article><strong>${stats.reviews}</strong><span>Reviews<br />Posted</span></article>
+          <article><strong>${stats.following}</strong><span>Profiles<br />Following</span></article>
+          <article><strong>${stats.collections}</strong><span>Public<br />Collections</span></article>
         </div>
-        <p class="profile-bio">${escapeHtml(currentUserProfile.bio || "Add a short bio in settings to personalize your MovieMate profile.")}</p>
+        <p class="profile-bio">${escapeHtml(profileData?.bio || "Add a short bio in settings to personalize your MovieMate profile.")}</p>
         <div class="profile-mini-stats">
-          <span>${stats.saved} saved</span>
-          <span>${stats.interested} interested</span>
+          <span>👥 ${followersCount} Followers</span>
+          <span>• ${followingCount} Following</span>
         </div>
         <div class="profile-card-actions">
-          <a class="secondary-btn" href="/account.html">Edit Profile</a>
+          ${
+            isOwnProfile
+              ? '<a class="primary-btn profile-follow-btn" href="/account.html">Edit Profile</a>'
+              : `<button class="primary-btn profile-follow-btn ${followActive ? "active" : ""}" type="button" data-follow-uid="${escapeHtml(targetUid)}">${followActive ? "Following" : "Follow"}</button>`
+          }
         </div>
       </aside>
 
       <section class="profile-main-panel">
         <div class="profile-tabs">
-          <button class="profile-tab active" data-profile-tab="reviews" type="button">Reviews</button>
-          <button class="profile-tab" data-profile-tab="posts" type="button">Posts</button>
-          <button class="profile-tab" data-profile-tab="collections" type="button">Collections</button>
+          <button class="profile-tab active" data-profile-tab="reviews" type="button">✎ Reviews</button>
+          <button class="profile-tab" data-profile-tab="collections" type="button">☰ Collections</button>
         </div>
 
         <div class="profile-panel-body active" data-profile-panel="reviews">
@@ -6073,9 +9771,19 @@ function renderProfilePage() {
               <button class="profile-filter-pill" data-profile-filter="skip" type="button">Skip</button>
               <button class="profile-filter-pill" data-profile-filter="timepass" type="button">Timepass</button>
               <button class="profile-filter-pill" data-profile-filter="goForIt" type="button">Go For It</button>
-              <button class="profile-filter-pill" data-profile-filter="perfect" type="button">Perfect</button>
+              <button class="profile-filter-pill" data-profile-filter="perfect" type="button">Perfection</button>
             </div>
-            <a class="secondary-btn" href="/my-reviews.html">Open calendar view</a>
+            <div class="profile-view-switcher">
+              <a class="icon-chip compact" href="/my-reviews.html" aria-label="Open calendar view">☷</a>
+              <button class="icon-chip compact" type="button" aria-label="Grid view" data-profile-grid-toggle="true">◫</button>
+              <button class="icon-chip compact" type="button" aria-label="Search profile" data-profile-search-toggle="true">⌕</button>
+            </div>
+          </div>
+          <div class="profile-review-search hidden" id="profileReviewSearchWrap">
+            <label class="input-group">
+              <span>Search reviews</span>
+              <input id="profileReviewSearchInput" type="text" placeholder="Search by title" />
+            </label>
           </div>
           <div class="profile-review-list" id="profileReviewList">
             ${
@@ -6086,21 +9794,11 @@ function renderProfilePage() {
           </div>
         </div>
 
-        <div class="profile-panel-body hidden" data-profile-panel="posts">
-          <div class="profile-post-list">
-            ${
-              submittedTitles.length
-                ? submittedTitles.map(profilePostCardTemplate).join("")
-                : '<p class="empty-state">Titles you add or save will start shaping this area over time.</p>'
-            }
-          </div>
-        </div>
-
         <div class="profile-panel-body hidden" data-profile-panel="collections">
           <div class="collection-grid profile-collection-grid">
             ${
-              personalCollections.length
-                ? personalCollections.map(collectionCardTemplate).join("")
+              profileCollections.length
+                ? profileCollections.map(collectionCardTemplate).join("")
                 : '<p class="empty-state">Save titles, react, and use watch actions to generate your personal collections.</p>'
             }
           </div>
@@ -6111,7 +9809,7 @@ function renderProfilePage() {
         <div class="panel-header">
           <div>
             <p class="panel-label">Interested In</p>
-            <h2>Saved by you</h2>
+            <h2>Watch next</h2>
           </div>
         </div>
         <div class="profile-interest-list">
@@ -6133,6 +9831,28 @@ function renderAccountPage() {
   const target = document.querySelector("#accountPage");
 
   if (!target) {
+    return;
+  }
+
+  const cachedUid = getRememberedSignedInUid();
+
+  if (!hasResolvedAuthState && !currentUserProfile && cachedUid) {
+    const cachedProfile = loadUserProfileCache(cachedUid);
+
+    if (cachedProfile) {
+      currentUserProfile = cachedProfile;
+      userProfilesCache.set(cachedUid, cachedProfile);
+    }
+  }
+
+  if (!hasResolvedAuthState && !currentUserProfile) {
+    target.innerHTML = `
+      <section class="account-empty-state">
+        <p class="eyebrow">Account settings</p>
+        <h1>Loading your account...</h1>
+        <p class="section-copy">We are restoring your MovieMate session.</p>
+      </section>
+    `;
     return;
   }
 
@@ -6291,6 +10011,7 @@ function renderAccountPage() {
                 ? '<span class="profile-reaction-badge">Verified</span>'
                 : '<button class="primary-btn health-action-btn" id="resendVerificationBtn" type="button">Send verification email</button>'
             }
+            <p class="form-message health-help-copy" id="accountHealthMessage" aria-live="polite"></p>
           </div>
           <div class="health-card">
             <h3>Active Strikes (${activeStrikes})</h3>
@@ -6326,6 +10047,27 @@ function renderAccountPage() {
 }
 
 function setupProfileTabs(reviewEntries) {
+  const rerenderReviewList = () => {
+    const activeFilter =
+      document.querySelector(".profile-filter-pill.active")?.dataset.profileFilter || "all";
+    const query = document.querySelector("#profileReviewSearchInput")?.value?.trim().toLowerCase() || "";
+    const list = document.querySelector("#profileReviewList");
+
+    if (!list) {
+      return;
+    }
+
+    let filtered = activeFilter === "all" ? reviewEntries : reviewEntries.filter((entry) => entry.reaction === activeFilter);
+
+    if (query) {
+      filtered = filtered.filter((entry) => entry.title.title.toLowerCase().includes(query));
+    }
+
+    list.innerHTML = filtered.length
+      ? filtered.map(profileReviewCardTemplate).join("")
+      : '<p class="empty-state">No reviews yet for this filter.</p>';
+  };
+
   document.querySelectorAll(".profile-tab").forEach((button) => {
     button.addEventListener("click", () => {
       const tab = button.dataset.profileTab;
@@ -6347,12 +10089,94 @@ function setupProfileTabs(reviewEntries) {
 
       document.querySelectorAll(".profile-filter-pill").forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
-
-      const filtered = filter === "all" ? reviewEntries : reviewEntries.filter((entry) => entry.reaction === filter);
-      list.innerHTML = filtered.length
-        ? filtered.map(profileReviewCardTemplate).join("")
-        : '<p class="empty-state">No reviews yet for this filter.</p>';
+      rerenderReviewList();
     });
+  });
+
+  document.querySelector("[data-profile-grid-toggle='true']")?.addEventListener("click", () => {
+    document.querySelector("#profileReviewList")?.classList.toggle("profile-review-list-grid");
+  });
+
+  document.querySelector("[data-profile-search-toggle='true']")?.addEventListener("click", () => {
+    document.querySelector("#profileReviewSearchWrap")?.classList.toggle("hidden");
+    document.querySelector("#profileReviewSearchInput")?.focus();
+  });
+
+  document.querySelector("#profileReviewSearchInput")?.addEventListener("input", () => {
+    rerenderReviewList();
+  });
+
+  document.querySelector("[data-follow-uid]")?.addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    const targetUid = button?.getAttribute("data-follow-uid") || "";
+
+    if (!requireAccount("follow other MovieMate members")) {
+      return;
+    }
+
+    try {
+      button.disabled = true;
+      const following = await toggleFollowUser(targetUid);
+      await renderProfilePage();
+      showMessage("#authMessage", following ? "You are now following this profile." : "You unfollowed this profile.");
+    } catch (error) {
+      console.error(error);
+      window.alert(getActionErrorMessage(error, "Could not update follow status right now."));
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  document.addEventListener("click", async (event) => {
+    const target = event.target instanceof HTMLElement ? event.target : null;
+
+    if (!target) {
+      return;
+    }
+
+    const toggle = target.closest("[data-profile-menu-toggle='true']");
+
+    if (toggle) {
+      const wrap = toggle.closest(".profile-card-menu-wrap");
+      const menu = wrap?.querySelector("[data-profile-menu='true']");
+      document.querySelectorAll("[data-profile-menu='true']").forEach((item) => {
+        if (item !== menu) {
+          item.classList.add("hidden");
+        }
+      });
+      menu?.classList.toggle("hidden");
+      return;
+    }
+
+    const shareButton = target.closest("[data-profile-share]");
+
+    if (shareButton) {
+      const titleId = shareButton.getAttribute("data-title-id") || "";
+      const title = titlesCache.find((item) => item.id === titleId);
+
+      if (title) {
+        try {
+          await shareTitle(title);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      shareButton.closest("[data-profile-menu='true']")?.classList.add("hidden");
+      return;
+    }
+
+    const reportButton = target.closest("[data-profile-report]");
+
+    if (reportButton) {
+      window.alert("Report tools can be added next.");
+      reportButton.closest("[data-profile-menu='true']")?.classList.add("hidden");
+      return;
+    }
+
+    if (!target.closest(".profile-card-menu-wrap")) {
+      document.querySelectorAll("[data-profile-menu='true']").forEach((item) => item.classList.add("hidden"));
+    }
   });
 }
 
@@ -6360,6 +10184,9 @@ function setupAccountSettingsForm() {
   const form = document.querySelector("#profileSettingsForm");
   const resetPasswordButton = document.querySelector("#resetPasswordBtn");
   const resendVerificationButton = document.querySelector("#resendVerificationBtn");
+  const accountHealthMessageSelector = document.querySelector("#accountHealthMessage")
+    ? "#accountHealthMessage"
+    : "#profileSettingsMessage";
   const avatarUploadTrigger = document.querySelector("#avatarUploadTrigger");
   const avatarUploadInput = document.querySelector("#avatarUploadInput");
   const avatarGenerateButton = document.querySelector("#avatarGenerateBtn");
@@ -6463,15 +10290,24 @@ function setupAccountSettingsForm() {
 
   resendVerificationButton?.addEventListener("click", async () => {
     if (!currentUser) {
+      showMessage(accountHealthMessageSelector, "Please sign in again, then try sending the verification email.");
+      return;
+    }
+
+    if (!currentUser.email) {
+      showMessage(accountHealthMessageSelector, "No email address was found on this account.");
       return;
     }
 
     try {
-      await sendEmailVerification(currentUser, buildAuthActionSettings());
-      showMessage("#profileSettingsMessage", "Verification email sent. Check inbox, spam, and promotions.");
+      showMessage(accountHealthMessageSelector, "Sending verification email...");
+      await currentUser.reload();
+      currentUser = auth.currentUser || currentUser;
+      await sendVerificationEmailSafely(currentUser);
+      showMessage(accountHealthMessageSelector, getVerificationSuccessMessage(currentUser.email));
     } catch (error) {
       console.error(error);
-      showMessage("#profileSettingsMessage", "Could not send verification email right now.");
+      showMessage(accountHealthMessageSelector, getVerificationEmailErrorMessage(error));
     }
   });
 
@@ -6502,9 +10338,22 @@ async function refreshCurrentPage() {
     return;
   }
 
+  if (document.body.dataset.page === "season") {
+    await renderSeasonPage();
+    updateOwnerToggle();
+    return;
+  }
+
+  if (document.body.dataset.page === "admin") {
+    await renderAdminPage();
+    updateOwnerToggle();
+    return;
+  }
+
   if (document.body.dataset.page === "profile") {
     await fetchTitles();
-    await renderProfilePage();
+    await prepareViewedProfile();
+    renderProfilePage();
     return;
   }
 
@@ -6542,21 +10391,20 @@ async function trackTitleView(titleId) {
   sessionStorage.setItem(viewKey, "true");
   patchTitleCounters(titleId, { viewsCount: 1 });
 
-  updateDoc(doc(db, TITLES_COLLECTION, titleId), {
-    viewsCount: increment(1)
-  }).catch((error) => {
+  try {
+    await updateDoc(doc(db, TITLES_COLLECTION, titleId), {
+      viewsCount: increment(1)
+    });
+  } catch (error) {
     console.error(error);
-  });
+  }
 }
 
 function setupUserNotificationsModal() {
-  const openButtons = document.querySelectorAll("[data-top-notifications]");
+  const openButton = document.querySelector("#topNotificationsBtn");
   const closeButton = document.querySelector("#notificationsClose");
 
-  openButtons.forEach((button) => button.addEventListener("click", () => {
-    button.classList.add("active");
-    openNotificationsModal();
-  }));
+  openButton?.addEventListener("click", openNotificationsModal);
   closeButton?.addEventListener("click", closeNotificationsModal);
 
   document.addEventListener("click", (event) => {
@@ -6601,112 +10449,6 @@ function setupScrollControls() {
       top: document.documentElement.scrollHeight,
       behavior: "smooth"
     });
-  });
-}
-
-function isMobileInstallEligible() {
-  const isMobileViewport = window.matchMedia("(max-width: 820px)").matches;
-  const isStandalone =
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.navigator.standalone === true;
-
-  return isMobileViewport && !isStandalone;
-}
-
-function hideInstallBanner() {
-  const banner = document.querySelector("#installBanner");
-  if (!banner) {
-    return;
-  }
-
-  banner.classList.remove("visible");
-  banner.classList.add("hidden");
-}
-
-function showInstallBanner() {
-  if (!isMobileInstallEligible()) {
-    return;
-  }
-
-  if (localStorage.getItem(INSTALL_BANNER_DISMISSED_KEY) === "true") {
-    return;
-  }
-
-  const banner = document.querySelector("#installBanner");
-  if (!banner) {
-    return;
-  }
-
-  banner.classList.remove("hidden");
-  banner.classList.add("visible");
-}
-
-function dismissInstallBanner() {
-  localStorage.setItem(INSTALL_BANNER_DISMISSED_KEY, "true");
-  hideInstallBanner();
-}
-
-function setupInstallBanner() {
-  const banner = document.querySelector("#installBanner");
-  const actionButton = document.querySelector("#installBannerAction");
-  const closeButton = document.querySelector("#installBannerClose");
-
-  if (!banner || !actionButton || !closeButton) {
-    return;
-  }
-
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    deferredInstallPrompt = event;
-    showInstallBanner();
-  });
-
-  window.addEventListener("appinstalled", () => {
-    deferredInstallPrompt = null;
-    dismissInstallBanner();
-  });
-
-  closeButton.addEventListener("click", dismissInstallBanner);
-
-  actionButton.addEventListener("click", async () => {
-    if (deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
-      await deferredInstallPrompt.userChoice.catch(() => null);
-      deferredInstallPrompt = null;
-      dismissInstallBanner();
-      return;
-    }
-
-    if (/iphone|ipad|ipod/i.test(window.navigator.userAgent)) {
-      window.alert("Use Safari Share > Add to Home Screen to install MovieMate.");
-      dismissInstallBanner();
-      return;
-    }
-
-    window.alert("Use your browser menu and choose Install app or Add to Home screen to install MovieMate.");
-    dismissInstallBanner();
-  });
-
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker
-        .register("/service-worker.js", { updateViaCache: "none" })
-        .then((registration) => registration.update())
-        .catch((error) => {
-          console.warn("Could not register service worker", error);
-        });
-    });
-  }
-
-  window.addEventListener("resize", () => {
-    if (!isMobileInstallEligible()) {
-      hideInstallBanner();
-      return;
-    }
-
-    if (localStorage.getItem(INSTALL_BANNER_DISMISSED_KEY) !== "true") {
-      showInstallBanner();
-    }
   });
 }
 
@@ -6818,6 +10560,8 @@ async function init() {
   setupSaveButtons();
   setupDeleteButtons();
   setupCommentDeleteButtons();
+  setupCommentInteractionButtons();
+  setupDetailMeterInteractions();
   setupOwnerActionButtons();
   setupOwnerMode();
   setupOwnerEditForm();
@@ -6826,26 +10570,23 @@ async function init() {
   setupAuthModal();
   setupSpoilerToggle();
   setupGlobalSearchModal();
+  setupDetailHeaderPanels();
 
   if (document.body.dataset.page === "home") {
     renderHomepageSkeletons();
-    setupInstallBanner();
     setupFilters();
     setupLoadMore();
     setupScheduleControls();
     setupCollectionTabs();
     setupInterestWindow();
-    setupHomeBrowsePopover();
-    setupHomeSpacesControls();
     setupHomeFullscreenSections();
-    setupExploreHeaderNav();
     setupTopSearch();
     setupUserNotificationsModal();
     setupScrollControls();
     setupSuggestForm();
+    focusBrowseTargetFromUrl();
     await renderHomePage();
     refreshHomePageInBackground();
-    window.setTimeout(showInstallBanner, 1200);
   }
 
   if (document.body.dataset.page === "details") {
@@ -6853,8 +10594,19 @@ async function init() {
     updateOwnerToggle();
   }
 
+  if (document.body.dataset.page === "season") {
+    await renderSeasonPage();
+    updateOwnerToggle();
+  }
+
+  if (document.body.dataset.page === "admin") {
+    await renderAdminPage();
+    updateOwnerToggle();
+  }
+
   if (document.body.dataset.page === "profile") {
     await fetchTitles();
+    await prepareViewedProfile();
     renderProfilePage();
   }
 
@@ -6914,3 +10666,14 @@ init().catch((error) => {
   showMessage("#formMessage", "Could not load MovieMate right now.");
   showMessage("#commentMessage", "Could not load comments right now.");
 });
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/service-worker.js", { updateViaCache: "none" })
+      .then((registration) => registration.update())
+      .catch((error) => {
+        console.warn("Could not register service worker", error);
+      });
+  });
+}
