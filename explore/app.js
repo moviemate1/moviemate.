@@ -2754,13 +2754,21 @@ function getHomeSpacesActiveTopics() {
 }
 
 function homeSpacesCardTemplate(title, mode) {
+  const href = `${buildTitleUrl(title.id)}${mode === "discussion" || mode === "rumor" ? "#discussions" : ""}`;
+
   return `
-    <a class="home-space-card" href="${buildTitleUrl(title.id)}${mode === "discussion" || mode === "rumor" ? "#discussions" : ""}">
+    <a class="home-space-card" href="${href}">
       <img src="${getOptimizedImageUrl(title.backdrop || title.image, 900)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
-      <span>${escapeHtml(getHomeSpacesPostLabel(title, mode))}</span>
-      <h3>${escapeHtml(title.title)}</h3>
-      <p>${escapeHtml(getHomeSpacesPostCopy(title, mode))}</p>
-      <small>${escapeHtml(title.type)} • ${escapeHtml(formatPlatforms(title.platforms || []))}</small>
+      <div class="home-space-card-row">
+        <div class="home-space-card-copy">
+          <span>${escapeHtml(getHomeSpacesPostLabel(title, mode))}</span>
+          <p><strong>${escapeHtml(title.title)}</strong> ${escapeHtml(getHomeSpacesPostCopy(title, mode))}</p>
+          <small>By MovieMate • ${mode === "discussion" ? `${title.comments?.length || 0} comments` : `${getInterestedCount(title)} interested`}</small>
+        </div>
+        <span class="home-space-comment-bubble" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7 8h10"></path><path d="M7 12h6"></path><path d="M5 19l3-3h9a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3"></path></svg>
+        </span>
+      </div>
     </a>
   `;
 }
