@@ -33,7 +33,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="explore/styles.css?v=106-header-panels" />
+    <link rel="stylesheet" href="explore/styles.css?v=108-no-browse-page" />
   </head>
   <body data-page="home">
     <header class="explore-header-mobile-shell" aria-label="MovieMate mobile header">
@@ -258,10 +258,10 @@
                 </div>
               </div>
               <div class="browse-panel-grid">
-                <a class="browse-box" href="#browse"><span class="browse-box-icon">◫</span><span>Category</span></a>
-                <a class="browse-box" href="#browse"><span class="browse-box-icon">◎</span><span>Genre</span></a>
-                <a class="browse-box" href="#browse"><span class="browse-box-icon">◍</span><span>Country</span></a>
-                <a class="browse-box" href="#browse"><span class="browse-box-icon">文</span><span>Language</span></a>
+                <a class="browse-box" href="#trending"><span class="browse-box-icon">◫</span><span>Category</span></a>
+                <a class="browse-box" href="#trending"><span class="browse-box-icon">◎</span><span>Genre</span></a>
+                <a class="browse-box" href="#trending"><span class="browse-box-icon">◍</span><span>Country</span></a>
+                <a class="browse-box" href="#trending"><span class="browse-box-icon">文</span><span>Language</span></a>
                 <a class="browse-box" href="#collections"><span class="browse-box-icon">☺</span><span>Community</span></a>
                 <a class="browse-box" href="#trending"><span class="browse-box-icon">★</span><span>District</span></a>
                 <a class="browse-box" href="#bollywoodRowHeading"><span class="browse-box-icon">हि</span><span>Bollywood</span></a>
@@ -291,51 +291,6 @@
               <div class="most-interested-list" id="mostInterestedList"></div>
             </section>
           </aside>
-        </section>
-
-        <section class="section browse-section" id="browse">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Browse library</p>
-              <h2 id="browseHeadingText">Search by title, genre, language, or format</h2>
-            </div>
-            <p class="section-copy" id="browseCopyText">
-              Use fast filters to scan the library in a cleaner, more even card layout.
-            </p>
-          </div>
-
-          <div class="controls-card">
-            <label class="input-group">
-              <span>Search</span>
-              <input id="searchInput" type="search" placeholder="Search movies and series" autocomplete="off" />
-              <div class="search-suggestions hidden" id="searchSuggestions"></div>
-            </label>
-            <label class="input-group">
-              <span>Type</span>
-              <select id="typeFilter">
-                <option value="all">All types</option>
-                <option value="Movie">Movies</option>
-                <option value="Series">Shows</option>
-              </select>
-            </label>
-            <label class="input-group">
-              <span>Genre</span>
-              <select id="genreFilter">
-                <option value="all">All genres</option>
-              </select>
-            </label>
-            <label class="input-group">
-              <span>Language</span>
-              <select id="languageFilter">
-                <option value="all">All languages</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="movie-grid" id="movieGrid"></div>
-          <div class="load-more-wrap hidden" id="loadMoreWrap">
-            <button class="secondary-btn" id="loadMoreBtn" type="button">Load More</button>
-          </div>
         </section>
 
         <section class="section schedule-section" id="schedule">
@@ -467,7 +422,7 @@
       <a class="mobile-dock-link" href="#collections">
         <span>Collections</span>
       </a>
-      <a class="mobile-dock-link" href="#browse">
+      <a class="mobile-dock-link" href="#trending" data-home-browse-toggle aria-haspopup="dialog" aria-expanded="false">
         <span>Browse</span>
       </a>
       <button class="mobile-dock-link" id="ownerDockToggle" type="button">
@@ -608,7 +563,7 @@
       </div>
     </div>
 
-    <script type="module" src="explore/app.js?v=32-home-panels"></script>
+    <script type="module" src="explore/app.js?v=34-no-browse-page"></script>
     <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a3795ec89854463a9b90761fb384fb6c"}'></script><!-- End Cloudflare Web Analytics -->
   </body>
 </html>
