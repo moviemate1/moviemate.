@@ -5035,20 +5035,8 @@ function detailHeaderNotificationsPanelTemplate() {
   const notifications = buildUserNotifications(titles).slice(0, 8);
 
   return `
-    <div class="detail-header-panel-surface detail-header-panel-surface-floating">
-      <div class="detail-panel-title-row">
-        <span class="detail-panel-title-mark">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a4 4 0 0 1 4 4v2.1c0 1.2.4 2.3 1.1 3.2l1 1.2H5.9l1-1.2c.7-.9 1.1-2 1.1-3.2V8.5a4 4 0 0 1 4-4Z"></path><path d="M9.5 18a2.5 2.5 0 0 0 5 0"></path></svg>
-          <span>Notifications</span>
-        </span>
-      </div>
-      <div class="notification-feed detail-header-notification-feed">
-        ${
-          notifications.length
-            ? notifications.map(userNotificationTemplate).join("")
-            : '<p class="detail-search-empty-copy">No notifications yet. Saved titles and interested titles will show updates here.</p>'
-        }
-      </div>
+    <div class="detail-header-panel-surface detail-header-panel-surface-floating detail-header-panel-surface-notifications">
+      ${notificationDropdownShellTemplate(notifications)}
     </div>
   `;
 }
@@ -5731,16 +5719,107 @@ function renderCollectionPage() {
   `;
 }
 
+function getNotificationDisplayTitle(item) {
+  const typeSuffix = item.typeLabel ? ` (${item.typeLabel})` : "";
+
+  if (/released/i.test(item.label || "")) {
+    return `Releasing Today: ${item.title}${typeSuffix}`;
+  }
+
+  if (/updated/i.test(item.label || "")) {
+    return `Update: ${item.title}`;
+  }
+
+  if (/new title/i.test(item.label || "")) {
+    return `New on MovieMate: ${item.title}`;
+  }
+
+  if (/all-time/i.test(item.label || "")) {
+    return `${item.title} is trending`;
+  }
+
+  return item.title;
+}
+
+function getNotificationDateLabel(item) {
+  if (item.releaseDate) {
+    return formatReleaseDate(item.releaseDate);
+  }
+
+  if (item.createdAtMs) {
+    return new Intl.DateTimeFormat("en", { day: "numeric", month: "short" }).format(new Date(item.createdAtMs));
+  }
+
+  return "MovieMate update";
+}
+
 function userNotificationTemplate(item) {
+  const image = item.image ? getOptimizedImageUrl(item.image, 154) : "";
+  const title = getNotificationDisplayTitle(item);
+  const date = getNotificationDateLabel(item);
+  const content = `
+    <span class="notification-popover-poster" aria-hidden="true">
+      ${
+        image
+          ? `<img src="${escapeHtml(image)}" alt="" loading="lazy">`
+          : `<span>${escapeHtml(String(item.title || "M").charAt(0).toUpperCase())}</span>`
+      }
+    </span>
+    <span class="notification-popover-copy">
+      <strong>${escapeHtml(title)}</strong>
+      <small>${escapeHtml(date)}</small>
+    </span>
+  `;
+
+  return item.href
+    ? `<a class="notification-feed-card notification-popover-item" href="${escapeHtml(item.href)}">${content}</a>`
+    : `<article class="notification-feed-card notification-popover-item">${content}</article>`;
+}
+
+function notificationListTemplate(items) {
+  if (!items.length) {
+    return '<p class="detail-search-empty-copy notification-popover-empty">No notifications yet. Saved titles and interested titles will show updates here.</p>';
+  }
+
+  const lastSevenDays = items.slice(0, Math.min(1, items.length));
+  const lastThirtyDays = items.slice(lastSevenDays.length);
+  const groups = [
+    ["Last 7 Days", lastSevenDays],
+    ["Last 30 Days", lastThirtyDays]
+  ].filter(([, groupItems]) => groupItems.length);
+
+  return groups
+    .map(
+      ([label, groupItems]) => `
+        <section class="notification-popover-group">
+          <h3 class="notification-popover-group-title">${label}</h3>
+          ${groupItems.map(userNotificationTemplate).join("")}
+        </section>
+      `
+    )
+    .join("");
+}
+
+function notificationDropdownShellTemplate(items) {
   return `
-    <article class="notification-feed-card">
-      <div>
-        <p class="eyebrow">${escapeHtml(item.label)}</p>
-        <h3>${escapeHtml(item.title)}</h3>
-        <p>${escapeHtml(item.copy)}</p>
+    <div class="notification-popover-card">
+      <div class="notification-popover-head">
+        <h2>Notifications</h2>
+        <span class="notification-popover-head-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7 3v4"></path><path d="M17 3v4"></path><path d="M4.5 9h15"></path><path d="M6 5h12a2 2 0 0 1 2 2v13H4V7a2 2 0 0 1 2-2Z"></path><path d="M8 14h2"></path><path d="M14 14h2"></path><path d="M8 18h2"></path><path d="M14 18h2"></path></svg>
+        </span>
       </div>
-      ${item.href ? `<a class="ghost-link" href="${item.href}">Open</a>` : ""}
-    </article>
+      <div class="notification-popover-tabs" role="tablist" aria-label="Notification filters">
+        <button class="notification-popover-tab active" type="button">All</button>
+        <button class="notification-popover-tab" type="button">Updates</button>
+        <button class="notification-popover-tab" type="button">Activity</button>
+      </div>
+      <div class="notification-popover-body">
+        <div class="notification-feed detail-header-notification-feed">
+          ${notificationListTemplate(items)}
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -5772,11 +5851,14 @@ function buildUserNotifications(titles) {
             items.push({
               id: `release-${title.id}-${comparable}`,
               label: savedTracked ? "Saved title released" : "Interested title released",
-              title: title.title,
-              copy: `${getDisplayTypeLabel(title)} • ${formatReleaseDate(title.releaseDate)} • now ready to watch.`,
-              href: buildTitleUrl(title.id),
-              createdAtMs: updatedAtMs || createdAtMs
-            });
+            title: title.title,
+            copy: `${getDisplayTypeLabel(title)} • ${formatReleaseDate(title.releaseDate)} • now ready to watch.`,
+            href: buildTitleUrl(title.id),
+            image: title.image,
+            typeLabel: getDisplayTypeLabel(title),
+            releaseDate: title.releaseDate,
+            createdAtMs: updatedAtMs || createdAtMs
+          });
           }
         }
       }
@@ -5790,6 +5872,9 @@ function buildUserNotifications(titles) {
             ? "A title on your watch radar has fresh updates."
             : "A saved title has fresh updates waiting for you.",
           href: buildTitleUrl(title.id),
+          image: title.image,
+          typeLabel: getDisplayTypeLabel(title),
+          releaseDate: title.releaseDate,
           createdAtMs: updatedAtMs
         });
       }
@@ -5803,6 +5888,9 @@ function buildUserNotifications(titles) {
     title: entry.title,
     copy: entry.copy,
     href: entry.href,
+    image: entry.image || "",
+    typeLabel: entry.typeLabel || "",
+    releaseDate: entry.releaseDate || "",
     createdAtMs: getCreatedAtMs(entry.createdAt)
   }));
 
@@ -5816,6 +5904,9 @@ function buildUserNotifications(titles) {
       title: title.title,
       copy: `${title.type} • ${formatReleaseDate(title.releaseDate)} • now live on MovieMate.`,
       href: buildTitleUrl(title.id),
+      image: title.image,
+      typeLabel: getDisplayTypeLabel(title),
+      releaseDate: title.releaseDate,
       createdAtMs: getCreatedAtMs(title.createdAt)
     }));
 
@@ -5828,6 +5919,9 @@ function buildUserNotifications(titles) {
       title: title.title,
       copy: `${getReactionStats(title).recommendedPercent}% recommend • ${title.genre}`,
       href: buildTitleUrl(title.id),
+      image: title.image,
+      typeLabel: getDisplayTypeLabel(title),
+      releaseDate: title.releaseDate,
       createdAtMs: 0
     }));
 
@@ -5850,7 +5944,7 @@ function renderUserNotifications(titles) {
   const seenAt = Number(localStorage.getItem(USER_NOTIFICATIONS_SEEN_KEY) || 0);
   const unseenCount = items.filter((item) => item.createdAtMs && item.createdAtMs > seenAt).length;
 
-  list.innerHTML = items.map(userNotificationTemplate).join("");
+  list.innerHTML = notificationListTemplate(items);
   emptyState.classList.toggle("hidden", items.length > 0);
 
   if (dot) {

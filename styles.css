@@ -1799,6 +1799,182 @@ button.ghost-link {
   color: var(--muted);
 }
 
+#notificationsModal.overlay-modal {
+  align-items: flex-start;
+  justify-content: center;
+  padding: 92px 18px 28px;
+}
+
+#notificationsModal .overlay-backdrop {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+#notificationsModal .notification-overlay {
+  width: min(450px, calc(100vw - 28px));
+  max-height: min(720px, calc(100vh - 118px));
+  padding: 0;
+  overflow: hidden;
+}
+
+.notification-popover-card {
+  width: min(450px, calc(100vw - 28px));
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 74% 44%, rgba(255, 255, 255, 0.14), transparent 18%),
+    radial-gradient(circle at 88% 80%, rgba(201, 50, 86, 0.16), transparent 24%),
+    rgba(7, 7, 9, 0.96);
+  box-shadow: 0 30px 76px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(18px);
+}
+
+.notification-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.11);
+}
+
+.notification-popover-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+
+.notification-popover-head-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+}
+
+.notification-popover-head-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.notification-popover-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.notification-popover-tab {
+  position: relative;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 0;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+}
+
+.notification-popover-tab.active {
+  color: #fff;
+}
+
+.notification-popover-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.notification-popover-body {
+  max-height: min(58vh, 560px);
+  overflow: auto;
+}
+
+.notification-popover-body .notification-feed {
+  display: block;
+  gap: 0;
+}
+
+.notification-popover-group-title {
+  margin: 0;
+  padding: 15px 20px 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.notification-popover-item.notification-feed-card {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 20px 15px;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  background: transparent;
+}
+
+.notification-popover-item:hover {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.notification-popover-poster {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.74);
+  font-weight: 900;
+}
+
+.notification-popover-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.notification-popover-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.notification-popover-copy strong {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.95rem;
+  line-height: 1.35;
+  font-weight: 750;
+}
+
+.notification-popover-copy small {
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.notification-popover-empty {
+  margin: 0;
+  padding: 20px;
+}
+
 .search-suggestions {
   display: grid;
   gap: 8px;
@@ -7177,6 +7353,39 @@ body[data-page="details"] .topbar.compact .account-top-link .account-chip-avatar
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24);
 }
 
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link {
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 46px !important;
+  min-width: 46px !important;
+  height: 46px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-signin-icon {
+  display: grid !important;
+  place-items: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-signin-icon svg {
+  display: block !important;
+  width: 19px !important;
+  height: 19px !important;
+  margin: 0 !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-chip-avatar {
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+}
+
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-backdrop {
   display: none;
 }
@@ -7241,6 +7450,20 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
   padding: 18px 20px 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-notifications {
+  width: min(450px, calc(100vw - 28px));
+  padding: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: transparent;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-notifications .notification-popover-card {
+  width: 100%;
+  border: 0;
+  box-shadow: none;
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-panel-title-row {
