@@ -5487,12 +5487,7 @@ const HOME_BROWSE_POPUP_LINKS = [
 ];
 
 function isMainHomepage() {
-  if (document.body.dataset.page !== "home") {
-    return false;
-  }
-
-  const pathname = window.location.pathname || "/";
-  return !pathname.startsWith("/explore/") && (pathname === "/" || pathname.endsWith("/index.html"));
+  return document.body.dataset.page === "home";
 }
 
 function isHomeFullscreenSectionHash(hash) {
