@@ -251,6 +251,11 @@ let pendingNotificationState = {
   count: null,
   unsubscribe: null
 };
+let titlesRealtimeState = {
+  unsubscribe: null,
+  renderTimer: null,
+  hasRenderedInitialSnapshot: false
+};
 let detailHeaderPanelState = {
   mode: "",
   searchTab: "content",
@@ -10761,6 +10766,44 @@ function setupOwnerNotificationsRealtime() {
   });
 }
 
+function scheduleRealtimePageRefresh() {
+  window.clearTimeout(titlesRealtimeState.renderTimer);
+  titlesRealtimeState.renderTimer = window.setTimeout(() => {
+    refreshCurrentPage().catch((error) => {
+      console.warn("Could not refresh live title data.", error);
+    });
+  }, 250);
+}
+
+function setupTitlesRealtime() {
+  titlesRealtimeState.unsubscribe?.();
+  titlesRealtimeState.unsubscribe = onSnapshot(collection(db, TITLES_COLLECTION), (snapshot) => {
+    if (snapshot.empty) {
+      return;
+    }
+
+    const liveTitles = snapshot.docs.map(normalizeTitle);
+    titlesCache = liveTitles;
+    saveTitlesCacheToStorage(liveTitles);
+
+    if (detailHeaderPanelState.mode) {
+      detailHeaderPanelState.titles = getVisibleTitles(liveTitles);
+      renderDetailHeaderPanel().catch((error) => {
+        console.warn("Could not refresh detail header panel.", error);
+      });
+    }
+
+    if (!titlesRealtimeState.hasRenderedInitialSnapshot) {
+      titlesRealtimeState.hasRenderedInitialSnapshot = true;
+      return;
+    }
+
+    scheduleRealtimePageRefresh();
+  }, (error) => {
+    console.warn("Could not listen for live title updates.", error);
+  });
+}
+
 async function init() {
   let hasHandledInitialAuthState = false;
   try {
@@ -10872,6 +10915,7 @@ async function init() {
   });
 
   updateAuthUI();
+  setupTitlesRealtime();
   setupOwnerNotificationsRealtime();
 }
 
