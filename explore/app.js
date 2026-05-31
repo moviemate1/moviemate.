@@ -200,6 +200,7 @@ let pendingNotificationState = {
   count: null,
   unsubscribe: null
 };
+const SPACES_TOPIC_OPTIONS = ["Indian", "International", "Anime", "Sports", "Games"];
 
 const DEFAULT_USER_PROFILE = {
   displayName: "",
@@ -2686,6 +2687,10 @@ function getHomeSpacesPostLabel(title, mode) {
     return "Discussion";
   }
 
+  if (mode === "rumor") {
+    return title.type === "Series" ? "Series Rumor" : "Movie Rumor";
+  }
+
   if (title.releaseDate && title.releaseDate > new Date().toISOString().slice(0, 10)) {
     return "Upcoming Report";
   }
@@ -2705,6 +2710,10 @@ function getHomeSpacesPostCopy(title, mode) {
       : `Open the discussion for ${title.title}.`;
   }
 
+  if (mode === "rumor") {
+    return `Rumors, possible leaks, and early details around ${title.title} can be discussed here.`;
+  }
+
   return title.description || `${title.title} is getting attention from MovieMate viewers.`;
 }
 
@@ -2718,6 +2727,10 @@ function getHomeSpacesTitles(titles, mode, activeTopics) {
       }
 
       if (mode === "discussion" && !(title.comments?.length || title.trending || getInterestedCount(title) > 0)) {
+        return false;
+      }
+
+      if (mode === "rumor" && !(title.trending || title.status === "Upcoming" || getInterestedCount(title) > 0)) {
         return false;
       }
 
@@ -2737,12 +2750,12 @@ function getHomeSpacesActiveTopics() {
   const active = Array.from(document.querySelectorAll("[data-home-spaces-topic].active"))
     .map((button) => button.dataset.homeSpacesTopic)
     .filter(Boolean);
-  return active.length ? active : ["Indian", "International", "Anime", "Sports", "Games"];
+  return active.length ? active : SPACES_TOPIC_OPTIONS;
 }
 
 function homeSpacesCardTemplate(title, mode) {
   return `
-    <a class="home-space-card" href="${buildTitleUrl(title.id)}${mode === "discussion" ? "#discussions" : ""}">
+    <a class="home-space-card" href="${buildTitleUrl(title.id)}${mode === "discussion" || mode === "rumor" ? "#discussions" : ""}">
       <img src="${getOptimizedImageUrl(title.backdrop || title.image, 900)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
       <span>${escapeHtml(getHomeSpacesPostLabel(title, mode))}</span>
       <h3>${escapeHtml(title.title)}</h3>
@@ -5673,17 +5686,7 @@ function closeHomeFullscreenSection(options = {}) {
 }
 
 function ensureHomeSectionCloseButton(section) {
-  if (section.querySelector("[data-home-section-close]")) {
-    return;
-  }
-
-  const button = document.createElement("button");
-  button.className = "home-section-panel-close";
-  button.type = "button";
-  button.setAttribute("aria-label", "Close section");
-  button.dataset.homeSectionClose = "true";
-  button.textContent = "Close";
-  section.prepend(button);
+  section.querySelectorAll("[data-home-section-close]").forEach((button) => button.remove());
 }
 
 function openHomeFullscreenSection(hashOrId) {

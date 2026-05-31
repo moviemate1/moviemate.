@@ -7227,19 +7227,20 @@ body[data-page="home"] #collections.home-section-panel-open::before {
 body[data-page="home"] #schedule.home-section-panel-open .section-heading,
 body[data-page="home"] #spaces.home-section-panel-open .section-heading,
 body[data-page="home"] #collections.home-section-panel-open .section-heading {
-  padding-right: 108px;
+  padding-right: 0;
 }
 
 .home-spaces-shell {
   display: grid;
-  grid-template-columns: minmax(210px, 290px) minmax(0, 1fr);
-  gap: clamp(26px, 4vw, 64px);
+  grid-template-columns: 1fr;
+  gap: clamp(20px, 3vw, 34px);
   align-items: start;
 }
 
 .home-spaces-sidebar {
   display: grid;
   gap: 14px;
+  width: min(100%, 360px);
   padding: 18px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 26px;
@@ -7247,21 +7248,22 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
 }
 
 .home-spaces-topic-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 10px;
   padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.home-spaces-topic-list p {
-  flex: 1 0 100%;
+.home-spaces-topic-list p,
+.home-spaces-topic-list span {
   margin: 0 0 2px;
   color: rgba(255, 255, 255, 0.92);
   font-weight: 800;
 }
 
 .home-spaces-topic {
+  width: 100%;
   min-height: 38px;
   padding: 0 13px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -7269,6 +7271,7 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   color: rgba(255, 255, 255, 0.72);
   background: rgba(255, 255, 255, 0.045);
   font: 800 0.86rem/1 "Manrope", sans-serif;
+  text-align: left;
   cursor: pointer;
 }
 
@@ -7282,8 +7285,9 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
 
 .home-spaces-feed {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  grid-template-columns: minmax(0, 760px);
   gap: 20px;
+  align-content: start;
 }
 
 .home-space-card {
@@ -7343,18 +7347,7 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
 }
 
 .home-section-panel-close {
-  position: sticky;
-  top: 0;
-  float: right;
-  z-index: 2;
-  min-height: 44px;
-  padding: 0 18px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  color: #fff;
-  background: rgba(25, 20, 35, 0.9);
-  font: 800 0.92rem/1 "Manrope", sans-serif;
-  cursor: pointer;
+  display: none !important;
 }
 
 .home-section-panel-close:hover,
