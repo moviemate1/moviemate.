@@ -3228,17 +3228,85 @@ function renderCollectionPage() {
   `;
 }
 
+function getNotificationDisplayTitle(item) {
+  const typeSuffix = item.typeLabel ? ` (${item.typeLabel})` : "";
+
+  if (/released/i.test(item.label || "")) {
+    return `Releasing Today: ${item.title}${typeSuffix}`;
+  }
+
+  if (/updated/i.test(item.label || "")) {
+    return `Update: ${item.title}`;
+  }
+
+  if (/new title/i.test(item.label || "")) {
+    return `New on MovieMate: ${item.title}`;
+  }
+
+  if (/all-time/i.test(item.label || "")) {
+    return `${item.title} is trending`;
+  }
+
+  return item.title;
+}
+
+function getNotificationDateLabel(item) {
+  if (item.releaseDate) {
+    return formatReleaseDate(item.releaseDate);
+  }
+
+  if (item.createdAtMs) {
+    return new Intl.DateTimeFormat("en", { day: "numeric", month: "short" }).format(new Date(item.createdAtMs));
+  }
+
+  return "MovieMate update";
+}
+
 function userNotificationTemplate(item) {
-  return `
-    <article class="notification-feed-card">
-      <div>
-        <p class="eyebrow">${escapeHtml(item.label)}</p>
-        <h3>${escapeHtml(item.title)}</h3>
-        <p>${escapeHtml(item.copy)}</p>
-      </div>
-      ${item.href ? `<a class="ghost-link" href="${item.href}">Open</a>` : ""}
-    </article>
+  const image = item.image ? getOptimizedImageUrl(item.image, 154) : "";
+  const title = getNotificationDisplayTitle(item);
+  const date = getNotificationDateLabel(item);
+  const content = `
+    <span class="notification-popover-poster" aria-hidden="true">
+      ${
+        image
+          ? `<img src="${escapeHtml(image)}" alt="" loading="lazy">`
+          : `<span>${escapeHtml(String(item.title || "M").charAt(0).toUpperCase())}</span>`
+      }
+    </span>
+    <span class="notification-popover-copy">
+      <strong>${escapeHtml(title)}</strong>
+      <small>${escapeHtml(date)}</small>
+    </span>
   `;
+
+  return item.href
+    ? `<a class="notification-feed-card notification-popover-item" href="${escapeHtml(item.href)}">${content}</a>`
+    : `<article class="notification-feed-card notification-popover-item">${content}</article>`;
+}
+
+function notificationListTemplate(items) {
+  if (!items.length) {
+    return '<p class="detail-search-empty-copy notification-popover-empty">No notifications yet. Saved titles and interested titles will show updates here.</p>';
+  }
+
+  const lastSevenDays = items.slice(0, Math.min(1, items.length));
+  const lastThirtyDays = items.slice(lastSevenDays.length);
+  const groups = [
+    ["Last 7 Days", lastSevenDays],
+    ["Last 30 Days", lastThirtyDays]
+  ].filter(([, groupItems]) => groupItems.length);
+
+  return groups
+    .map(
+      ([label, groupItems]) => `
+        <section class="notification-popover-group">
+          <h3 class="notification-popover-group-title">${label}</h3>
+          ${groupItems.map(userNotificationTemplate).join("")}
+        </section>
+      `
+    )
+    .join("");
 }
 
 function buildUserNotifications(titles) {
@@ -3269,6 +3337,9 @@ function buildUserNotifications(titles) {
             title: title.title,
             copy: `${title.type} • ${formatReleaseDate(title.releaseDate)} • now ready to watch.`,
             href: buildTitleUrl(title.id),
+            image: title.image,
+            typeLabel: title.type,
+            releaseDate: title.releaseDate,
             createdAtMs: updatedAtMs || createdAtMs
           });
         }
@@ -3283,6 +3354,9 @@ function buildUserNotifications(titles) {
             ? "A title on your watch radar has fresh updates."
             : "A saved title has fresh updates waiting for you.",
           href: buildTitleUrl(title.id),
+          image: title.image,
+          typeLabel: title.type,
+          releaseDate: title.releaseDate,
           createdAtMs: updatedAtMs
         });
       }
@@ -3296,6 +3370,9 @@ function buildUserNotifications(titles) {
     title: entry.title,
     copy: entry.copy,
     href: entry.href,
+    image: entry.image || "",
+    typeLabel: entry.typeLabel || "",
+    releaseDate: entry.releaseDate || "",
     createdAtMs: getCreatedAtMs(entry.createdAt)
   }));
 
@@ -3308,6 +3385,9 @@ function buildUserNotifications(titles) {
       title: title.title,
       copy: `${title.type} • ${formatReleaseDate(title.releaseDate)} • now live on MovieMate.`,
       href: buildTitleUrl(title.id),
+      image: title.image,
+      typeLabel: title.type,
+      releaseDate: title.releaseDate,
       createdAtMs: getCreatedAtMs(title.createdAt)
     }));
 
@@ -3319,6 +3399,9 @@ function buildUserNotifications(titles) {
       title: title.title,
       copy: `${getReactionStats(title).recommendedPercent}% recommend • ${title.genre}`,
       href: buildTitleUrl(title.id),
+      image: title.image,
+      typeLabel: title.type,
+      releaseDate: title.releaseDate,
       createdAtMs: 0
     }));
 
@@ -3341,7 +3424,7 @@ function renderUserNotifications(titles) {
   const seenAt = Number(localStorage.getItem(USER_NOTIFICATIONS_SEEN_KEY) || 0);
   const unseenCount = items.filter((item) => item.createdAtMs && item.createdAtMs > seenAt).length;
 
-  list.innerHTML = items.map(userNotificationTemplate).join("");
+  list.innerHTML = notificationListTemplate(items);
   emptyState.classList.toggle("hidden", items.length > 0);
 
   dots.forEach((dot) => {

@@ -33,7 +33,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=112-solid-route-panels" />
+    <link rel="stylesheet" href="styles.css?v=113-notification-popover" />
   </head>
   <body data-page="home">
     <header class="explore-header-mobile-shell" aria-label="MovieMate mobile header">
@@ -434,14 +434,24 @@
 
     <div class="overlay-modal hidden" id="notificationsModal" aria-hidden="true">
       <button class="overlay-backdrop" data-close-notifications="true" type="button" aria-label="Close notifications"></button>
-      <div class="overlay-card notification-overlay">
-        <button class="overlay-close" id="notificationsClose" type="button" aria-label="Close notifications">&times;</button>
-        <p class="eyebrow">Your updates</p>
-        <h2 class="overlay-title">MovieMate notifications</h2>
-        <div class="notification-feed" id="userNotificationsList"></div>
-        <p class="empty-state hidden" id="userNotificationsEmpty">
-          No new updates right now.
-        </p>
+      <div class="overlay-card notification-overlay notification-popover-card" role="dialog" aria-label="Notifications">
+        <div class="notification-popover-head">
+          <h2>Notifications</h2>
+          <button class="notification-popover-head-icon" id="notificationsClose" type="button" aria-label="Close notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4"></path><path d="M17 3v4"></path><path d="M4.5 9h15"></path><path d="M6 5h12a2 2 0 0 1 2 2v13H4V7a2 2 0 0 1 2-2Z"></path><path d="M8 14h2"></path><path d="M14 14h2"></path><path d="M8 18h2"></path><path d="M14 18h2"></path></svg>
+          </button>
+        </div>
+        <div class="notification-popover-tabs" role="tablist" aria-label="Notification filters">
+          <button class="notification-popover-tab active" type="button">All</button>
+          <button class="notification-popover-tab" type="button">Updates</button>
+          <button class="notification-popover-tab" type="button">Activity</button>
+        </div>
+        <div class="notification-popover-body">
+          <div class="notification-feed" id="userNotificationsList"></div>
+          <p class="empty-state hidden notification-popover-empty" id="userNotificationsEmpty">
+            No notifications yet. Saved titles and interested titles will show updates here.
+          </p>
+        </div>
       </div>
     </div>
 
@@ -560,7 +570,7 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=36-solid-route-panels"></script>
+    <script type="module" src="app.js?v=37-notification-popover"></script>
     <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a3795ec89854463a9b90761fb384fb6c"}'></script><!-- End Cloudflare Web Analytics -->
   </body>
 </html>
