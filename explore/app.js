@@ -5696,11 +5696,23 @@ function setupHomeFullscreenSections() {
     return;
   }
 
-  if (window.location.hash === "#browse") {
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#trending`);
-    setExploreHeaderActive("#trending");
-    window.setTimeout(() => openHomeBrowsePopover(), 80);
-  }
+  const syncHomePanelFromHash = () => {
+    if (window.location.hash === "#browse") {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#trending`);
+      setExploreHeaderActive("#trending");
+      window.setTimeout(() => openHomeBrowsePopover(), 80);
+      return;
+    }
+
+    if (isHomeFullscreenSectionHash(window.location.hash)) {
+      openHomeFullscreenSection(window.location.hash);
+      return;
+    }
+
+    if (window.location.hash === "#trending" && document.body.classList.contains("home-section-panel-active")) {
+      closeHomeFullscreenSection({ restoreExploreHash: true });
+    }
+  };
 
   HOME_FULLSCREEN_SECTION_IDS.forEach((id) => {
     const section = document.getElementById(id);
@@ -5782,9 +5794,9 @@ function setupHomeFullscreenSections() {
     }
   });
 
-  if (isHomeFullscreenSectionHash(window.location.hash)) {
-    window.setTimeout(() => openHomeFullscreenSection(window.location.hash), 120);
-  }
+  window.addEventListener("hashchange", syncHomePanelFromHash);
+  window.addEventListener("load", () => window.setTimeout(syncHomePanelFromHash, 0), { once: true });
+  window.setTimeout(syncHomePanelFromHash, 0);
 }
 
 function setupExploreHeaderNav() {
