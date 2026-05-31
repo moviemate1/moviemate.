@@ -5470,9 +5470,42 @@ function setExploreHeaderActive(hash) {
 }
 
 const HOME_FULLSCREEN_SECTION_IDS = new Set(["browse", "schedule", "collections"]);
+const HOME_BROWSE_POPUP_LINKS = [
+  { icon: "◫", label: "Category", href: "#browse" },
+  { icon: "◎", label: "Genre", href: "#browse" },
+  { icon: "◍", label: "Country", href: "#browse" },
+  { icon: "文", label: "Language", href: "#browse" },
+  { icon: "☺", label: "Community", href: "#collections" },
+  { icon: "★", label: "District", href: "#trending" },
+  { icon: "हि", label: "Bollywood", href: "#bollywoodRowHeading" },
+  { icon: "ச", label: "South", href: "#southRowHeading" },
+  { icon: "N", label: "Netflix", href: "#netflixRowHeading" },
+  { icon: "◷", label: "Schedule", href: "#schedule" },
+  { icon: "P", label: "Prime", href: "#primeRowHeading" },
+  { icon: "◎", label: "Trending", href: "#trending" }
+];
+
+function isMainHomepage() {
+  if (document.body.dataset.page !== "home") {
+    return false;
+  }
+
+  const pathname = window.location.pathname || "/";
+  return !pathname.startsWith("/explore/") && (pathname === "/" || pathname.endsWith("/index.html"));
+}
 
 function isHomeFullscreenSectionHash(hash) {
-  return HOME_FULLSCREEN_SECTION_IDS.has((hash || "").replace("#", ""));
+  const id = (hash || "").replace("#", "");
+
+  if (!id) {
+    return false;
+  }
+
+  if (id === "browse" && isMainHomepage()) {
+    return false;
+  }
+
+  return HOME_FULLSCREEN_SECTION_IDS.has(id);
 }
 
 function closeHomeFullscreenSection(options = {}) {
@@ -5528,6 +5561,103 @@ function openHomeFullscreenSection(hashOrId) {
   return true;
 }
 
+function ensureHomeBrowsePopover() {
+  let popover = document.querySelector("#homeBrowsePopover");
+
+  if (popover) {
+    return popover;
+  }
+
+  popover = document.createElement("div");
+  popover.id = "homeBrowsePopover";
+  popover.className = "home-browse-popover hidden";
+  popover.setAttribute("aria-hidden", "true");
+  popover.innerHTML = `
+    <button class="home-browse-popover-backdrop" type="button" data-home-browse-close="true" aria-label="Close browse menu"></button>
+    <section class="home-browse-popover-panel" role="dialog" aria-modal="false" aria-label="Browse MovieMate">
+      <div class="home-browse-popover-header">
+        <div>
+          <p class="panel-label">Browse By</p>
+          <h2>Explore faster</h2>
+        </div>
+        <button class="home-browse-popover-close" type="button" data-home-browse-close="true" aria-label="Close browse menu">&times;</button>
+      </div>
+      <div class="browse-panel-grid home-browse-popover-grid">
+        ${HOME_BROWSE_POPUP_LINKS.map(
+          (item) => `
+            <a class="browse-box" href="${item.href}" data-home-browse-link="true">
+              <span class="browse-box-icon">${item.icon}</span>
+              <span>${item.label}</span>
+            </a>
+          `
+        ).join("")}
+      </div>
+    </section>
+  `;
+  document.body.appendChild(popover);
+  return popover;
+}
+
+function closeHomeBrowsePopover() {
+  const popover = document.querySelector("#homeBrowsePopover");
+  const trigger = document.querySelector("[data-home-browse-toggle]");
+
+  if (!popover) {
+    return;
+  }
+
+  popover.classList.add("hidden");
+  popover.setAttribute("aria-hidden", "true");
+  trigger?.setAttribute("aria-expanded", "false");
+}
+
+function openHomeBrowsePopover() {
+  if (!isMainHomepage()) {
+    return false;
+  }
+
+  const popover = ensureHomeBrowsePopover();
+  const trigger = document.querySelector("[data-home-browse-toggle]");
+
+  popover.classList.remove("hidden");
+  popover.setAttribute("aria-hidden", "false");
+  trigger?.setAttribute("aria-expanded", "true");
+  window.requestAnimationFrame(() => {
+    popover.querySelector("a, button")?.focus({ preventScroll: true });
+  });
+
+  return true;
+}
+
+function toggleHomeBrowsePopover(forceOpen = null) {
+  if (!isMainHomepage()) {
+    return false;
+  }
+
+  const popover = ensureHomeBrowsePopover();
+  const isOpen = !popover.classList.contains("hidden");
+  const shouldOpen = forceOpen === null ? !isOpen : forceOpen;
+
+  if (shouldOpen) {
+    return openHomeBrowsePopover();
+  }
+
+  closeHomeBrowsePopover();
+  return false;
+}
+
+function setupHomeBrowsePopover() {
+  if (!isMainHomepage()) {
+    return;
+  }
+
+  const trigger = document.querySelector("[data-home-browse-toggle]");
+
+  if (trigger) {
+    trigger.setAttribute("aria-expanded", "false");
+  }
+}
+
 function setupHomeFullscreenSections() {
   if (document.body.dataset.page !== "home") {
     return;
@@ -5543,6 +5673,30 @@ function setupHomeFullscreenSections() {
 
     if (!target) {
       return;
+    }
+
+    const browseTrigger = target.closest("[data-home-browse-toggle]");
+
+    if (browseTrigger) {
+      event.preventDefault();
+      toggleHomeBrowsePopover();
+      return;
+    }
+
+    if (target.closest("[data-home-browse-close]")) {
+      event.preventDefault();
+      closeHomeBrowsePopover();
+      return;
+    }
+
+    if (target.closest("#homeBrowsePopover a[href]")) {
+      closeHomeBrowsePopover();
+    }
+
+    const popover = document.querySelector("#homeBrowsePopover");
+
+    if (popover && !popover.classList.contains("hidden") && !target.closest("#homeBrowsePopover")) {
+      closeHomeBrowsePopover();
     }
 
     if (target.closest("[data-home-section-close]")) {
@@ -5567,6 +5721,11 @@ function setupHomeFullscreenSections() {
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !document.querySelector("#homeBrowsePopover")?.classList.contains("hidden")) {
+      closeHomeBrowsePopover();
+      return;
+    }
+
     if (event.key === "Escape" && document.body.classList.contains("home-section-panel-active")) {
       closeHomeFullscreenSection({ restoreExploreHash: true });
     }
@@ -6647,6 +6806,7 @@ async function init() {
     setupScheduleControls();
     setupCollectionTabs();
     setupInterestWindow();
+    setupHomeBrowsePopover();
     setupHomeFullscreenSections();
     setupExploreHeaderNav();
     setupTopSearch();
