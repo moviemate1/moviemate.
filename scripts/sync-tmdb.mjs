@@ -48,6 +48,7 @@ const UPCOMING_PAGE_COUNT = 3;
 const NOW_PLAYING_PAGE_COUNT = 3;
 const STREAMING_PAGE_COUNT = 4;
 const MAJOR_OTT_STREAMING_PAGE_COUNT = 4;
+const MAJOR_OTT_POPULAR_PAGE_COUNT = 2;
 const RECENT_RELEASE_PAGE_COUNT = 4;
 const BOLLYWOOD_PAGE_COUNT = 2;
 const SOUTH_PAGE_COUNT = 1;
@@ -57,7 +58,76 @@ const TITLE_BATCH_SIZE = 20;
 const PEOPLE_BATCH_SIZE = 20;
 const MAX_TITLES_TO_SYNC = 320;
 const MAX_PEOPLE_TO_SYNC = 30;
-const DEFAULT_DIRECT_SEARCH_QUERIES = ["Off Campus"];
+const FULL_ENRICHMENT_LIMIT = 80;
+const TMDB_REQUEST_SPACING_MS = 850;
+const TMDB_MAX_RETRIES = 8;
+const DIRECT_SEARCH_RESULT_LIMIT = 4;
+const DEFAULT_DIRECT_SEARCH_QUERIES = [
+  "Off Campus",
+  "Money Heist",
+  "La Casa de Papel",
+  "Berlin",
+  "Stranger Things",
+  "Wednesday",
+  "Squid Game",
+  "Bridgerton",
+  "The Witcher",
+  "The Crown",
+  "Narcos",
+  "Dark",
+  "Black Mirror",
+  "The Sandman",
+  "Alice in Borderland",
+  "One Piece",
+  "3 Body Problem",
+  "The Night Agent",
+  "The Lincoln Lawyer",
+  "You",
+  "Cobra Kai",
+  "Emily in Paris",
+  "The Umbrella Academy",
+  "Lupin",
+  "Elite",
+  "Sex Education",
+  "Ozark",
+  "Lucifer",
+  "Peaky Blinders",
+  "The Queen's Gambit",
+  "Dahmer",
+  "Beef",
+  "The Diplomat",
+  "Avatar: The Last Airbender",
+  "Baby Reindeer",
+  "The Gentlemen",
+  "Supacell",
+  "The Boys",
+  "Fallout",
+  "Reacher",
+  "The Lord of the Rings: The Rings of Power",
+  "Invincible",
+  "The Wheel of Time",
+  "The Summer I Turned Pretty",
+  "Citadel",
+  "Gen V",
+  "Jack Ryan",
+  "Mirzapur",
+  "Panchayat",
+  "The Mandalorian",
+  "Loki",
+  "Ahsoka",
+  "Percy Jackson and the Olympians",
+  "House of the Dragon",
+  "The Last of Us",
+  "Euphoria",
+  "The White Lotus",
+  "Succession",
+  "Only Murders in the Building",
+  "The Handmaid's Tale",
+  "Severance",
+  "Ted Lasso",
+  "Silo",
+  "The Morning Show"
+];
 const MAJOR_OTT_PLATFORMS = [
   "Netflix",
   "Prime Video",
@@ -136,6 +206,8 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+let tmdbRequestQueue = Promise.resolve();
+let lastTmdbRequestAt = 0;
 
 const LANGUAGE_MAP = {
   en: "English",
@@ -197,6 +269,23 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function scheduleTmdbRequest(task) {
+  const run = tmdbRequestQueue.then(async () => {
+    const elapsed = Date.now() - lastTmdbRequestAt;
+    const delay = Math.max(0, TMDB_REQUEST_SPACING_MS - elapsed);
+
+    if (delay) {
+      await wait(delay);
+    }
+
+    lastTmdbRequestAt = Date.now();
+    return task();
+  });
+
+  tmdbRequestQueue = run.catch(() => undefined);
+  return run;
+}
+
 function toIsoDate(date) {
   return date.toISOString().slice(0, 10);
 }
@@ -229,6 +318,25 @@ function getDirectSearchQueries() {
   return [...new Set([...DEFAULT_DIRECT_SEARCH_QUERIES, ...extraQueries])];
 }
 
+function normalizeSearchText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function isStrongDirectSearchMatch(item, type, query) {
+  const itemTitle = normalizeSearchText(type === "Movie" ? item.title : item.name);
+  const searchTitle = normalizeSearchText(query);
+
+  if (!itemTitle || !searchTitle) {
+    return false;
+  }
+
+  return itemTitle === searchTitle || itemTitle.includes(searchTitle) || searchTitle.includes(itemTitle);
+}
+
 function getMajorOttPlatformNames() {
   const extraPlatforms = String(process.env.TMDB_EXTRA_OTT_PLATFORMS || "")
     .split(",")
@@ -248,6 +356,20 @@ function isTransientFirestoreError(error) {
     details.includes("quota exceeded") ||
     details.includes("resource_exhausted")
   );
+}
+
+function isRetryableTmdbStatus(status) {
+  return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+}
+
+function getRetryDelayMs(response, attempt) {
+  const retryAfter = Number(response.headers.get("retry-after") || 0);
+
+  if (retryAfter > 0) {
+    return Math.min(60000, retryAfter * 1000);
+  }
+
+  return Math.min(60000, 1500 * 2 ** attempt);
 }
 
 async function commitBatchWithRetry(batch, label) {
@@ -546,19 +668,35 @@ async function fetchTmdb(path, params = {}) {
     }
   });
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${process.env.TMDB_TOKEN}`,
-      accept: "application/json"
-    }
-  });
+  for (let attempt = 0; attempt <= TMDB_MAX_RETRIES; attempt += 1) {
+    const response = await scheduleTmdbRequest(() =>
+      fetch(url, {
+        headers: {
+          Authorization: `Bearer ${process.env.TMDB_TOKEN}`,
+          accept: "application/json"
+        }
+      })
+    );
 
-  if (!response.ok) {
+    if (response.ok) {
+      return response.json();
+    }
+
     const text = await response.text();
-    throw new Error(`TMDb request failed (${response.status}): ${text}`);
+    const error = new Error(`TMDb request failed (${response.status}): ${text}`);
+    error.tmdbStatus = response.status;
+
+    if (attempt < TMDB_MAX_RETRIES && isRetryableTmdbStatus(response.status)) {
+      const delay = getRetryDelayMs(response, attempt);
+      console.warn(`TMDb ${response.status} for ${url.pathname}; retrying in ${delay}ms.`);
+      await wait(delay);
+      continue;
+    }
+
+    throw error;
   }
 
-  return response.json();
+  throw new Error(`TMDb request failed after ${TMDB_MAX_RETRIES + 1} attempts: ${url.pathname}`);
 }
 
 async function fetchGenres(type) {
@@ -569,10 +707,21 @@ async function fetchGenres(type) {
 
 async function fetchWatchProvidersForType(type, region) {
   const endpoint = type === "Movie" ? "/watch/providers/movie" : "/watch/providers/tv";
-  const payload = await fetchTmdb(endpoint, {
-    language: "en-US",
-    watch_region: region
-  });
+  let payload;
+
+  try {
+    payload = await fetchTmdb(endpoint, {
+      language: "en-US",
+      watch_region: region
+    });
+  } catch (error) {
+    if (isRetryableTmdbStatus(error.tmdbStatus)) {
+      console.warn(`Skipping ${type} provider list for ${region}: ${error.message}`);
+      return [];
+    }
+
+    throw error;
+  }
 
   return Array.isArray(payload.results) ? payload.results : [];
 }
@@ -604,6 +753,13 @@ async function fetchPagedResults(path, params, pages) {
       fetchTmdb(path, {
         ...params,
         page
+      }).catch((error) => {
+        if (isRetryableTmdbStatus(error.tmdbStatus)) {
+          console.warn(`Skipping ${path} page ${page} after TMDb retry limit: ${error.message}`);
+          return { results: [] };
+        }
+
+        throw error;
       })
     )
   );
@@ -756,6 +912,59 @@ async function fetchMajorOttStreamingSeries(providerIds) {
   return results.flat();
 }
 
+async function fetchMajorOttPopularMoviesForRegion(region, providerIds) {
+  if (!providerIds.length) {
+    return [];
+  }
+
+  return fetchPagedResults(
+    "/discover/movie",
+    {
+      language: "en-US",
+      region,
+      watch_region: region,
+      with_watch_providers: providerIds.join("|"),
+      with_watch_monetization_types: "flatrate|ads|free",
+      sort_by: "popularity.desc",
+      include_adult: "false"
+    },
+    MAJOR_OTT_POPULAR_PAGE_COUNT
+  );
+}
+
+async function fetchMajorOttPopularSeriesForRegion(region, providerIds) {
+  if (!providerIds.length) {
+    return [];
+  }
+
+  return fetchPagedResults(
+    "/discover/tv",
+    {
+      language: "en-US",
+      watch_region: region,
+      with_watch_providers: providerIds.join("|"),
+      with_watch_monetization_types: "flatrate|ads|free",
+      sort_by: "popularity.desc",
+      include_null_first_air_dates: "false"
+    },
+    MAJOR_OTT_POPULAR_PAGE_COUNT
+  );
+}
+
+async function fetchMajorOttPopularMovies(providerIds) {
+  const results = await Promise.all(
+    WATCH_PROVIDER_REGIONS.map((region) => fetchMajorOttPopularMoviesForRegion(region, providerIds))
+  );
+  return results.flat();
+}
+
+async function fetchMajorOttPopularSeries(providerIds) {
+  const results = await Promise.all(
+    WATCH_PROVIDER_REGIONS.map((region) => fetchMajorOttPopularSeriesForRegion(region, providerIds))
+  );
+  return results.flat();
+}
+
 async function fetchStreamingMovies() {
   return fetchPagedResults(
     "/discover/movie",
@@ -860,18 +1069,30 @@ async function fetchDirectSearchResults(type) {
   }
 
   const results = await Promise.all(
-    queries.map((query) =>
-      fetchTmdb(endpoint, {
+    queries.map(async (query) => {
+      const payload = await fetchTmdb(endpoint, {
         language: "en-US",
         query,
         include_adult: "false",
         page: 1
-      })
-    )
+      }).catch((error) => {
+        if (isRetryableTmdbStatus(error.tmdbStatus)) {
+          console.warn(`Skipping direct TMDb search "${query}" after retry limit: ${error.message}`);
+          return { results: [] };
+        }
+
+        throw error;
+      });
+      const queryResults = Array.isArray(payload.results) ? payload.results : [];
+      const strongMatches = queryResults.filter((item) => isStrongDirectSearchMatch(item, type, query));
+      const pickedResults = strongMatches.length ? strongMatches : queryResults.slice(0, DIRECT_SEARCH_RESULT_LIMIT);
+
+      return pickedResults.slice(0, DIRECT_SEARCH_RESULT_LIMIT);
+    })
   );
 
   return results
-    .flatMap((payload) => payload.results || [])
+    .flat()
     .filter((item) => item && (type === "Movie" ? item.title : item.name));
 }
 
@@ -1195,9 +1416,19 @@ async function cleanupImportedTitles() {
 async function enrichWithTrailers(items) {
   const concurrency = 4;
   const enriched = [];
+  const fullItems = items.slice(0, FULL_ENRICHMENT_LIMIT);
+  const liteItems = items.slice(FULL_ENRICHMENT_LIMIT).map((item) => ({
+    ...item,
+    platforms: Array.isArray(item.platforms) ? item.platforms : [],
+    cast: Array.isArray(item.cast) ? item.cast : [],
+    crew: Array.isArray(item.crew) ? item.crew : [],
+    seasons: Array.isArray(item.seasons) ? item.seasons : [],
+    seasonsCount: Number(item.seasonsCount || 0),
+    episodesCount: Number(item.episodesCount || 0)
+  }));
 
-  for (let index = 0; index < items.length; index += concurrency) {
-    const chunk = items.slice(index, index + concurrency);
+  for (let index = 0; index < fullItems.length; index += concurrency) {
+    const chunk = fullItems.slice(index, index + concurrency);
     const results = await Promise.all(
       chunk.map(async (item) => ({
         ...item,
@@ -1210,7 +1441,7 @@ async function enrichWithTrailers(items) {
     enriched.push(...results);
   }
 
-  return enriched;
+  return [...enriched, ...liteItems];
 }
 
 function collectUniquePeople(items) {
@@ -1270,6 +1501,7 @@ function getSyncPriority(title) {
   const bucketWeights = {
     "direct-search": 1000,
     "major-ott": 940,
+    "major-ott-popular": 930,
     "ott-recent": 900,
     "airing-today": 880,
     "on-the-air": 850,
@@ -1315,6 +1547,8 @@ async function run() {
     streamingSeries,
     majorOttStreamingMovies,
     majorOttStreamingSeries,
+    majorOttPopularMovies,
+    majorOttPopularSeries,
     bollywoodMovies,
     southMovies,
     popularMovies,
@@ -1335,6 +1569,8 @@ async function run() {
     fetchStreamingSeries(),
     fetchMajorOttStreamingMovies(movieMajorOttProviderIds),
     fetchMajorOttStreamingSeries(seriesMajorOttProviderIds),
+    fetchMajorOttPopularMovies(movieMajorOttProviderIds),
+    fetchMajorOttPopularSeries(seriesMajorOttProviderIds),
     fetchBollywoodMovies(),
     fetchSouthMovies(),
     fetchPopularMovies(),
@@ -1378,6 +1614,12 @@ async function run() {
   const normalizedMajorOttStreamingSeries = majorOttStreamingSeries
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "major-ott"));
+  const normalizedMajorOttPopularMovies = majorOttPopularMovies
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "major-ott-popular"));
+  const normalizedMajorOttPopularSeries = majorOttPopularSeries
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "major-ott-popular"));
   const normalizedPopularMovies = popularMovies
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "popular"));
@@ -1417,6 +1659,8 @@ async function run() {
     ...normalizedStreamingSeries,
     ...normalizedMajorOttStreamingMovies,
     ...normalizedMajorOttStreamingSeries,
+    ...normalizedMajorOttPopularMovies,
+    ...normalizedMajorOttPopularSeries,
     ...normalizedBollywoodMovies,
     ...normalizedSouthMovies,
     ...normalizedPopularMovies,
