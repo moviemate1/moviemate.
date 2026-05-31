@@ -262,6 +262,7 @@ let detailHeaderPanelState = {
   spacesTopics: ["Indian", "International", "Anime", "Sports", "Games"],
   titles: []
 };
+const SPACES_TOPIC_OPTIONS = ["Indian", "International", "Anime", "Sports", "Games"];
 
 const DEFAULT_USER_PROFILE = {
   displayName: "",
@@ -4902,6 +4903,10 @@ function getSpacesPostLabel(title, mode) {
     return "Discussion";
   }
 
+  if (mode === "rumor") {
+    return title.type === "Series" ? "Series Rumor" : "Movie Rumor";
+  }
+
   if (title.releaseDate && title.releaseDate > new Date().toISOString().slice(0, 10)) {
     return "Announcement";
   }
@@ -4931,6 +4936,10 @@ function getSpacesPostCopy(title, mode) {
       : `Start a discussion about this ${title.type.toLowerCase()}.`;
   }
 
+  if (mode === "rumor") {
+    return `Rumors, possible leaks, and early details around ${title.title} can be discussed here.`;
+  }
+
   if (title.description) {
     return truncateText(title.description, 150);
   }
@@ -4944,6 +4953,10 @@ function getDetailSpacesPanelTitles(titles, mode, activeTopics) {
   return [...titles]
     .filter((title) => {
       if (mode === "discussion" && !(title.comments?.length || title.trending || getInterestedCount(title) > 0)) {
+        return false;
+      }
+
+      if (mode === "rumor" && !(title.trending || isUpcomingTitle(title) || getInterestedCount(title) > 0)) {
         return false;
       }
 
@@ -4966,10 +4979,9 @@ function getDetailSpacesPanelTitles(titles, mode, activeTopics) {
 function detailHeaderSpacesPanelTemplate() {
   const titles = detailHeaderPanelState.titles || [];
   const mode = detailHeaderPanelState.spacesFeed || "feed";
-  const topicButtons = ["Indian", "International", "Anime", "Sports", "Games"];
   const activeTopics = Array.isArray(detailHeaderPanelState.spacesTopics)
     ? detailHeaderPanelState.spacesTopics
-    : topicButtons;
+    : SPACES_TOPIC_OPTIONS;
   const discussionTitles = getDetailSpacesPanelTitles(titles, mode, activeTopics);
 
   return `
@@ -4979,7 +4991,7 @@ function detailHeaderSpacesPanelTemplate() {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-3 3v-3H5a2 2 0 0 1-2-2V8a3 3 0 0 1 3-3h1"></path><path d="M16 6h2a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-1l-2 2v-2"></path></svg>
           <span>Spaces</span>
         </span>
-        <p>Movie and series reports, detail updates, announcements, and viewer discussions appear here.</p>
+        <p>Movie and series reports, rumors, leaks, detail updates, announcements, and viewer discussions appear here.</p>
       </div>
       <div class="detail-header-spaces-shell">
         <aside class="detail-header-spaces-sidebar">
@@ -4991,9 +5003,13 @@ function detailHeaderSpacesPanelTemplate() {
             <span class="detail-space-mode-icon" aria-hidden="true">▱</span>
             Discussion
           </button>
+          <button class="detail-schedule-menu-btn detail-space-mode-btn ${mode === "rumor" ? "active" : ""}" type="button" data-detail-spaces-feed="rumor">
+            <span class="detail-space-mode-icon" aria-hidden="true">?</span>
+            Rumors
+          </button>
           <div class="detail-header-spaces-topics">
             <span>Topics</span>
-            ${topicButtons
+            ${SPACES_TOPIC_OPTIONS
               .map(
                 (label) => `
                   <button class="detail-space-topic ${activeTopics.includes(label) ? "active" : ""}" type="button" data-detail-spaces-topic="${label}" aria-pressed="${activeTopics.includes(label) ? "true" : "false"}">
@@ -5009,7 +5025,7 @@ function detailHeaderSpacesPanelTemplate() {
           ${discussionTitles
             .map(
               (title) => `
-                <a class="detail-space-story-card" href="${buildTitleUrl(title.id)}${mode === "discussion" ? "#discussions" : ""}">
+                <a class="detail-space-story-card" href="${buildTitleUrl(title.id)}${mode === "discussion" || mode === "rumor" ? "#discussions" : ""}">
                   <div class="detail-space-story-media">
                     <img src="${getOptimizedImageUrl(title.backdrop || title.image, 900)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
                     ${title.trailerUrl ? '<span class="detail-space-play" aria-hidden="true">▶</span>' : ""}
@@ -5187,9 +5203,8 @@ function setupDetailHeaderPanels() {
     const spacesTopicButton = target.closest("[data-detail-spaces-topic]");
     if (spacesTopicButton) {
       const nextTopic = spacesTopicButton.dataset.detailSpacesTopic || "all";
-      const fallbackTopics = ["Indian", "International", "Anime", "Sports", "Games"];
       const activeTopics = new Set(
-        Array.isArray(detailHeaderPanelState.spacesTopics) ? detailHeaderPanelState.spacesTopics : fallbackTopics
+        Array.isArray(detailHeaderPanelState.spacesTopics) ? detailHeaderPanelState.spacesTopics : SPACES_TOPIC_OPTIONS
       );
 
       if (activeTopics.has(nextTopic)) {
@@ -5198,7 +5213,7 @@ function setupDetailHeaderPanels() {
         activeTopics.add(nextTopic);
       }
 
-      detailHeaderPanelState.spacesTopics = fallbackTopics.filter((topic) => activeTopics.has(topic));
+      detailHeaderPanelState.spacesTopics = SPACES_TOPIC_OPTIONS.filter((topic) => activeTopics.has(topic));
       await renderDetailHeaderPanel();
     }
   });
@@ -5776,9 +5791,43 @@ function userNotificationTemplate(item) {
     : `<article class="notification-feed-card notification-popover-item">${content}</article>`;
 }
 
-function notificationListTemplate(items) {
+function getNotificationFilterFromButton(button) {
+  return (button?.dataset.notificationFilter || button?.textContent || "all").trim().toLowerCase();
+}
+
+function getNotificationCategory(item) {
+  const text = `${item.id || ""} ${item.label || ""} ${item.copy || ""}`.toLowerCase();
+
+  if (text.includes("release") || text.includes("updated") || text.includes("update") || text.includes("new title")) {
+    return "updates";
+  }
+
+  return "activity";
+}
+
+function filterNotificationsByTab(items, filter = "all") {
+  if (filter === "all") {
+    return items;
+  }
+
+  return items.filter((item) => getNotificationCategory(item) === filter);
+}
+
+function getNotificationEmptyMessage(filter = "all") {
+  if (filter === "updates") {
+    return "No updates yet. Saved titles and interested titles will show release updates here.";
+  }
+
+  if (filter === "activity") {
+    return "No activity yet. Community picks and account activity will show here.";
+  }
+
+  return "No notifications yet. Saved titles and interested titles will show updates here.";
+}
+
+function notificationListTemplate(items, filter = "all") {
   if (!items.length) {
-    return '<p class="detail-search-empty-copy notification-popover-empty">No notifications yet. Saved titles and interested titles will show updates here.</p>';
+    return `<p class="detail-search-empty-copy notification-popover-empty">${escapeHtml(getNotificationEmptyMessage(filter))}</p>`;
   }
 
   const lastSevenDays = items.slice(0, Math.min(1, items.length));
@@ -5810,9 +5859,9 @@ function notificationDropdownShellTemplate(items) {
         </span>
       </div>
       <div class="notification-popover-tabs" role="tablist" aria-label="Notification filters">
-        <button class="notification-popover-tab active" type="button">All</button>
-        <button class="notification-popover-tab" type="button">Updates</button>
-        <button class="notification-popover-tab" type="button">Activity</button>
+        <button class="notification-popover-tab active" type="button" role="tab" aria-selected="true" data-notification-filter="all">All</button>
+        <button class="notification-popover-tab" type="button" role="tab" aria-selected="false" data-notification-filter="updates">Updates</button>
+        <button class="notification-popover-tab" type="button" role="tab" aria-selected="false" data-notification-filter="activity">Activity</button>
       </div>
       <div class="notification-popover-body">
         <div class="notification-feed detail-header-notification-feed">
@@ -5941,15 +5990,53 @@ function renderUserNotifications(titles) {
   }
 
   const items = buildUserNotifications(titles);
+  const activeFilter = getNotificationFilterFromButton(document.querySelector("#notificationsModal .notification-popover-tab.active"));
+  const filteredItems = filterNotificationsByTab(items, activeFilter);
   const seenAt = Number(localStorage.getItem(USER_NOTIFICATIONS_SEEN_KEY) || 0);
   const unseenCount = items.filter((item) => item.createdAtMs && item.createdAtMs > seenAt).length;
 
-  list.innerHTML = notificationListTemplate(items);
-  emptyState.classList.toggle("hidden", items.length > 0);
+  list.innerHTML = notificationListTemplate(filteredItems, activeFilter);
+  emptyState.classList.add("hidden");
 
   if (dot) {
     dot.classList.toggle("visible", unseenCount > 0);
   }
+}
+
+function renderNotificationPopover(card) {
+  const feed = card?.querySelector(".notification-feed");
+
+  if (!feed) {
+    return;
+  }
+
+  const activeFilter = getNotificationFilterFromButton(card.querySelector(".notification-popover-tab.active"));
+  const items = buildUserNotifications(getVisibleTitles(titlesCache));
+  const filteredItems = filterNotificationsByTab(items, activeFilter);
+  feed.innerHTML = notificationListTemplate(filteredItems, activeFilter);
+}
+
+function setupNotificationTabs() {
+  document.addEventListener("click", (event) => {
+    const tab = event.target.closest(".notification-popover-tab");
+
+    if (!tab) {
+      return;
+    }
+
+    const card = tab.closest(".notification-popover-card");
+
+    if (!card) {
+      return;
+    }
+
+    card.querySelectorAll(".notification-popover-tab").forEach((button) => {
+      const isActive = button === tab;
+      button.classList.toggle("active", isActive);
+      button.setAttribute("aria-selected", String(isActive));
+    });
+    renderNotificationPopover(card);
+  });
 }
 
 function filterTitles(titles) {
@@ -6041,17 +6128,7 @@ function closeHomeFullscreenSection(options = {}) {
 }
 
 function ensureHomeSectionCloseButton(section) {
-  if (section.querySelector("[data-home-section-close]")) {
-    return;
-  }
-
-  const button = document.createElement("button");
-  button.className = "home-section-panel-close";
-  button.type = "button";
-  button.setAttribute("aria-label", "Close section");
-  button.dataset.homeSectionClose = "true";
-  button.textContent = "Close";
-  section.prepend(button);
+  section.querySelectorAll("[data-home-section-close]").forEach((button) => button.remove());
 }
 
 function openHomeFullscreenSection(hashOrId) {
@@ -10667,6 +10744,7 @@ async function init() {
   setupSpoilerToggle();
   setupGlobalSearchModal();
   setupDetailHeaderPanels();
+  setupNotificationTabs();
 
   if (document.body.dataset.page === "home") {
     renderHomepageSkeletons();

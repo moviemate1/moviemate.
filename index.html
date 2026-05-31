@@ -33,7 +33,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="explore/styles.css?v=113-notification-popover" />
+    <link rel="stylesheet" href="explore/styles.css?v=114-spaces-rumors" />
   </head>
   <body data-page="home">
     <header class="explore-header-mobile-shell" aria-label="MovieMate mobile header">
@@ -365,7 +365,7 @@
               <h2>Spaces</h2>
             </div>
             <p class="section-copy">
-              Reports, gossip, announcements, upcoming details, and viewer discussions from MovieMate titles.
+              Reports, rumors, leaks, announcements, upcoming details, and viewer discussions from MovieMate titles.
             </p>
           </div>
 
@@ -373,6 +373,7 @@
             <aside class="home-spaces-sidebar">
               <button class="schedule-menu-btn active" type="button" data-home-spaces-mode="feed">Reports</button>
               <button class="schedule-menu-btn" type="button" data-home-spaces-mode="discussion">Discussion</button>
+              <button class="schedule-menu-btn" type="button" data-home-spaces-mode="rumor">Rumors</button>
               <div class="home-spaces-topic-list">
                 <p>Topics</p>
                 <button class="home-spaces-topic active" type="button" data-home-spaces-topic="Indian">Indian</button>
@@ -445,9 +446,9 @@
           </button>
         </div>
         <div class="notification-popover-tabs" role="tablist" aria-label="Notification filters">
-          <button class="notification-popover-tab active" type="button">All</button>
-          <button class="notification-popover-tab" type="button">Updates</button>
-          <button class="notification-popover-tab" type="button">Activity</button>
+          <button class="notification-popover-tab active" type="button" role="tab" aria-selected="true" data-notification-filter="all">All</button>
+          <button class="notification-popover-tab" type="button" role="tab" aria-selected="false" data-notification-filter="updates">Updates</button>
+          <button class="notification-popover-tab" type="button" role="tab" aria-selected="false" data-notification-filter="activity">Activity</button>
         </div>
         <div class="notification-popover-body">
           <div class="notification-feed" id="userNotificationsList"></div>
@@ -573,7 +574,7 @@
       </div>
     </div>
 
-    <script type="module" src="explore/app.js?v=37-notification-popover"></script>
+    <script type="module" src="explore/app.js?v=39-spaces-rumors"></script>
     <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a3795ec89854463a9b90761fb384fb6c"}'></script><!-- End Cloudflare Web Analytics -->
   </body>
 </html>

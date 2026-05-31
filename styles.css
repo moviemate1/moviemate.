@@ -7820,10 +7820,14 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-shell {
-  grid-template-columns: 220px minmax(0, 700px);
-  justify-content: center;
+  grid-template-columns: minmax(0, 760px);
+  justify-content: start;
   align-items: start;
-  gap: clamp(42px, 7vw, 92px);
+  gap: clamp(20px, 3vw, 34px);
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-sidebar {
+  width: min(100%, 360px);
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-topics {
@@ -9540,18 +9544,7 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
 }
 
 .home-section-panel-close {
-  position: sticky;
-  top: 0;
-  float: right;
-  z-index: 2;
-  min-height: 44px;
-  padding: 0 18px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  color: #fff;
-  background: rgba(25, 20, 35, 0.9);
-  font: 800 0.92rem/1 "Manrope", sans-serif;
-  cursor: pointer;
+  display: none !important;
 }
 
 .home-section-panel-close:hover,
