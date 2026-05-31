@@ -7,14 +7,16 @@ const TITLES_COLLECTION = "moviemate_titles";
 const PEOPLE_COLLECTION = "moviemate_people";
 const ALLOWED_LANGUAGE_CODES = new Set(["en", "hi", "ja", "ko", "ne", "ta", "te", "ml", "kn"]);
 const WATCH_PROVIDER_REGIONS = ["IN", "US", "GB"];
-const UPCOMING_PAGE_COUNT = 1;
-const BOLLYWOOD_PAGE_COUNT = 1;
+const UPCOMING_PAGE_COUNT = 2;
+const NOW_PLAYING_PAGE_COUNT = 2;
+const STREAMING_PAGE_COUNT = 2;
+const BOLLYWOOD_PAGE_COUNT = 2;
 const SOUTH_PAGE_COUNT = 1;
-const POPULAR_PAGE_COUNT = 1;
-const TRENDING_PAGE_COUNT = 1;
+const POPULAR_PAGE_COUNT = 2;
+const TRENDING_PAGE_COUNT = 2;
 const TITLE_BATCH_SIZE = 20;
 const PEOPLE_BATCH_SIZE = 20;
-const MAX_TITLES_TO_SYNC = 60;
+const MAX_TITLES_TO_SYNC = 120;
 const MAX_PEOPLE_TO_SYNC = 20;
 
 const requiredEnv = ["TMDB_TOKEN", "FIREBASE_SERVICE_ACCOUNT"];
@@ -262,6 +264,17 @@ async function fetchUpcomingMovies() {
   );
 }
 
+async function fetchNowPlayingMovies() {
+  return fetchPagedResults(
+    "/movie/now_playing",
+    {
+      language: "en-US",
+      region: "IN"
+    },
+    NOW_PLAYING_PAGE_COUNT
+  );
+}
+
 async function fetchUpcomingSeries() {
   const today = new Date().toISOString().slice(0, 10);
   return fetchPagedResults(
@@ -274,6 +287,57 @@ async function fetchUpcomingSeries() {
       vote_count_gte: 20
     },
     UPCOMING_PAGE_COUNT
+  );
+}
+
+async function fetchAiringTodaySeries() {
+  return fetchPagedResults(
+    "/tv/airing_today",
+    {
+      language: "en-US",
+      timezone: "Asia/Kolkata"
+    },
+    NOW_PLAYING_PAGE_COUNT
+  );
+}
+
+async function fetchOnTheAirSeries() {
+  return fetchPagedResults(
+    "/tv/on_the_air",
+    {
+      language: "en-US",
+      timezone: "Asia/Kolkata"
+    },
+    NOW_PLAYING_PAGE_COUNT
+  );
+}
+
+async function fetchStreamingMovies() {
+  return fetchPagedResults(
+    "/discover/movie",
+    {
+      language: "en-US",
+      region: "IN",
+      watch_region: "IN",
+      with_watch_monetization_types: "flatrate",
+      sort_by: "popularity.desc",
+      include_adult: "false"
+    },
+    STREAMING_PAGE_COUNT
+  );
+}
+
+async function fetchStreamingSeries() {
+  return fetchPagedResults(
+    "/discover/tv",
+    {
+      language: "en-US",
+      watch_region: "IN",
+      with_watch_monetization_types: "flatrate",
+      sort_by: "popularity.desc",
+      include_null_first_air_dates: "false"
+    },
+    STREAMING_PAGE_COUNT
   );
 }
 
@@ -737,7 +801,12 @@ async function run() {
     movieGenres,
     tvGenres,
     upcomingMovies,
+    nowPlayingMovies,
     upcomingSeries,
+    airingTodaySeries,
+    onTheAirSeries,
+    streamingMovies,
+    streamingSeries,
     bollywoodMovies,
     southMovies,
     popularMovies,
@@ -748,7 +817,12 @@ async function run() {
     fetchGenres("Movie"),
     fetchGenres("Series"),
     fetchUpcomingMovies(),
+    fetchNowPlayingMovies(),
     fetchUpcomingSeries(),
+    fetchAiringTodaySeries(),
+    fetchOnTheAirSeries(),
+    fetchStreamingMovies(),
+    fetchStreamingSeries(),
     fetchBollywoodMovies(),
     fetchSouthMovies(),
     fetchPopularMovies(),
@@ -760,9 +834,24 @@ async function run() {
   const normalizedUpcomingMovies = upcomingMovies
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "upcoming"));
+  const normalizedNowPlayingMovies = nowPlayingMovies
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "theater"));
   const normalizedUpcomingSeries = upcomingSeries
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "upcoming"));
+  const normalizedAiringTodaySeries = airingTodaySeries
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "airing-today"));
+  const normalizedOnTheAirSeries = onTheAirSeries
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "on-the-air"));
+  const normalizedStreamingMovies = streamingMovies
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "ott"));
+  const normalizedStreamingSeries = streamingSeries
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "ott"));
   const normalizedPopularMovies = popularMovies
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "popular"));
@@ -786,7 +875,12 @@ async function run() {
 
   [
     ...normalizedUpcomingMovies,
+    ...normalizedNowPlayingMovies,
     ...normalizedUpcomingSeries,
+    ...normalizedAiringTodaySeries,
+    ...normalizedOnTheAirSeries,
+    ...normalizedStreamingMovies,
+    ...normalizedStreamingSeries,
     ...normalizedBollywoodMovies,
     ...normalizedSouthMovies,
     ...normalizedPopularMovies,
