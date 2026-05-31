@@ -5744,6 +5744,18 @@ function setupHomeFullscreenSections() {
       return;
     }
 
+    const sectionTrigger = target.closest("[data-home-section-toggle]");
+
+    if (sectionTrigger) {
+      const sectionId = sectionTrigger.dataset.homeSectionToggle || "";
+
+      if (HOME_FULLSCREEN_SECTION_IDS.has(sectionId)) {
+        event.preventDefault();
+        openHomeFullscreenSection(sectionId);
+        return;
+      }
+    }
+
     const link = target.closest("a[href]");
     const hash = link ? new URL(link.getAttribute("href") || "", window.location.href).hash : "";
 
