@@ -7767,6 +7767,75 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   min-width: 0;
 }
 
+.title-search-result-list {
+  display: grid;
+  gap: 12px;
+  max-width: 880px;
+}
+
+.title-search-result {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 92px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  color: #fff;
+  text-decoration: none;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.title-search-result:hover,
+.title-search-result:focus-visible {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+}
+
+.title-search-result img {
+  width: 68px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.title-search-result-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.title-search-result-copy strong {
+  overflow: hidden;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title-search-result-copy small,
+.title-search-result-copy em {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.86rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title-search-result-copy em {
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 600;
+}
+
 .global-search-person-list,
 .global-search-collection-list {
   display: grid;

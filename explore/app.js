@@ -5446,7 +5446,7 @@ function globalSearchResultsTemplate() {
         }
       </div>
       <div class="global-search-meta compact"><strong>Popular right now</strong></div>
-      <div class="global-search-card-grid">${quickTitles.map(movieCardTemplate).join("")}</div>
+      <div class="title-search-result-list">${quickTitles.map(titleSearchResultTemplate).join("")}</div>
     `;
   }
 
@@ -5488,8 +5488,37 @@ function globalSearchResultsTemplate() {
 
   const matches = getGlobalSearchTitles(titles, query);
   return matches.length
-    ? `<div class="global-search-card-grid">${matches.map(movieCardTemplate).join("")}</div>`
+    ? `<div class="title-search-result-list">${matches.map(titleSearchResultTemplate).join("")}</div>`
     : '<p class="global-search-empty">No title matches yet. Try a different movie, show, anime, cast, or crew name.</p>';
+}
+
+function titleSearchResultTemplate(title) {
+  const image = title.image || title.backdrop || "";
+  const typeLabel = title.type || "Title";
+  const release = title.releaseDate ? formatReleaseDate(title.releaseDate) : title.status || "MovieMate";
+  const platforms = formatPlatforms(title.platforms || []);
+  const description = truncateSearchResultText(title.description || `${typeLabel} • ${title.genre || "MovieMate title"}`, 118);
+
+  return `
+    <a class="title-search-result" href="${buildTitleUrl(title.id)}">
+      <img src="${getOptimizedImageUrl(image, 180)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+      <span class="title-search-result-copy">
+        <strong>${escapeHtml(title.title)}</strong>
+        <small>${escapeHtml(typeLabel)} • ${escapeHtml(release)}${platforms ? ` • ${escapeHtml(platforms)}` : ""}</small>
+        <em>${escapeHtml(description)}</em>
+      </span>
+    </a>
+  `;
+}
+
+function truncateSearchResultText(text, maxLength) {
+  const normalized = String(text || "").trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength - 1).trim()}…`;
 }
 
 function ensureGlobalSearchModal() {
