@@ -7820,14 +7820,14 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-shell {
-  grid-template-columns: minmax(0, 760px);
-  justify-content: start;
+  grid-template-columns: 306px minmax(0, 700px);
+  justify-content: center;
   align-items: start;
-  gap: clamp(20px, 3vw, 34px);
+  gap: clamp(54px, 5vw, 82px);
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-sidebar {
-  width: min(100%, 360px);
+  width: 100%;
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-topics {
@@ -7877,40 +7877,41 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-mode-btn {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 52px;
-  padding: 0 14px;
-  border-radius: 8px;
+  gap: 18px;
+  min-height: 64px;
+  padding: 0 18px;
+  border-radius: 7px;
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-mode-icon {
-  width: 24px;
+  width: 26px;
   display: inline-grid;
   place-items: center;
   color: rgba(255, 255, 255, 0.72);
-  font-size: 1rem;
+  font-size: 1.15rem;
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-feed {
   display: grid;
   align-content: start;
-  gap: 26px;
+  gap: 28px;
   padding-bottom: 18px;
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-card {
   display: grid;
-  gap: 14px;
-  overflow: hidden;
-  padding-bottom: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  gap: 18px;
+  overflow: visible;
+  padding-bottom: 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
   text-decoration: none;
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-card img {
   width: 100%;
-  height: 280px;
+  height: auto;
+  aspect-ratio: 16 / 9;
   display: block;
   border-radius: 8px;
   object-fit: cover;
@@ -7953,16 +7954,20 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-copy h3 {
   grid-column: 1;
   margin: 0;
-  color: #fff;
-  font-size: 1.18rem;
-  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: clamp(1.1rem, 1.55vw, 1.35rem);
+  line-height: 1.35;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-copy p {
   grid-column: 1;
   margin: 0;
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 0.98rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: clamp(1.04rem, 1.3vw, 1.18rem);
+  font-weight: 700;
   line-height: 1.45;
 }
 
@@ -7983,6 +7988,7 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
   height: 42px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.86);
 }
 
@@ -9579,6 +9585,19 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     padding: 22px 14px 44px;
   }
 
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-spaces-shell {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-copy {
+    grid-template-columns: 1fr;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-space-story-copy::after {
+    display: none;
+  }
+
   body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel[data-detail-panel-mode="browse"] {
     top: 72px !important;
     padding: 0 12px !important;
@@ -9601,13 +9620,7 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   .home-section-panel-close {
-    position: relative;
-    top: auto;
-    float: none;
-    margin: 0 0 18px auto;
-    display: flex;
-    align-items: center;
-    width: max-content;
+    display: none !important;
   }
 }
 
