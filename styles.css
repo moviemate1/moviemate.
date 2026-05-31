@@ -7401,8 +7401,9 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
 }
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel[data-detail-panel-mode="spaces"] {
-  top: 72px;
+  top: 0;
   bottom: 0;
+  z-index: 320;
   padding: 0;
 }
 
@@ -7429,8 +7430,8 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
 
 body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-spaces {
   width: 100%;
-  min-height: calc(100vh - 72px);
-  max-height: calc(100vh - 72px);
+  min-height: 100vh;
+  max-height: 100vh;
   margin: 0;
   padding: clamp(28px, 4vw, 52px) clamp(22px, 8vw, 120px) 56px;
   border-right: 0;
@@ -9612,6 +9613,19 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
   padding: 12px 10px !important;
 }
 
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel[data-detail-panel-mode="spaces"] {
+  top: 0 !important;
+  bottom: 0 !important;
+  z-index: 320 !important;
+  background: #050505 !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel[data-detail-panel-mode="spaces"] .detail-header-panel-surface-spaces {
+  min-height: 100vh !important;
+  max-height: 100vh !important;
+  padding-top: clamp(32px, 4vw, 58px) !important;
+}
+
 body[data-page="home"] #browse.home-section-panel-open .section-heading,
 body[data-page="home"] #schedule.home-section-panel-open .section-heading,
 body[data-page="home"] #collections.home-section-panel-open .section-heading {
@@ -9649,8 +9663,8 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface,
   body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-floating,
   body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-spaces {
-    min-height: calc(100vh - 72px);
-    max-height: calc(100vh - 72px);
+    min-height: 100vh;
+    max-height: 100vh;
     padding: 22px 14px 44px;
   }
 
