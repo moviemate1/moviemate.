@@ -4385,6 +4385,7 @@ function closeDetailHeaderPanel() {
   }
 
   document.body.classList.remove("detail-header-panel-open");
+  document.body.classList.remove("detail-header-browse-panel-open");
   setActiveDetailHeaderTrigger("");
 }
 
@@ -4837,7 +4838,7 @@ function detailHeaderBrowsePanelTemplate() {
   ];
 
   return `
-    <div class="detail-header-panel-surface detail-header-panel-surface-floating">
+    <div class="detail-header-panel-surface detail-header-panel-surface-floating detail-header-panel-surface-browse">
       <div class="detail-header-browse-shell">
         <div class="detail-header-browse-copy">
           <p>Browse by</p>
@@ -5085,6 +5086,7 @@ async function renderDetailHeaderPanel() {
   root.setAttribute("aria-hidden", "false");
   root.dataset.detailPanelMode = mode;
   document.body.classList.add("detail-header-panel-open");
+  document.body.classList.toggle("detail-header-browse-panel-open", mode === "browse");
   setActiveDetailHeaderTrigger(mode);
 
   if (mode === "search") {
