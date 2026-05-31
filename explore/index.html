@@ -33,7 +33,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=106-header-panels" />
+    <link rel="stylesheet" href="styles.css?v=108-no-browse-page" />
   </head>
   <body data-page="home">
     <header class="explore-header-mobile-shell" aria-label="MovieMate mobile header">
@@ -89,7 +89,7 @@
               <a class="explore-nav-link" href="#schedule" aria-label="Schedule"><span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2"></rect><path d="M8 3.5v4M16 3.5v4M4 9.5h16"></path></svg></span> Schedule</a>
               <a class="explore-nav-link" href="#spaces" aria-label="Spaces"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-3 3v-3H5a2 2 0 0 1-2-2V8a3 3 0 0 1 3-3h1"></path><path d="M16 6h2a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-1l-2 2v-2"></path></svg></span> Spaces</a>
               <a class="explore-nav-link" href="#collections" aria-label="Collections"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v14l-6.5-3.8L5.5 20V6A1.5 1.5 0 0 1 7 4.5Z"></path></svg></span> Collections</a>
-              <a class="explore-nav-link" href="#browse" aria-label="Browse"><span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.2"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.2"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.2"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.2"></rect></svg></span> Browse</a>
+              <button class="explore-nav-link" data-home-browse-toggle type="button" aria-label="Browse" aria-haspopup="dialog" aria-expanded="false"><span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.2"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.2"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.2"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.2"></rect></svg></span> Browse</button>
             </div>
             <div class="explore-actions-right">
               <button class="icon-chip notification-trigger" data-top-notifications type="button" aria-label="Notifications">
@@ -258,10 +258,10 @@
                 </div>
               </div>
               <div class="browse-panel-grid">
-                <a class="browse-box" href="#browse"><span class="browse-box-icon">◫</span><span>Category</span></a>
-                <a class="browse-box" href="#browse"><span class="browse-box-icon">◎</span><span>Genre</span></a>
-                <a class="browse-box" href="#browse"><span class="browse-box-icon">◍</span><span>Country</span></a>
-                <a class="browse-box" href="#browse"><span class="browse-box-icon">文</span><span>Language</span></a>
+                <a class="browse-box" href="#trending"><span class="browse-box-icon">◫</span><span>Category</span></a>
+                <a class="browse-box" href="#trending"><span class="browse-box-icon">◎</span><span>Genre</span></a>
+                <a class="browse-box" href="#trending"><span class="browse-box-icon">◍</span><span>Country</span></a>
+                <a class="browse-box" href="#trending"><span class="browse-box-icon">文</span><span>Language</span></a>
                 <a class="browse-box" href="#collections"><span class="browse-box-icon">☺</span><span>Community</span></a>
                 <a class="browse-box" href="#trending"><span class="browse-box-icon">★</span><span>District</span></a>
                 <a class="browse-box" href="#bollywoodRowHeading"><span class="browse-box-icon">हि</span><span>Bollywood</span></a>
@@ -315,51 +315,6 @@
               </div>
             </aside>
             <div class="home-spaces-feed" id="homeSpacesFeed"></div>
-          </div>
-        </section>
-
-        <section class="section browse-section" id="browse">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Browse library</p>
-              <h2 id="browseHeadingText">Search by title, genre, language, or format</h2>
-            </div>
-            <p class="section-copy" id="browseCopyText">
-              Use fast filters to scan the library in a cleaner, more even card layout.
-            </p>
-          </div>
-
-          <div class="controls-card">
-            <label class="input-group">
-              <span>Search</span>
-              <input id="searchInput" type="search" placeholder="Search movies and series" autocomplete="off" />
-              <div class="search-suggestions hidden" id="searchSuggestions"></div>
-            </label>
-            <label class="input-group">
-              <span>Type</span>
-              <select id="typeFilter">
-                <option value="all">All types</option>
-                <option value="Movie">Movies</option>
-                <option value="Series">Shows</option>
-              </select>
-            </label>
-            <label class="input-group">
-              <span>Genre</span>
-              <select id="genreFilter">
-                <option value="all">All genres</option>
-              </select>
-            </label>
-            <label class="input-group">
-              <span>Language</span>
-              <select id="languageFilter">
-                <option value="all">All languages</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="movie-grid" id="movieGrid"></div>
-          <div class="load-more-wrap hidden" id="loadMoreWrap">
-            <button class="secondary-btn" id="loadMoreBtn" type="button">Load More</button>
           </div>
         </section>
 
@@ -464,7 +419,7 @@
       <a class="mobile-dock-link" href="#collections">
         <span>Collections</span>
       </a>
-      <a class="mobile-dock-link" href="#browse">
+      <a class="mobile-dock-link" href="#trending" data-home-browse-toggle aria-haspopup="dialog" aria-expanded="false">
         <span>Browse</span>
       </a>
       <button class="mobile-dock-link" id="ownerDockToggle" type="button">
@@ -605,7 +560,7 @@
       </div>
     </div>
 
-    <script type="module" src="app.js?v=32-home-panels"></script>
+    <script type="module" src="app.js?v=34-no-browse-page"></script>
     <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a3795ec89854463a9b90761fb384fb6c"}'></script><!-- End Cloudflare Web Analytics -->
   </body>
 </html>

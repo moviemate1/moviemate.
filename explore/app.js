@@ -5470,12 +5470,12 @@ function setExploreHeaderActive(hash) {
   setActiveInGroup(".mobile-dock-link[href]");
 }
 
-const HOME_FULLSCREEN_SECTION_IDS = new Set(["browse", "schedule", "spaces", "collections"]);
+const HOME_FULLSCREEN_SECTION_IDS = new Set(["schedule", "spaces", "collections"]);
 const HOME_BROWSE_POPUP_LINKS = [
-  { icon: "◫", label: "Category", href: "#browse" },
-  { icon: "◎", label: "Genre", href: "#browse" },
-  { icon: "◍", label: "Country", href: "#browse" },
-  { icon: "文", label: "Language", href: "#browse" },
+  { icon: "◫", label: "Category", href: "#trending" },
+  { icon: "◎", label: "Genre", href: "#trending" },
+  { icon: "◍", label: "Country", href: "#trending" },
+  { icon: "文", label: "Language", href: "#trending" },
   { icon: "☺", label: "Community", href: "#collections" },
   { icon: "★", label: "District", href: "#trending" },
   { icon: "हि", label: "Bollywood", href: "#bollywoodRowHeading" },
@@ -5487,12 +5487,7 @@ const HOME_BROWSE_POPUP_LINKS = [
 ];
 
 function isMainHomepage() {
-  if (document.body.dataset.page !== "home") {
-    return false;
-  }
-
-  const pathname = window.location.pathname || "/";
-  return !pathname.startsWith("/explore/") && (pathname === "/" || pathname.endsWith("/index.html"));
+  return document.body.dataset.page === "home";
 }
 
 function isHomeFullscreenSectionHash(hash) {
@@ -5502,7 +5497,7 @@ function isHomeFullscreenSectionHash(hash) {
     return false;
   }
 
-  if (id === "browse" && isMainHomepage()) {
+  if (id === "browse") {
     return false;
   }
 
@@ -5543,6 +5538,10 @@ function openHomeFullscreenSection(hashOrId) {
 
   const id = (hashOrId || "").replace("#", "");
   const section = document.getElementById(id);
+
+  if (id === "browse") {
+    return false;
+  }
 
   if (!HOME_FULLSCREEN_SECTION_IDS.has(id) || !section) {
     return false;
@@ -5695,6 +5694,12 @@ function setupHomeSpacesControls() {
 function setupHomeFullscreenSections() {
   if (document.body.dataset.page !== "home") {
     return;
+  }
+
+  if (window.location.hash === "#browse") {
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#trending`);
+    setExploreHeaderActive("#trending");
+    window.setTimeout(() => openHomeBrowsePopover(), 80);
   }
 
   HOME_FULLSCREEN_SECTION_IDS.forEach((id) => {
@@ -6576,7 +6581,6 @@ function setupScrollControls() {
   const downButton = document.querySelector("#scrollDownBtn");
   const scrollTargets = [
     "#trending",
-    "#browse",
     "#schedule",
     "#collections",
     "#auto-updated",
