@@ -5,19 +5,119 @@ const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w780";
 const TMDB_PROFILE_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
 const TITLES_COLLECTION = "moviemate_titles";
 const PEOPLE_COLLECTION = "moviemate_people";
-const ALLOWED_LANGUAGE_CODES = new Set(["en", "hi", "ja", "ko", "ne", "ta", "te", "ml", "kn"]);
-const WATCH_PROVIDER_REGIONS = ["IN", "US", "GB"];
-const UPCOMING_PAGE_COUNT = 2;
-const NOW_PLAYING_PAGE_COUNT = 2;
-const STREAMING_PAGE_COUNT = 2;
+const ALLOWED_LANGUAGE_CODES = new Set([
+  "en",
+  "hi",
+  "ja",
+  "ko",
+  "ne",
+  "ta",
+  "te",
+  "ml",
+  "kn",
+  "es",
+  "fr",
+  "de",
+  "it",
+  "zh",
+  "pt",
+  "tr",
+  "th",
+  "id",
+  "ar"
+]);
+const WATCH_PROVIDER_REGIONS = [
+  "IN",
+  "US",
+  "GB",
+  "CA",
+  "AU",
+  "DE",
+  "FR",
+  "ES",
+  "IT",
+  "JP",
+  "KR",
+  "BR",
+  "MX",
+  "ID",
+  "TH"
+];
+const RECENT_RELEASE_LOOKBACK_DAYS = 120;
+const UPCOMING_PAGE_COUNT = 3;
+const NOW_PLAYING_PAGE_COUNT = 3;
+const STREAMING_PAGE_COUNT = 4;
+const MAJOR_OTT_STREAMING_PAGE_COUNT = 4;
+const RECENT_RELEASE_PAGE_COUNT = 4;
 const BOLLYWOOD_PAGE_COUNT = 2;
 const SOUTH_PAGE_COUNT = 1;
 const POPULAR_PAGE_COUNT = 2;
 const TRENDING_PAGE_COUNT = 2;
 const TITLE_BATCH_SIZE = 20;
 const PEOPLE_BATCH_SIZE = 20;
-const MAX_TITLES_TO_SYNC = 120;
-const MAX_PEOPLE_TO_SYNC = 20;
+const MAX_TITLES_TO_SYNC = 320;
+const MAX_PEOPLE_TO_SYNC = 30;
+const DEFAULT_DIRECT_SEARCH_QUERIES = ["Off Campus"];
+const MAJOR_OTT_PLATFORMS = [
+  "Netflix",
+  "Prime Video",
+  "Disney+",
+  "Disney Plus",
+  "Hulu",
+  "Max",
+  "HBO Max",
+  "Apple TV+",
+  "Apple TV Plus",
+  "Paramount+",
+  "Peacock",
+  "Crunchyroll",
+  "JioHotstar",
+  "JioCinema",
+  "Hotstar",
+  "ZEE5",
+  "SonyLIV",
+  "Aha",
+  "Hoichoi",
+  "Sun NXT",
+  "Lionsgate Play",
+  "MX Player",
+  "Eros Now",
+  "ALTBalaji",
+  "ShemarooMe",
+  "ManoramaMAX",
+  "Chaupal",
+  "DocuBay",
+  "Voot",
+  "MGM+",
+  "Starz",
+  "Showtime",
+  "AMC+",
+  "Discovery+",
+  "BritBox",
+  "BBC iPlayer",
+  "ITVX",
+  "Channel 4",
+  "Rakuten Viki",
+  "Viki",
+  "Kocowa",
+  "iQIYI",
+  "Bilibili",
+  "Tencent Video",
+  "WeTV",
+  "HIDIVE",
+  "Shudder",
+  "Acorn TV",
+  "Curiosity Stream",
+  "Roku Channel",
+  "Amazon Freevee",
+  "Tubi",
+  "Pluto TV",
+  "Plex",
+  "Kanopy",
+  "Hoopla",
+  "Mubi",
+  "YouTube Premium"
+];
 
 const requiredEnv = ["TMDB_TOKEN", "FIREBASE_SERVICE_ACCOUNT"];
 
@@ -51,7 +151,12 @@ const LANGUAGE_MAP = {
   fr: "French",
   de: "German",
   it: "Italian",
-  zh: "Chinese"
+  zh: "Chinese",
+  pt: "Portuguese",
+  tr: "Turkish",
+  th: "Thai",
+  id: "Indonesian",
+  ar: "Arabic"
 };
 
 function toLanguageList(code) {
@@ -90,6 +195,47 @@ function buildYouTubeWatchUrl(key) {
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function toIsoDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function getTodayDate() {
+  return toIsoDate(new Date());
+}
+
+function getOffsetDate(days) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + days);
+  return toIsoDate(date);
+}
+
+function getRecentReleaseStartDate() {
+  return getOffsetDate(-RECENT_RELEASE_LOOKBACK_DAYS);
+}
+
+function getTitleStatusFromReleaseDate(releaseDate) {
+  const today = getTodayDate();
+  return releaseDate && releaseDate > today ? "Upcoming" : "Released";
+}
+
+function getDirectSearchQueries() {
+  const extraQueries = String(process.env.TMDB_EXTRA_SEARCH_QUERIES || "")
+    .split(",")
+    .map((query) => query.trim())
+    .filter(Boolean);
+
+  return [...new Set([...DEFAULT_DIRECT_SEARCH_QUERIES, ...extraQueries])];
+}
+
+function getMajorOttPlatformNames() {
+  const extraPlatforms = String(process.env.TMDB_EXTRA_OTT_PLATFORMS || "")
+    .split(",")
+    .map((platform) => platform.trim())
+    .filter(Boolean);
+
+  return [...new Set([...MAJOR_OTT_PLATFORMS, ...extraPlatforms].map(normalizePlatformName).filter(Boolean))];
 }
 
 function isTransientFirestoreError(error) {
@@ -135,6 +281,8 @@ function normalizePlatformName(name) {
   }
 
   if (
+    lower.includes("jiocinema") ||
+    lower.includes("jio cinema") ||
     lower.includes("jiohotstar") ||
     lower.includes("hotstar") ||
     lower.includes("disney+ hotstar") ||
@@ -164,8 +312,188 @@ function normalizePlatformName(name) {
     return "SonyLIV";
   }
 
+  if (lower === "aha" || lower.includes("aha video")) {
+    return "Aha";
+  }
+
+  if (lower.includes("hoichoi")) {
+    return "Hoichoi";
+  }
+
+  if (lower.includes("sun nxt") || lower.includes("sunnxt")) {
+    return "Sun NXT";
+  }
+
+  if (lower.includes("lionsgate")) {
+    return "Lionsgate Play";
+  }
+
+  if (lower.includes("mx player")) {
+    return "MX Player";
+  }
+
+  if (lower.includes("eros now")) {
+    return "Eros Now";
+  }
+
+  if (lower.includes("altbalaji") || lower.includes("alt balaji")) {
+    return "ALTBalaji";
+  }
+
+  if (lower.includes("shemaroo")) {
+    return "ShemarooMe";
+  }
+
+  if (lower.includes("manoramamax") || lower.includes("manorama max")) {
+    return "ManoramaMAX";
+  }
+
+  if (lower.includes("chaupal")) {
+    return "Chaupal";
+  }
+
+  if (lower.includes("docubay")) {
+    return "DocuBay";
+  }
+
+  if (lower.includes("voot")) {
+    return "Voot";
+  }
+
   if (lower.includes("apple tv")) {
     return "Apple TV+";
+  }
+
+  if (lower === "disney+" || lower.includes("disney plus") || lower.includes("disney+")) {
+    return "Disney+";
+  }
+
+  if (lower.includes("hulu")) {
+    return "Hulu";
+  }
+
+  if (lower === "max" || lower.includes("hbo max")) {
+    return "Max";
+  }
+
+  if (lower.includes("paramount")) {
+    return "Paramount+";
+  }
+
+  if (lower.includes("peacock")) {
+    return "Peacock";
+  }
+
+  if (lower.includes("mgm")) {
+    return "MGM+";
+  }
+
+  if (lower.includes("starz")) {
+    return "Starz";
+  }
+
+  if (lower.includes("showtime")) {
+    return "Showtime";
+  }
+
+  if (lower.includes("amc+")) {
+    return "AMC+";
+  }
+
+  if (lower.includes("discovery")) {
+    return "Discovery+";
+  }
+
+  if (lower.includes("britbox")) {
+    return "BritBox";
+  }
+
+  if (lower.includes("bbc iplayer")) {
+    return "BBC iPlayer";
+  }
+
+  if (lower.includes("itvx")) {
+    return "ITVX";
+  }
+
+  if (lower === "channel 4" || lower.includes("all 4")) {
+    return "Channel 4";
+  }
+
+  if (lower.includes("rakuten viki") || lower === "viki") {
+    return "Viki";
+  }
+
+  if (lower.includes("kocowa")) {
+    return "Kocowa";
+  }
+
+  if (lower.includes("iqiyi")) {
+    return "iQIYI";
+  }
+
+  if (lower.includes("bilibili")) {
+    return "Bilibili";
+  }
+
+  if (lower.includes("tencent")) {
+    return "Tencent Video";
+  }
+
+  if (lower.includes("wetv")) {
+    return "WeTV";
+  }
+
+  if (lower.includes("hidive")) {
+    return "HIDIVE";
+  }
+
+  if (lower.includes("shudder")) {
+    return "Shudder";
+  }
+
+  if (lower.includes("acorn tv")) {
+    return "Acorn TV";
+  }
+
+  if (lower.includes("curiosity")) {
+    return "Curiosity Stream";
+  }
+
+  if (lower.includes("roku")) {
+    return "Roku Channel";
+  }
+
+  if (lower.includes("freevee")) {
+    return "Amazon Freevee";
+  }
+
+  if (lower.includes("tubi")) {
+    return "Tubi";
+  }
+
+  if (lower.includes("pluto")) {
+    return "Pluto TV";
+  }
+
+  if (lower.includes("plex")) {
+    return "Plex";
+  }
+
+  if (lower.includes("kanopy")) {
+    return "Kanopy";
+  }
+
+  if (lower.includes("hoopla")) {
+    return "Hoopla";
+  }
+
+  if (lower.includes("mubi")) {
+    return "Mubi";
+  }
+
+  if (lower.includes("youtube premium")) {
+    return "YouTube Premium";
   }
 
   if (lower.includes("theatre") || lower.includes("theater") || lower.includes("cinema")) {
@@ -239,6 +567,36 @@ async function fetchGenres(type) {
   return new Map((payload.genres || []).map((genre) => [genre.id, genre.name]));
 }
 
+async function fetchWatchProvidersForType(type, region) {
+  const endpoint = type === "Movie" ? "/watch/providers/movie" : "/watch/providers/tv";
+  const payload = await fetchTmdb(endpoint, {
+    language: "en-US",
+    watch_region: region
+  });
+
+  return Array.isArray(payload.results) ? payload.results : [];
+}
+
+async function resolveMajorOttProviderIds(type) {
+  const targetPlatforms = new Set(getMajorOttPlatformNames());
+  const providersById = new Map();
+
+  const providerLists = await Promise.all(
+    WATCH_PROVIDER_REGIONS.map((region) => fetchWatchProvidersForType(type, region))
+  );
+
+  providerLists.flat().forEach((provider) => {
+    const providerId = Number(provider.provider_id || 0);
+    const providerName = normalizePlatformName(provider.provider_name);
+
+    if (providerId && targetPlatforms.has(providerName)) {
+      providersById.set(providerId, providerName);
+    }
+  });
+
+  return [...providersById.keys()].sort((left, right) => left - right);
+}
+
 async function fetchPagedResults(path, params, pages) {
   const pageNumbers = Array.from({ length: pages }, (_, index) => index + 1);
   const results = await Promise.all(
@@ -276,17 +634,46 @@ async function fetchNowPlayingMovies() {
 }
 
 async function fetchUpcomingSeries() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayDate();
   return fetchPagedResults(
     "/discover/tv",
     {
       language: "en-US",
       sort_by: "first_air_date.asc",
-      first_air_date_gte: today,
+      "first_air_date.gte": today,
       include_null_first_air_dates: "false",
       vote_count_gte: 20
     },
     UPCOMING_PAGE_COUNT
+  );
+}
+
+async function fetchRecentlyReleasedMovies() {
+  return fetchPagedResults(
+    "/discover/movie",
+    {
+      language: "en-US",
+      region: "US",
+      sort_by: "primary_release_date.desc",
+      "primary_release_date.gte": getRecentReleaseStartDate(),
+      "primary_release_date.lte": getTodayDate(),
+      include_adult: "false"
+    },
+    RECENT_RELEASE_PAGE_COUNT
+  );
+}
+
+async function fetchRecentlyReleasedSeries() {
+  return fetchPagedResults(
+    "/discover/tv",
+    {
+      language: "en-US",
+      sort_by: "first_air_date.desc",
+      "first_air_date.gte": getRecentReleaseStartDate(),
+      "first_air_date.lte": getTodayDate(),
+      include_null_first_air_dates: "false"
+    },
+    RECENT_RELEASE_PAGE_COUNT
   );
 }
 
@@ -310,6 +697,63 @@ async function fetchOnTheAirSeries() {
     },
     NOW_PLAYING_PAGE_COUNT
   );
+}
+
+async function fetchMajorOttStreamingMoviesForRegion(region, providerIds) {
+  if (!providerIds.length) {
+    return [];
+  }
+
+  return fetchPagedResults(
+    "/discover/movie",
+    {
+      language: "en-US",
+      region,
+      watch_region: region,
+      with_watch_providers: providerIds.join("|"),
+      with_watch_monetization_types: "flatrate|ads|free",
+      sort_by: "primary_release_date.desc",
+      "primary_release_date.gte": getRecentReleaseStartDate(),
+      "primary_release_date.lte": getTodayDate(),
+      include_adult: "false"
+    },
+    MAJOR_OTT_STREAMING_PAGE_COUNT
+  );
+}
+
+async function fetchMajorOttStreamingSeriesForRegion(region, providerIds) {
+  if (!providerIds.length) {
+    return [];
+  }
+
+  return fetchPagedResults(
+    "/discover/tv",
+    {
+      language: "en-US",
+      watch_region: region,
+      with_watch_providers: providerIds.join("|"),
+      with_watch_monetization_types: "flatrate|ads|free",
+      sort_by: "first_air_date.desc",
+      "first_air_date.gte": getRecentReleaseStartDate(),
+      "first_air_date.lte": getTodayDate(),
+      include_null_first_air_dates: "false"
+    },
+    MAJOR_OTT_STREAMING_PAGE_COUNT
+  );
+}
+
+async function fetchMajorOttStreamingMovies(providerIds) {
+  const results = await Promise.all(
+    WATCH_PROVIDER_REGIONS.map((region) => fetchMajorOttStreamingMoviesForRegion(region, providerIds))
+  );
+  return results.flat();
+}
+
+async function fetchMajorOttStreamingSeries(providerIds) {
+  const results = await Promise.all(
+    WATCH_PROVIDER_REGIONS.map((region) => fetchMajorOttStreamingSeriesForRegion(region, providerIds))
+  );
+  return results.flat();
 }
 
 async function fetchStreamingMovies() {
@@ -405,6 +849,30 @@ async function fetchTrendingMovies() {
 
 async function fetchTrendingSeries() {
   return fetchPagedResults("/trending/tv/week", {}, TRENDING_PAGE_COUNT);
+}
+
+async function fetchDirectSearchResults(type) {
+  const endpoint = type === "Movie" ? "/search/movie" : "/search/tv";
+  const queries = getDirectSearchQueries();
+
+  if (!queries.length) {
+    return [];
+  }
+
+  const results = await Promise.all(
+    queries.map((query) =>
+      fetchTmdb(endpoint, {
+        language: "en-US",
+        query,
+        include_adult: "false",
+        page: 1
+      })
+    )
+  );
+
+  return results
+    .flatMap((payload) => payload.results || [])
+    .filter((item) => item && (type === "Movie" ? item.title : item.name));
 }
 
 async function fetchTrailerUrl(item, type) {
@@ -617,14 +1085,12 @@ function isAllowedLanguage(item) {
 
 function normalizeTmdbItem(item, type, genreMap, bucket) {
   const releaseDate = type === "Movie" ? item.release_date : item.first_air_date;
-  const today = new Date().toISOString().slice(0, 10);
-  const isUpcoming = releaseDate ? releaseDate >= today : true;
 
   return {
     id: `tmdb-${type.toLowerCase()}-${item.id}`,
     title: type === "Movie" ? item.title : item.name,
     type,
-    status: isUpcoming ? "Upcoming" : "Released",
+    status: getTitleStatusFromReleaseDate(releaseDate),
     releaseDate: releaseDate || "",
     genre: formatGenre(item.genre_ids || [], genreMap),
     language: toLanguageList(item.original_language),
@@ -794,41 +1260,89 @@ async function enrichPeople(people) {
   return enriched;
 }
 
+function getReleaseTimestamp(title) {
+  const value = String(title.releaseDate || "");
+  const timestamp = value ? Date.parse(`${value}T00:00:00Z`) : 0;
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function getSyncPriority(title) {
+  const bucketWeights = {
+    "direct-search": 1000,
+    "major-ott": 940,
+    "ott-recent": 900,
+    "airing-today": 880,
+    "on-the-air": 850,
+    theater: 820,
+    trending: 760,
+    ott: 720,
+    upcoming: 700,
+    popular: 620,
+    bollywood: 560,
+    south: 540
+  };
+  const buckets = Array.isArray(title.importBuckets) ? title.importBuckets : [];
+  const bucketScore = buckets.reduce((score, bucket) => Math.max(score, bucketWeights[bucket] || 0), 0);
+  const releaseTimestamp = getReleaseTimestamp(title);
+  const recencyScore = releaseTimestamp ? Math.min(120, Math.max(0, Math.round((releaseTimestamp - Date.parse(`${getOffsetDate(-180)}T00:00:00Z`)) / 86400000))) : 0;
+
+  return bucketScore + recencyScore + Math.min(80, Number(title.tmdbPopularity || 0));
+}
+
 async function run() {
   console.log("Sync started...");
 
+  const [movieGenres, tvGenres, movieMajorOttProviderIds, seriesMajorOttProviderIds] = await Promise.all([
+    fetchGenres("Movie"),
+    fetchGenres("Series"),
+    resolveMajorOttProviderIds("Movie"),
+    resolveMajorOttProviderIds("Series")
+  ]);
+
+  console.log(
+    `Resolved ${movieMajorOttProviderIds.length} movie OTT providers and ${seriesMajorOttProviderIds.length} series OTT providers.`
+  );
+
   const [
-    movieGenres,
-    tvGenres,
     upcomingMovies,
     nowPlayingMovies,
+    recentlyReleasedMovies,
     upcomingSeries,
+    recentlyReleasedSeries,
     airingTodaySeries,
     onTheAirSeries,
     streamingMovies,
     streamingSeries,
+    majorOttStreamingMovies,
+    majorOttStreamingSeries,
     bollywoodMovies,
     southMovies,
     popularMovies,
     popularSeries,
     trendingMovies,
-    trendingSeries
+    trendingSeries,
+    directSearchMovies,
+    directSearchSeries
   ] = await Promise.all([
-    fetchGenres("Movie"),
-    fetchGenres("Series"),
     fetchUpcomingMovies(),
     fetchNowPlayingMovies(),
+    fetchRecentlyReleasedMovies(),
     fetchUpcomingSeries(),
+    fetchRecentlyReleasedSeries(),
     fetchAiringTodaySeries(),
     fetchOnTheAirSeries(),
     fetchStreamingMovies(),
     fetchStreamingSeries(),
+    fetchMajorOttStreamingMovies(movieMajorOttProviderIds),
+    fetchMajorOttStreamingSeries(seriesMajorOttProviderIds),
     fetchBollywoodMovies(),
     fetchSouthMovies(),
     fetchPopularMovies(),
     fetchPopularSeries(),
     fetchTrendingMovies(),
-    fetchTrendingSeries()
+    fetchTrendingSeries(),
+    fetchDirectSearchResults("Movie"),
+    fetchDirectSearchResults("Series")
   ]);
 
   const normalizedUpcomingMovies = upcomingMovies
@@ -837,9 +1351,15 @@ async function run() {
   const normalizedNowPlayingMovies = nowPlayingMovies
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "theater"));
+  const normalizedRecentlyReleasedMovies = recentlyReleasedMovies
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "ott-recent"));
   const normalizedUpcomingSeries = upcomingSeries
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "upcoming"));
+  const normalizedRecentlyReleasedSeries = recentlyReleasedSeries
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "ott-recent"));
   const normalizedAiringTodaySeries = airingTodaySeries
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "airing-today"));
@@ -852,6 +1372,12 @@ async function run() {
   const normalizedStreamingSeries = streamingSeries
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "ott"));
+  const normalizedMajorOttStreamingMovies = majorOttStreamingMovies
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "major-ott"));
+  const normalizedMajorOttStreamingSeries = majorOttStreamingSeries
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "major-ott"));
   const normalizedPopularMovies = popularMovies
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "popular"));
@@ -870,23 +1396,35 @@ async function run() {
   const normalizedTrendingSeries = trendingSeries
     .filter(isAllowedLanguage)
     .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "trending"));
+  const normalizedDirectSearchMovies = directSearchMovies
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Movie", movieGenres, "direct-search"));
+  const normalizedDirectSearchSeries = directSearchSeries
+    .filter(isAllowedLanguage)
+    .map((item) => normalizeTmdbItem(item, "Series", tvGenres, "direct-search"));
 
   const grouped = new Map();
 
   [
     ...normalizedUpcomingMovies,
     ...normalizedNowPlayingMovies,
+    ...normalizedRecentlyReleasedMovies,
     ...normalizedUpcomingSeries,
+    ...normalizedRecentlyReleasedSeries,
     ...normalizedAiringTodaySeries,
     ...normalizedOnTheAirSeries,
     ...normalizedStreamingMovies,
     ...normalizedStreamingSeries,
+    ...normalizedMajorOttStreamingMovies,
+    ...normalizedMajorOttStreamingSeries,
     ...normalizedBollywoodMovies,
     ...normalizedSouthMovies,
     ...normalizedPopularMovies,
     ...normalizedPopularSeries,
     ...normalizedTrendingMovies,
-    ...normalizedTrendingSeries
+    ...normalizedTrendingSeries,
+    ...normalizedDirectSearchMovies,
+    ...normalizedDirectSearchSeries
   ].forEach((item) => {
     const existing = grouped.get(item.id);
 
@@ -898,15 +1436,28 @@ async function run() {
     grouped.set(item.id, {
       ...existing,
       ...item,
-      status:
-        existing.importBuckets.includes("upcoming") || item.importBuckets.includes("upcoming")
-          ? "Upcoming"
-          : existing.status,
+      status: getTitleStatusFromReleaseDate(item.releaseDate || existing.releaseDate),
       importBuckets: [...new Set([...(existing.importBuckets || []), ...(item.importBuckets || [])])]
     });
   });
 
-  const merged = [...grouped.values()].slice(0, MAX_TITLES_TO_SYNC);
+  const merged = [...grouped.values()]
+    .sort((left, right) => {
+      const priorityDelta = getSyncPriority(right) - getSyncPriority(left);
+
+      if (priorityDelta) {
+        return priorityDelta;
+      }
+
+      const releaseDelta = getReleaseTimestamp(right) - getReleaseTimestamp(left);
+
+      if (releaseDelta) {
+        return releaseDelta;
+      }
+
+      return Number(right.tmdbPopularity || 0) - Number(left.tmdbPopularity || 0);
+    })
+    .slice(0, MAX_TITLES_TO_SYNC);
   const mergedWithTrailers = await enrichWithTrailers(merged);
   const uniquePeople = collectUniquePeople(mergedWithTrailers);
   const enrichedPeople = await enrichPeople(uniquePeople);
