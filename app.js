@@ -4456,8 +4456,8 @@ function detailHeaderSearchResultsTemplate() {
       <div class="detail-search-panel-meta compact">
         <strong>Popular right now</strong>
       </div>
-      <div class="detail-header-card-grid detail-header-card-grid-search">
-        ${quickTitles.map(movieCardTemplate).join("")}
+      <div class="title-search-result-list">
+        ${quickTitles.map(titleSearchResultTemplate).join("")}
       </div>
     `;
   }
@@ -4557,11 +4557,40 @@ function detailHeaderSearchResultsTemplate() {
 
   return matches.length
     ? `
-        <div class="detail-header-card-grid detail-header-card-grid-search">
-          ${matches.map(movieCardTemplate).join("")}
+        <div class="title-search-result-list">
+          ${matches.map(titleSearchResultTemplate).join("")}
         </div>
       `
     : '<p class="detail-search-empty-copy">No title matches yet. Try a different movie, show, anime, cast, or crew name.</p>';
+}
+
+function titleSearchResultTemplate(title) {
+  const image = title.image || title.backdrop || "";
+  const typeLabel = getDisplayTypeLabel(title);
+  const release = title.releaseDate ? formatReleaseDate(title.releaseDate) : title.status || "MovieMate";
+  const platforms = formatPlatforms(title.platforms || []);
+  const description = truncateSearchResultText(title.description || `${typeLabel} • ${title.genre || "MovieMate title"}`, 118);
+
+  return `
+    <a class="title-search-result" href="${buildTitleUrl(title.id)}">
+      <img src="${getOptimizedImageUrl(image, 180)}" alt="${escapeHtml(title.title)} poster" loading="lazy" decoding="async" />
+      <span class="title-search-result-copy">
+        <strong>${escapeHtml(title.title)}</strong>
+        <small>${escapeHtml(typeLabel)} • ${escapeHtml(release)}${platforms ? ` • ${escapeHtml(platforms)}` : ""}</small>
+        <em>${escapeHtml(description)}</em>
+      </span>
+    </a>
+  `;
+}
+
+function truncateSearchResultText(text, maxLength) {
+  const normalized = String(text || "").trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength - 1).trim()}…`;
 }
 
 function detailHeaderSearchPanelTemplate() {
@@ -5114,6 +5143,7 @@ function setupDetailHeaderPanels() {
   getDetailHeaderPanelTriggers().forEach((trigger) => {
     trigger.addEventListener("click", async (event) => {
       event.preventDefault();
+      event.stopPropagation();
       const mode = trigger.dataset.detailPanelTrigger || "";
 
       if (!mode) {
@@ -5149,8 +5179,11 @@ function setupDetailHeaderPanels() {
       return;
     }
 
+    event.stopPropagation();
+
     const tabButton = target.closest("[data-detail-search-tab]");
     if (tabButton) {
+      event.preventDefault();
       detailHeaderPanelState.searchTab = tabButton.dataset.detailSearchTab || "content";
       await renderDetailHeaderPanel();
       return;
@@ -5158,6 +5191,7 @@ function setupDetailHeaderPanels() {
 
     const historyChip = target.closest("[data-detail-search-chip]");
     if (historyChip) {
+      event.preventDefault();
       detailHeaderPanelState.searchQuery = historyChip.dataset.detailSearchChip || "";
       rememberDetailHeaderSearch(detailHeaderPanelState.searchQuery);
       await renderDetailHeaderPanel();
@@ -5165,6 +5199,7 @@ function setupDetailHeaderPanels() {
     }
 
     if (target.closest("[data-detail-search-clear='true']")) {
+      event.preventDefault();
       saveDetailHeaderSearchHistory([]);
       if (detailHeaderPanelState.mode === "search") {
         await renderDetailHeaderPanel();
@@ -5174,6 +5209,7 @@ function setupDetailHeaderPanels() {
 
     const scheduleWindowButton = target.closest("[data-detail-schedule-window]");
     if (scheduleWindowButton) {
+      event.preventDefault();
       detailHeaderPanelState.scheduleWindow = scheduleWindowButton.dataset.detailScheduleWindow || "released";
       await renderDetailHeaderPanel();
       return;
@@ -5181,6 +5217,7 @@ function setupDetailHeaderPanels() {
 
     const scheduleTypeButton = target.closest("[data-detail-schedule-type]");
     if (scheduleTypeButton) {
+      event.preventDefault();
       detailHeaderPanelState.scheduleType = scheduleTypeButton.dataset.detailScheduleType || "all";
       await renderDetailHeaderPanel();
       return;
@@ -5188,6 +5225,7 @@ function setupDetailHeaderPanels() {
 
     const collectionsModeButton = target.closest("[data-detail-collections-mode]");
     if (collectionsModeButton) {
+      event.preventDefault();
       detailHeaderPanelState.collectionsMode = collectionsModeButton.dataset.detailCollectionsMode || "discover";
       await renderDetailHeaderPanel();
       return;
@@ -5195,6 +5233,7 @@ function setupDetailHeaderPanels() {
 
     const spacesFeedButton = target.closest("[data-detail-spaces-feed]");
     if (spacesFeedButton) {
+      event.preventDefault();
       detailHeaderPanelState.spacesFeed = spacesFeedButton.dataset.detailSpacesFeed || "feed";
       await renderDetailHeaderPanel();
       return;
@@ -5202,6 +5241,7 @@ function setupDetailHeaderPanels() {
 
     const spacesTopicButton = target.closest("[data-detail-spaces-topic]");
     if (spacesTopicButton) {
+      event.preventDefault();
       const nextTopic = spacesTopicButton.dataset.detailSpacesTopic || "all";
       const activeTopics = new Set(
         Array.isArray(detailHeaderPanelState.spacesTopics) ? detailHeaderPanelState.spacesTopics : SPACES_TOPIC_OPTIONS
@@ -9378,7 +9418,7 @@ function globalSearchResultsTemplate() {
         }
       </div>
       <div class="global-search-meta compact"><strong>Popular right now</strong></div>
-      <div class="global-search-card-grid">${quickTitles.map(movieCardTemplate).join("")}</div>
+      <div class="title-search-result-list">${quickTitles.map(titleSearchResultTemplate).join("")}</div>
     `;
   }
 
@@ -9420,7 +9460,7 @@ function globalSearchResultsTemplate() {
 
   const matches = getGlobalSearchTitles(titles, query);
   return matches.length
-    ? `<div class="global-search-card-grid">${matches.map(movieCardTemplate).join("")}</div>`
+    ? `<div class="title-search-result-list">${matches.map(titleSearchResultTemplate).join("")}</div>`
     : '<p class="global-search-empty">No title matches yet. Try a different movie, show, anime, cast, or crew name.</p>';
 }
 
