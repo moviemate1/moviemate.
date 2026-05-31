@@ -3285,9 +3285,43 @@ function userNotificationTemplate(item) {
     : `<article class="notification-feed-card notification-popover-item">${content}</article>`;
 }
 
-function notificationListTemplate(items) {
+function getNotificationFilterFromButton(button) {
+  return (button?.dataset.notificationFilter || button?.textContent || "all").trim().toLowerCase();
+}
+
+function getNotificationCategory(item) {
+  const text = `${item.id || ""} ${item.label || ""} ${item.copy || ""}`.toLowerCase();
+
+  if (text.includes("release") || text.includes("updated") || text.includes("update") || text.includes("new title")) {
+    return "updates";
+  }
+
+  return "activity";
+}
+
+function filterNotificationsByTab(items, filter = "all") {
+  if (filter === "all") {
+    return items;
+  }
+
+  return items.filter((item) => getNotificationCategory(item) === filter);
+}
+
+function getNotificationEmptyMessage(filter = "all") {
+  if (filter === "updates") {
+    return "No updates yet. Saved titles and interested titles will show release updates here.";
+  }
+
+  if (filter === "activity") {
+    return "No activity yet. Community picks and account activity will show here.";
+  }
+
+  return "No notifications yet. Saved titles and interested titles will show updates here.";
+}
+
+function notificationListTemplate(items, filter = "all") {
   if (!items.length) {
-    return '<p class="detail-search-empty-copy notification-popover-empty">No notifications yet. Saved titles and interested titles will show updates here.</p>';
+    return `<p class="detail-search-empty-copy notification-popover-empty">${escapeHtml(getNotificationEmptyMessage(filter))}</p>`;
   }
 
   const lastSevenDays = items.slice(0, Math.min(1, items.length));
@@ -3421,14 +3455,52 @@ function renderUserNotifications(titles) {
   }
 
   const items = buildUserNotifications(titles);
+  const activeFilter = getNotificationFilterFromButton(document.querySelector("#notificationsModal .notification-popover-tab.active"));
+  const filteredItems = filterNotificationsByTab(items, activeFilter);
   const seenAt = Number(localStorage.getItem(USER_NOTIFICATIONS_SEEN_KEY) || 0);
   const unseenCount = items.filter((item) => item.createdAtMs && item.createdAtMs > seenAt).length;
 
-  list.innerHTML = notificationListTemplate(items);
-  emptyState.classList.toggle("hidden", items.length > 0);
+  list.innerHTML = notificationListTemplate(filteredItems, activeFilter);
+  emptyState.classList.add("hidden");
 
   dots.forEach((dot) => {
     dot.classList.toggle("visible", unseenCount > 0);
+  });
+}
+
+function renderNotificationPopover(card) {
+  const feed = card?.querySelector(".notification-feed");
+
+  if (!feed) {
+    return;
+  }
+
+  const activeFilter = getNotificationFilterFromButton(card.querySelector(".notification-popover-tab.active"));
+  const items = buildUserNotifications(getVisibleTitles(titlesCache));
+  const filteredItems = filterNotificationsByTab(items, activeFilter);
+  feed.innerHTML = notificationListTemplate(filteredItems, activeFilter);
+}
+
+function setupNotificationTabs() {
+  document.addEventListener("click", (event) => {
+    const tab = event.target.closest(".notification-popover-tab");
+
+    if (!tab) {
+      return;
+    }
+
+    const card = tab.closest(".notification-popover-card");
+
+    if (!card) {
+      return;
+    }
+
+    card.querySelectorAll(".notification-popover-tab").forEach((button) => {
+      const isActive = button === tab;
+      button.classList.toggle("active", isActive);
+      button.setAttribute("aria-selected", String(isActive));
+    });
+    renderNotificationPopover(card);
   });
 }
 
@@ -6942,6 +7014,7 @@ async function init() {
   setupAuthModal();
   setupSpoilerToggle();
   setupGlobalSearchModal();
+  setupNotificationTabs();
 
   if (document.body.dataset.page === "home") {
     renderHomepageSkeletons();
