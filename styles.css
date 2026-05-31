@@ -9830,3 +9830,86 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel[data-detail-panel-mode="notifications"] {
+  top: 64px !important;
+  bottom: auto !important;
+  padding: 0 max(18px, calc((100vw - 1440px) / 2 + 18px)) 0 !important;
+  background: transparent !important;
+  pointer-events: none !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel[data-detail-panel-mode="notifications"] .detail-header-panel-surface-notifications {
+  width: min(450px, calc(100vw - 28px)) !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  max-height: calc(100vh - 92px) !important;
+  margin: 10px max(12px, calc((100vw - 1440px) / 2 + 118px)) 0 auto !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: 0 30px 76px rgba(0, 0, 0, 0.5) !important;
+  pointer-events: auto !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel[data-detail-panel-mode="notifications"] .notification-popover-card {
+  width: 100% !important;
+  max-width: none !important;
+  border: 0 !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link.account-chip,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link:not(.signed-in),
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link.account-chip.signed-in {
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 46px !important;
+  min-width: 46px !important;
+  height: 46px !important;
+  min-height: 46px !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link .account-chip-label,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link:not(.signed-in) .account-chip-label {
+  display: none !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-signin-icon {
+  display: grid !important;
+  place-items: center !important;
+  align-self: center !important;
+  justify-self: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  margin: 0 !important;
+  transform: none !important;
+  border-radius: 50% !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-signin-icon svg {
+  display: block !important;
+  width: 19px !important;
+  height: 19px !important;
+  margin: 0 !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-chip-avatar {
+  display: grid !important;
+  place-items: center !important;
+  align-self: center !important;
+  justify-self: center !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+}
+
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link .account-chip-avatar.hidden,
+body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link.signed-in .account-signin-icon {
+  display: none !important;
+}
