@@ -6987,13 +6987,7 @@ button.ghost-link {
   }
 
   body[data-page="home"] .explore-mobile-beta {
-    display: inline-block !important;
-    margin-left: 8px !important;
-    color: rgba(255, 255, 255, 0.58) !important;
-    font-family: Arial, Helvetica, sans-serif !important;
-    font-size: 1.22rem !important;
-    font-weight: 500 !important;
-    line-height: 1 !important;
+    display: none !important;
   }
 
   body[data-page="home"] .explore-mobile-owner {
@@ -7102,7 +7096,8 @@ button.ghost-link {
 }
 
 /* Shared MOVIEMATE header and global search overlay. */
-body[data-page="home"] .beta-chip {
+body[data-page="home"] .beta-chip,
+body[data-page="home"] .explore-mobile-beta {
   display: none !important;
 }
 
