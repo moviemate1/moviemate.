@@ -6986,6 +6986,16 @@ button.ghost-link {
     white-space: nowrap !important;
   }
 
+  body[data-page="home"] .explore-mobile-beta {
+    display: inline-block !important;
+    margin-left: 8px !important;
+    color: rgba(255, 255, 255, 0.58) !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 1.22rem !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+  }
+
   body[data-page="home"] .explore-mobile-owner {
     min-height: 32px !important;
     max-width: 66px !important;
@@ -8072,6 +8082,87 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     display: none !important;
   }
 
+  body[data-page="home"] .mobile-dock {
+    gap: 14px !important;
+    justify-content: space-between !important;
+  }
+
+  body[data-page="home"] .mobile-dock-link {
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.66) !important;
+    box-shadow: none !important;
+  }
+
+  body[data-page="home"] .mobile-dock-link.active,
+  body[data-page="home"] .mobile-dock-link:hover {
+    background: transparent !important;
+    color: #fff !important;
+  }
+
+  body[data-page="home"] .mobile-dock-link span:not(.mobile-dock-icon):not(.account-chip-avatar):not(.mobile-dock-avatar) {
+    display: none !important;
+  }
+
+  body[data-page="home"] .mobile-dock-icon {
+    display: grid !important;
+    place-items: center !important;
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  body[data-page="home"] .mobile-dock-icon svg {
+    width: 28px !important;
+    height: 28px !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 2.1 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account {
+    flex: 0 0 auto !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account .dock-account-label {
+    display: none !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account .account-chip-avatar {
+    width: 36px !important;
+    height: 36px !important;
+    display: block !important;
+    border-radius: 50% !important;
+    background:
+      url("../app-icon-192.png") center / cover,
+      rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03) !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account.signed-in .account-chip-avatar {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 0.68rem !important;
+    line-height: 1 !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account .account-chip-avatar.hidden {
+    display: block !important;
+  }
+
   body[data-page="home"] .explore-main {
     width: 100% !important;
     padding-top: 0 !important;
@@ -8391,62 +8482,12 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     width: 100vw !important;
     max-width: 100vw !important;
     min-height: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
-    padding: 8px 24px calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    padding: 8px 22px calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: #050505 !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
-  }
-
-  body[data-page="home"] .mobile-dock-link,
-  body[data-page="home"] #ownerDockToggle {
-    display: inline-grid !important;
-    place-items: center !important;
-    width: 44px !important;
-    height: 44px !important;
-    min-width: 44px !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    color: rgba(255, 255, 255, 0.62) !important;
-    background: transparent !important;
-    font-size: 0 !important;
-  }
-
-  body[data-page="home"] .mobile-dock-link span {
-    display: none !important;
-  }
-
-  body[data-page="home"] .mobile-dock-link::before {
-    color: currentColor;
-    font-size: 2rem;
-    font-weight: 400;
-    line-height: 1;
-  }
-
-  body[data-page="home"] .mobile-dock-link:nth-child(1)::before {
-    content: "◉";
-  }
-
-  body[data-page="home"] .mobile-dock-link:nth-child(2)::before {
-    content: "▣";
-  }
-
-  body[data-page="home"] .mobile-dock-link:nth-child(3)::before {
-    content: "☕";
-  }
-
-  body[data-page="home"] .mobile-dock-link:nth-child(4)::before {
-    content: "▱";
-  }
-
-  body[data-page="home"] #ownerDockToggle::before {
-    content: "";
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: url("../app-icon-192.png") center / cover, rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.18);
   }
 }
 
