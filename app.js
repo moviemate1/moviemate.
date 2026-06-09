@@ -3909,6 +3909,32 @@ function renderNamedExploreRow(sectionId, titles, heading, copy) {
   emptyState.classList.toggle("hidden", titles.length > 0);
 }
 
+function ensureMobileTrendingFilter() {
+  if (!window.matchMedia("(max-width: 768px)").matches) {
+    return;
+  }
+
+  const heading = document.querySelector(".trend-section .section-heading");
+  const select = document.querySelector("#interestWindowSelect");
+
+  if (!heading || !select) {
+    return;
+  }
+
+  let wrap = heading.querySelector(".trend-mobile-interest-wrap");
+
+  if (!wrap) {
+    wrap = document.createElement("label");
+    wrap.className = "trend-mobile-interest-wrap interest-filter-wrap";
+    wrap.setAttribute("aria-label", "Most interested time filter");
+    heading.appendChild(wrap);
+  }
+
+  if (select.parentElement !== wrap) {
+    wrap.appendChild(select);
+  }
+}
+
 function renderCuratedExploreRows(titles) {
   const watchWithDistrict = getCuratedTitles(
     titles,
@@ -3983,6 +4009,8 @@ function renderCuratedExploreRows(titles) {
     trendingCopy.textContent =
       "Quick trending picks and high-interest titles that feel right for a shared watch mood.";
   }
+
+  ensureMobileTrendingFilter();
 
   if (trendingGrid && trendingEmptyState) {
     trendingGrid.innerHTML = watchWithDistrict.map(featuredCardTemplate).join("");
