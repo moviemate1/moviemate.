@@ -2239,6 +2239,7 @@ function renderNamedExploreRow(sectionId, titles, heading, copy) {
 }
 
 function renderCuratedExploreRows(titles) {
+  const useMobileInterestLayout = window.matchMedia("(max-width: 768px)").matches;
   const watchWithDistrict = getCuratedTitles(
     titles,
     (title) => title.trending || title.importBuckets.includes("trending") || getInterestScore(title) > 140,
@@ -2305,7 +2306,7 @@ function renderCuratedExploreRows(titles) {
   const trendingCopy = document.querySelector("#trendingCopyText");
 
   if (trendingHeading) {
-    trendingHeading.textContent = "Watch It With District";
+    trendingHeading.textContent = useMobileInterestLayout ? "Most Interested" : "Watch It With District";
   }
 
   if (trendingCopy) {
@@ -2314,7 +2315,9 @@ function renderCuratedExploreRows(titles) {
   }
 
   if (trendingGrid && trendingEmptyState) {
-    trendingGrid.innerHTML = watchWithDistrict.map(featuredCardTemplate).join("");
+    trendingGrid.innerHTML = watchWithDistrict
+      .map((title, index) => (useMobileInterestLayout ? mostInterestedItemTemplate(title, index) : featuredCardTemplate(title)))
+      .join("");
     trendingEmptyState.classList.toggle("hidden", watchWithDistrict.length > 0);
   }
 
