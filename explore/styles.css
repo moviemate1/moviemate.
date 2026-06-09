@@ -9461,7 +9461,58 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
-    width: 112px !important;
-    min-width: 112px !important;
+    width: 118px !important;
+    min-width: 118px !important;
+    max-width: 118px !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading > div {
+    max-width: calc(100% - 142px) !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading h2 {
+    font-size: clamp(1.34rem, 4.4vw, 1.72rem) !important;
+    letter-spacing: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  body[data-page="home"] .trend-section .section-heading {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    gap: 14px !important;
+  }
+
+  body[data-page="home"] .trend-mobile-interest-wrap {
+    margin-left: 0 !important;
+    flex: 0 0 auto !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading > div {
+    max-width: calc(100% - 116px) !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading h2 {
+    font-size: clamp(1.16rem, 3.9vw, 1.48rem) !important;
+    gap: 10px !important;
+  }
+
+  body[data-page="home"] .trend-heading-icon {
+    width: 20px !important;
+    height: 20px !important;
+    flex-basis: 20px !important;
+  }
+
+  body[data-page="home"] .trend-heading-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
+    width: 104px !important;
+    min-width: 104px !important;
+    max-width: 104px !important;
   }
 }
