@@ -9445,4 +9445,23 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     width: 18px !important;
     height: 18px !important;
   }
+
+  body[data-page="home"] .trend-section .section-heading > div {
+    max-width: calc(100% - 132px) !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading h2 {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  body[data-page="home"] .trend-mobile-interest-wrap {
+    margin-left: 12px !important;
+  }
+
+  body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
+    width: 112px !important;
+    min-width: 112px !important;
+  }
 }
