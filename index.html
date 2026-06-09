@@ -33,7 +33,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="explore/styles.css?v=118-mobile-all" />
+    <link rel="stylesheet" href="explore/styles.css?v=119-mobile-home" />
   </head>
   <body data-page="home">
     <header class="explore-header-mobile-shell" aria-label="MovieMate mobile header">
@@ -414,20 +414,29 @@
     </div>
 
     <nav class="mobile-dock" aria-label="MovieMate sections">
-      <a class="mobile-dock-link active" href="#trending">
-        <span>Explore</span>
+      <a class="mobile-dock-link active" href="#trending" aria-label="Explore">
+        <span class="mobile-dock-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"></circle><path d="M12 12 16.5 7.5"></path><path d="M8.5 15.5 12 12"></path></svg>
+        </span>
       </a>
-      <a class="mobile-dock-link" href="#schedule" data-home-section-toggle="schedule">
-        <span>Schedule</span>
+      <a class="mobile-dock-link" href="#schedule" data-home-section-toggle="schedule" aria-label="Schedule">
+        <span class="mobile-dock-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="M8 3v4M16 3v4M4 9h16"></path></svg>
+        </span>
       </a>
-      <a class="mobile-dock-link" href="#collections" data-home-section-toggle="collections">
-        <span>Collections</span>
+      <a class="mobile-dock-link" href="#spaces" data-home-section-toggle="spaces" aria-label="Spaces">
+        <span class="mobile-dock-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7 5h7a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H9l-4 4v-4H5a3 3 0 0 1-3-3V9a4 4 0 0 1 4-4h1Z"></path><path d="M8 9h6M8 12h4"></path></svg>
+        </span>
       </a>
-      <a class="mobile-dock-link" href="#trending" data-home-browse-toggle aria-haspopup="dialog" aria-expanded="false">
-        <span>Browse</span>
+      <a class="mobile-dock-link" href="#collections" data-home-section-toggle="collections" aria-label="Collections">
+        <span class="mobile-dock-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7 4.5h10a1.5 1.5 0 0 1 1.5 1.5v14l-6.5-3.8L5.5 20V6A1.5 1.5 0 0 1 7 4.5Z"></path></svg>
+        </span>
       </a>
-      <button class="mobile-dock-link" id="ownerDockToggle" type="button">
-        <span>Owner</span>
+      <button class="mobile-dock-link mobile-dock-account auth-chip" data-auth-toggle type="button" aria-label="Account">
+        <span class="account-chip-avatar hidden" data-account-avatar>MM</span>
+        <span class="dock-account-label" data-account-label>Sign In</span>
       </button>
     </nav>
 
@@ -574,7 +583,7 @@
       </div>
     </div>
 
-    <script type="module" src="explore/app.js?v=43-notification-tabs"></script>
+    <script type="module" src="explore/app.js?v=44-mobile-home"></script>
     <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a3795ec89854463a9b90761fb384fb6c"}'></script><!-- End Cloudflare Web Analytics -->
   </body>
 </html>
