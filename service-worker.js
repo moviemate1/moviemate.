@@ -1,12 +1,12 @@
-const CACHE_NAME = "moviemate-shell-v44-mobile-home";
+const CACHE_NAME = "moviemate-shell-v45-mobile-home";
 const SHELL_ASSETS = [
   "/",
   "/index.html",
   "/offline.html",
   "/explore/",
   "/explore/index.html",
-  "/explore/styles.css?v=132-mobile-home",
-  "/explore/app.js?v=54-mobile-home",
+  "/explore/styles.css?v=133-mobile-home",
+  "/explore/app.js?v=55-mobile-home",
   "/explore/firebase-config.js",
   "/manifest.webmanifest",
   "/favicon.svg"
