@@ -9371,24 +9371,38 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-section .section-heading {
+    display: flex !important;
+    align-items: center !important;
     justify-content: space-between !important;
-    gap: 18px !important;
+    flex-wrap: nowrap !important;
+    gap: 12px !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading > div {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
   }
 
   body[data-page="home"] .trend-section .section-heading h2 {
+    display: inline-flex !important;
+    align-items: center !important;
     gap: 12px !important;
-    font-size: clamp(1.72rem, 6vw, 2rem) !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    font-size: clamp(1.5rem, 5.2vw, 1.85rem) !important;
+    line-height: 1 !important;
   }
 
   body[data-page="home"] .trend-heading-icon {
-    width: 24px !important;
-    height: 24px !important;
-    flex-basis: 24px !important;
+    width: 26px !important;
+    height: 26px !important;
+    flex-basis: 26px !important;
   }
 
   body[data-page="home"] .trend-heading-icon svg {
-    width: 20px !important;
-    height: 20px !important;
+    width: 22px !important;
+    height: 22px !important;
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap {
@@ -9397,8 +9411,38 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
-    width: 116px !important;
-    min-width: 116px !important;
+    width: clamp(112px, 26vw, 138px) !important;
+    min-width: 112px !important;
     border-radius: 10px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right {
+    align-items: center !important;
+    gap: 14px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .icon-chip,
+  body[data-page="home"] .explore-mobile-header-right .notification-trigger,
+  body[data-page="home"] .explore-mobile-header-right .account-chip {
+    display: inline-grid !important;
+    place-items: center !important;
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+    line-height: 0 !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .notification-glyph {
+    width: 18px !important;
+    height: 18px !important;
+    color: rgba(255, 255, 255, 0.62) !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .notification-glyph svg,
+  body[data-page="home"] .explore-mobile-header-right .icon-chip svg {
+    width: 18px !important;
+    height: 18px !important;
   }
 }
