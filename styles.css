@@ -10276,4 +10276,8 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
     font-weight: 900 !important;
     line-height: 1 !important;
   }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .page-shell.detail-shell {
+    padding-bottom: 96px !important;
+  }
 }
