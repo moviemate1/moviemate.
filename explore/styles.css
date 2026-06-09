@@ -9178,7 +9178,7 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
 @media (max-width: 390px) {
   body[data-page="home"] .trend-section .section-heading h2 {
     gap: 10px !important;
-    font-size: 1.43rem !important;
+    font-size: 1.38rem !important;
   }
 
   body[data-page="home"] .trend-heading-icon {
@@ -9192,11 +9192,11 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
-    width: 118px !important;
-    min-width: 118px !important;
+    width: 104px !important;
+    min-width: 104px !important;
     height: 40px !important;
-    padding-right: 22px !important;
-    font-size: 0.84rem !important;
+    padding-right: 20px !important;
+    font-size: 0.8rem !important;
   }
 }
 
@@ -9241,11 +9241,11 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
-    width: 126px !important;
-    min-width: 126px !important;
+    width: 104px !important;
+    min-width: 104px !important;
     height: 42px !important;
-    padding: 0 28px 0 14px !important;
-    font-size: 0.86rem !important;
+    padding: 0 24px 0 12px !important;
+    font-size: 0.84rem !important;
     pointer-events: auto !important;
   }
 
@@ -9303,31 +9303,31 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] .explore-mobile-owner {
     display: grid !important;
     place-items: center !important;
-    width: 30px !important;
-    min-width: 30px !important;
-    height: 30px !important;
-    min-height: 30px !important;
+    width: 26px !important;
+    min-width: 26px !important;
+    height: 26px !important;
+    min-height: 26px !important;
     padding: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
     color: rgba(255, 255, 255, 0.58) !important;
-    font-size: 1.9rem !important;
-    line-height: 1 !important;
+    font-size: 1.55rem !important;
+    line-height: 0.9 !important;
     font-weight: 800 !important;
   }
 
   body[data-page="home"] .explore-mobile-owner .mobile-more-icon {
     display: grid !important;
     place-items: center !important;
-    width: 20px !important;
-    height: 20px !important;
+    width: 16px !important;
+    height: 16px !important;
     color: currentColor !important;
   }
 
   body[data-page="home"] .explore-mobile-owner .mobile-more-icon svg {
-    width: 20px !important;
-    height: 20px !important;
+    width: 16px !important;
+    height: 16px !important;
     display: block !important;
     fill: currentColor !important;
   }
