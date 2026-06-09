@@ -8882,3 +8882,248 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     font-size: 0.62rem !important;
   }
 }
+
+@media (max-width: 768px) {
+  body[data-page="home"] .explore-sidebar,
+  body[data-page="home"] .most-interested-panel {
+    display: none !important;
+  }
+
+  body[data-page="home"] .explore-mobile-brand::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right {
+    gap: 22px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-menu-wrap {
+    display: block !important;
+    width: 22px !important;
+    min-width: 22px !important;
+    height: 36px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .icon-chip,
+  body[data-page="home"] .explore-mobile-header-right .account-chip {
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.58) !important;
+    box-shadow: none !important;
+    font-size: 0 !important;
+    overflow: visible !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right [data-top-search] {
+    color: rgba(255, 255, 255, 0.58) !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right [data-top-search]::before {
+    content: "" !important;
+    position: absolute !important;
+    left: 2px !important;
+    top: 8px !important;
+    width: 17px !important;
+    height: 17px !important;
+    border: 3px solid currentColor !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right [data-top-search]::after {
+    content: "" !important;
+    position: absolute !important;
+    left: 19px !important;
+    top: 24px !important;
+    width: 13px !important;
+    height: 3px !important;
+    border-radius: 999px !important;
+    background: currentColor !important;
+    transform: rotate(45deg) !important;
+    transform-origin: left center !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .notification-glyph {
+    position: relative !important;
+    display: block !important;
+    width: 28px !important;
+    height: 30px !important;
+    color: rgba(255, 255, 255, 0.58) !important;
+    font-size: 0 !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .notification-glyph::before {
+    content: "" !important;
+    position: absolute !important;
+    left: 5px !important;
+    top: 5px !important;
+    width: 16px !important;
+    height: 18px !important;
+    border: 3px solid currentColor !important;
+    border-bottom: 0 !important;
+    border-radius: 14px 14px 9px 9px !important;
+    background: transparent !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .notification-glyph::after {
+    content: "" !important;
+    position: absolute !important;
+    left: 10px !important;
+    top: 25px !important;
+    width: 8px !important;
+    height: 4px !important;
+    border-bottom: 3px solid currentColor !important;
+    border-radius: 0 0 999px 999px !important;
+    background: transparent !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .notification-glyph > *,
+  body[data-page="home"] .explore-mobile-header-right .account-chip > * {
+    display: none !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .notification-dot {
+    display: none !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .account-chip::before {
+    content: "⋮" !important;
+    display: block !important;
+    color: rgba(255, 255, 255, 0.58) !important;
+    font-size: 1.84rem !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+
+  body[data-page="home"] .trend-section {
+    padding: 34px 16px 24px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background:
+      radial-gradient(ellipse at 12% 20%, rgba(132, 71, 167, 0.76), transparent 44%),
+      radial-gradient(ellipse at 92% 0%, rgba(54, 67, 137, 0.66), transparent 50%),
+      linear-gradient(180deg, #2a244c 0%, #1e1830 48%, rgba(7, 7, 9, 0) 100%) !important;
+    box-shadow: none !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading {
+    align-items: center !important;
+    margin: 0 0 26px !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading h2 {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    font-size: 1.9rem !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    letter-spacing: 0 !important;
+    white-space: nowrap !important;
+    flex: 0 0 auto !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading h2::before {
+    content: "♨︎" !important;
+    color: #fff !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 1.35rem !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading::after {
+    content: "This Week⌄" !important;
+    flex: 0 0 auto !important;
+    display: inline-grid !important;
+    place-items: center !important;
+    width: 90px !important;
+    min-width: 90px !important;
+    height: 42px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    background: #17171d !important;
+    color: #fff !important;
+    font-size: 0.94rem !important;
+    font-weight: 700 !important;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.26) !important;
+  }
+
+  body[data-page="home"] #trendingGrid {
+    width: calc(100vw - 32px) !important;
+    padding: 0 0 4px !important;
+    gap: 12px !important;
+  }
+
+  body[data-page="home"] #trendingGrid > * {
+    flex: 0 0 min(82vw, 296px) !important;
+  }
+
+  body[data-page="home"] #trendingGrid .interest-item {
+    grid-template-columns: 54px 76px minmax(0, 1fr) !important;
+    min-height: 90px !important;
+    padding: 10px 12px !important;
+    border-radius: 16px !important;
+    background: #1a1a20 !important;
+  }
+
+  body[data-page="home"] #trendingGrid .interest-rank {
+    min-width: 54px !important;
+    font-size: 4rem !important;
+    line-height: 0.9 !important;
+    letter-spacing: -0.06em !important;
+  }
+
+  body[data-page="home"] #trendingGrid .interest-poster {
+    width: 68px !important;
+    height: 88px !important;
+    border-radius: 8px !important;
+  }
+
+  body[data-page="home"] #trendingGrid .interest-copy h3 {
+    margin-bottom: 7px !important;
+    font-size: 1rem !important;
+    line-height: 1.12 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  body[data-page="home"] #trendingGrid .interest-copy p {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  body[data-page="home"] .explore-showcase {
+    margin-top: 30px !important;
+  }
+}
+
+@media (max-width: 390px) {
+  body[data-page="home"] .trend-section .section-heading h2 {
+    gap: 10px !important;
+    font-size: 1.43rem !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading h2::before {
+    font-size: 1.18rem !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading::after {
+    width: 86px !important;
+    min-width: 86px !important;
+    height: 40px !important;
+    font-size: 0.88rem !important;
+  }
+}
