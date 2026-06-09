@@ -8456,7 +8456,7 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .install-banner-action {
-    color: #d555ff !important;
+    color: #fff !important;
     font-size: 1.2rem !important;
     font-weight: 700 !important;
   }
@@ -8797,7 +8797,7 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .install-banner-action {
-    color: #c964ff !important;
+    color: #fff !important;
     font-size: 1.08rem !important;
     font-weight: 700 !important;
   }
@@ -8880,6 +8880,11 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     border-radius: 50% !important;
     border-width: 1.5px !important;
     font-size: 0.62rem !important;
+  }
+
+  body[data-page="home"] .mobile-dock-link,
+  body[data-page="home"] .mobile-dock-account {
+    color: rgba(255, 255, 255, 0.74) !important;
   }
 }
 
@@ -9021,6 +9026,11 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     margin: 0 0 26px !important;
   }
 
+  body[data-page="home"] .trend-section .section-heading > div {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
   body[data-page="home"] .trend-section .section-heading h2 {
     display: inline-flex !important;
     align-items: center !important;
@@ -9043,20 +9053,31 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-section .section-heading::after {
-    content: "This Week⌄" !important;
+    display: none !important;
+    content: none !important;
+  }
+
+  body[data-page="home"] .trend-mobile-interest-wrap {
     flex: 0 0 auto !important;
-    display: inline-grid !important;
-    place-items: center !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-left: auto !important;
+  }
+
+  body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
     width: 90px !important;
     min-width: 90px !important;
     height: 42px !important;
-    padding: 0 !important;
+    padding: 0 24px 0 12px !important;
+    border: 0 !important;
     border-radius: 10px !important;
     background: #17171d !important;
     color: #fff !important;
     font-size: 0.94rem !important;
     font-weight: 700 !important;
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.26) !important;
+    pointer-events: auto !important;
   }
 
   body[data-page="home"] #trendingGrid {
@@ -9108,6 +9129,10 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] .explore-showcase {
     margin-top: 30px !important;
   }
+
+  body[data-page="home"] .mobile-home-ad {
+    display: none !important;
+  }
 }
 
 @media (max-width: 390px) {
@@ -9121,6 +9146,10 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-section .section-heading::after {
+    display: none !important;
+  }
+
+  body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
     width: 86px !important;
     min-width: 86px !important;
     height: 40px !important;
