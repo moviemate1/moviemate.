@@ -33,7 +33,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="explore/styles.css?v=123-mobile-home" />
+    <link rel="stylesheet" href="explore/styles.css?v=125-mobile-home" />
   </head>
   <body data-page="home">
     <header class="explore-header-mobile-shell" aria-label="MovieMate mobile header">
@@ -47,9 +47,13 @@
             </a>
           </div>
           <div class="explore-mobile-header-right">
-            <button class="icon-chip" data-top-search type="button" aria-label="Search">⌕</button>
+            <button class="icon-chip" data-top-search type="button" aria-label="Search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="5.5"></circle><path d="m16 16 4 4"></path></svg>
+            </button>
             <button class="icon-chip notification-trigger" data-top-notifications type="button" aria-label="Notifications">
-              <span class="notification-glyph" aria-hidden="true">🔔</span>
+              <span class="notification-glyph" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 4.5a4 4 0 0 1 4 4v2.1c0 1.2.4 2.3 1.1 3.2l1 1.2H5.9l1-1.2c.7-.9 1.1-2 1.1-3.2V8.5a4 4 0 0 1 4-4Z"></path><path d="M9.5 18a2.5 2.5 0 0 0 5 0"></path></svg>
+              </span>
               <span class="notification-dot" data-top-notification-dot></span>
             </button>
             <button class="ghost-link explore-mobile-owner" data-owner-toggle type="button">Owner Mode</button>
@@ -416,7 +420,7 @@
     <nav class="mobile-dock" aria-label="MovieMate sections">
       <a class="mobile-dock-link active" href="#trending" aria-label="Explore">
         <span class="mobile-dock-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"></circle><path d="M12 12 16.5 7.5"></path><path d="M8.5 15.5 12 12"></path></svg>
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.25"></circle><circle cx="12" cy="12" r="2.25"></circle></svg>
         </span>
       </a>
       <a class="mobile-dock-link" href="#schedule" data-home-section-toggle="schedule" aria-label="Schedule">
@@ -583,7 +587,7 @@
       </div>
     </div>
 
-    <script type="module" src="explore/app.js?v=46-mobile-home"></script>
+    <script type="module" src="explore/app.js?v=47-mobile-home"></script>
     <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a3795ec89854463a9b90761fb384fb6c"}'></script><!-- End Cloudflare Web Analytics -->
   </body>
 </html>
