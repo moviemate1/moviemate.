@@ -9192,10 +9192,10 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
-    width: 104px !important;
-    min-width: 104px !important;
+    width: 110px !important;
+    min-width: 110px !important;
     height: 40px !important;
-    padding-right: 20px !important;
+    padding-right: 22px !important;
     font-size: 0.8rem !important;
   }
 }
@@ -9300,34 +9300,66 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
 }
 
 @media (max-width: 768px) {
+  body[data-page="home"] .explore-mobile-header-right .account-menu-wrap {
+    display: none !important;
+  }
+
+  body[data-page="home"] .explore-mobile-owner {
+    margin-left: 2px !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right {
+    gap: 18px !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading {
+    gap: 10px !important;
+  }
+
+  body[data-page="home"] .trend-heading-icon {
+    width: 18px !important;
+    height: 18px !important;
+    flex-basis: 18px !important;
+  }
+
+  body[data-page="home"] .trend-heading-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
+    width: 112px !important;
+    min-width: 112px !important;
+  }
+
   body[data-page="home"] .explore-mobile-owner {
     display: grid !important;
     place-items: center !important;
-    width: 26px !important;
-    min-width: 26px !important;
-    height: 26px !important;
-    min-height: 26px !important;
+    width: 24px !important;
+    min-width: 24px !important;
+    height: 24px !important;
+    min-height: 24px !important;
     padding: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
     color: rgba(255, 255, 255, 0.58) !important;
-    font-size: 1.55rem !important;
-    line-height: 0.9 !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
     font-weight: 800 !important;
   }
 
   body[data-page="home"] .explore-mobile-owner .mobile-more-icon {
     display: grid !important;
     place-items: center !important;
-    width: 16px !important;
-    height: 16px !important;
+    width: 14px !important;
+    height: 14px !important;
     color: currentColor !important;
   }
 
   body[data-page="home"] .explore-mobile-owner .mobile-more-icon svg {
-    width: 16px !important;
-    height: 16px !important;
+    width: 14px !important;
+    height: 14px !important;
     display: block !important;
     fill: currentColor !important;
   }
