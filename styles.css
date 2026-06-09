@@ -10226,4 +10226,54 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
   body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link.signed-in .account-signin-icon {
     display: none !important;
   }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-nav-icons {
+    flex: 0 0 auto !important;
+    justify-content: flex-end !important;
+    gap: 18px !important;
+    margin-left: auto !important;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-nav-btn:not([data-detail-panel-trigger="search"]):not([data-detail-panel-trigger="notifications"]) {
+    display: none !important;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-nav-btn[data-detail-panel-trigger="search"] {
+    order: 1 !important;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-nav-btn[data-detail-panel-trigger="notifications"] {
+    order: 2 !important;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .topbar-actions {
+    gap: 0 !important;
+    margin-left: 10px !important;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link,
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link.account-chip,
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link:not(.signed-in),
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link.account-chip.signed-in {
+    width: 24px !important;
+    min-width: 24px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.58) !important;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link > * {
+    display: none !important;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .topbar.compact .account-top-link::before {
+    content: "⋮" !important;
+    display: block !important;
+    color: currentColor !important;
+    font-size: 1.75rem !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
 }
