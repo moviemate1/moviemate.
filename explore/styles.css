@@ -8958,6 +8958,24 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     transform-origin: left center !important;
   }
 
+  body[data-page="home"] .explore-mobile-header-right [data-top-search]::before,
+  body[data-page="home"] .explore-mobile-header-right [data-top-search]::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right [data-top-search] svg,
+  body[data-page="home"] .explore-mobile-header-right .notification-glyph svg {
+    display: block !important;
+    width: 18px !important;
+    height: 18px !important;
+    stroke: currentColor !important;
+    fill: none !important;
+    stroke-width: 2 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+  }
+
   body[data-page="home"] .explore-mobile-header-right .notification-glyph {
     position: relative !important;
     display: block !important;
@@ -8990,6 +9008,12 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     border-bottom: 3px solid currentColor !important;
     border-radius: 0 0 999px 999px !important;
     background: transparent !important;
+  }
+
+  body[data-page="home"] .explore-mobile-header-right .notification-glyph::before,
+  body[data-page="home"] .explore-mobile-header-right .notification-glyph::after {
+    display: none !important;
+    content: none !important;
   }
 
   body[data-page="home"] .explore-mobile-header-right .notification-glyph > *,
@@ -9044,12 +9068,28 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-section .section-heading h2::before {
-    content: "♨︎" !important;
+    display: none !important;
+    content: none !important;
+  }
+
+  body[data-page="home"] .trend-heading-icon {
+    display: inline-grid !important;
+    place-items: center !important;
+    width: 22px !important;
+    height: 22px !important;
     color: #fff !important;
-    font-family: Arial, sans-serif !important;
-    font-size: 1.35rem !important;
-    font-weight: 900 !important;
-    line-height: 1 !important;
+    flex: 0 0 22px !important;
+  }
+
+  body[data-page="home"] .trend-heading-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+    display: block !important;
+    fill: currentColor !important;
+  }
+
+  body[data-page="home"] .trend-heading-text {
+    color: rgba(255, 255, 255, 0.9) !important;
   }
 
   body[data-page="home"] .trend-section .section-heading::after {
@@ -9066,15 +9106,15 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
-    width: 90px !important;
-    min-width: 90px !important;
+    width: 104px !important;
+    min-width: 104px !important;
     height: 42px !important;
-    padding: 0 24px 0 12px !important;
+    padding: 0 26px 0 12px !important;
     border: 0 !important;
     border-radius: 10px !important;
     background: #17171d !important;
     color: #fff !important;
-    font-size: 0.94rem !important;
+    font-size: 0.87rem !important;
     font-weight: 700 !important;
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.26) !important;
     pointer-events: auto !important;
@@ -9141,8 +9181,10 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     font-size: 1.43rem !important;
   }
 
-  body[data-page="home"] .trend-section .section-heading h2::before {
-    font-size: 1.18rem !important;
+  body[data-page="home"] .trend-heading-icon {
+    width: 20px !important;
+    height: 20px !important;
+    flex-basis: 20px !important;
   }
 
   body[data-page="home"] .trend-section .section-heading::after {
@@ -9150,9 +9192,9 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
-    width: 86px !important;
-    min-width: 86px !important;
+    width: 98px !important;
+    min-width: 98px !important;
     height: 40px !important;
-    font-size: 0.88rem !important;
+    font-size: 0.82rem !important;
   }
 }

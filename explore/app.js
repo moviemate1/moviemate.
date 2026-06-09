@@ -2332,7 +2332,16 @@ function renderCuratedExploreRows(titles) {
   const trendingCopy = document.querySelector("#trendingCopyText");
 
   if (trendingHeading) {
-    trendingHeading.textContent = useMobileInterestLayout ? "Most Interested" : "Watch It With District";
+    if (useMobileInterestLayout) {
+      trendingHeading.innerHTML = `
+        <span class="trend-heading-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M13.2 2.6c1.6 2.1 2.4 4 2.4 6 0 1.7-.6 3.2-1.8 4.4.3-1.2.1-2.4-.6-3.4-.6-.8-1.4-1.4-2-2.3-.6.8-1 1.8-1 3 0 2.4 1.8 4.4 4.1 4.8-3.6.6-6.9-1.7-7.6-5.3-.6-3.1.8-6.1 3.3-8 0 0 1.2 3.3 4 4.9-.1-1.6-.4-3.1-.8-4.1Z"></path></svg>
+        </span>
+        <span class="trend-heading-text">Most Interested</span>
+      `;
+    } else {
+      trendingHeading.textContent = "Watch It With District";
+    }
   }
 
   if (trendingCopy) {
