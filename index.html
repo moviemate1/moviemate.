@@ -33,7 +33,7 @@
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="explore/styles.css?v=125-mobile-home" />
+    <link rel="stylesheet" href="explore/styles.css?v=132-mobile-home" />
   </head>
   <body data-page="home">
     <header class="explore-header-mobile-shell" aria-label="MovieMate mobile header">
@@ -56,7 +56,11 @@
               </span>
               <span class="notification-dot" data-top-notification-dot></span>
             </button>
-            <button class="ghost-link explore-mobile-owner" data-owner-toggle type="button">Owner Mode</button>
+            <button class="ghost-link explore-mobile-owner" data-owner-toggle type="button" aria-label="More options">
+              <span class="mobile-more-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="4.75" r="2.05"></circle><circle cx="12" cy="12" r="2.05"></circle><circle cx="12" cy="19.25" r="2.05"></circle></svg>
+              </span>
+            </button>
             <div class="account-menu-wrap">
               <button class="avatar-chip auth-chip account-chip" data-auth-toggle type="button" aria-label="MovieMate account">
                 <span class="account-signin-icon" aria-hidden="true">
@@ -439,6 +443,9 @@
         </span>
       </a>
       <button class="mobile-dock-link mobile-dock-account auth-chip" data-auth-toggle type="button" aria-label="Account">
+        <span class="account-signin-icon mobile-dock-signin-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8.25" r="3.25"></circle><path d="M5.75 19.5a6.25 6.25 0 0 1 12.5 0"></path></svg>
+        </span>
         <span class="account-chip-avatar hidden" data-account-avatar>MM</span>
         <span class="dock-account-label" data-account-label>Sign In</span>
       </button>
@@ -587,7 +594,7 @@
       </div>
     </div>
 
-    <script type="module" src="explore/app.js?v=47-mobile-home"></script>
+    <script type="module" src="explore/app.js?v=54-mobile-home"></script>
     <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a3795ec89854463a9b90761fb384fb6c"}'></script><!-- End Cloudflare Web Analytics -->
   </body>
 </html>
