@@ -7907,7 +7907,6 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
 }
 
 .mobile-title-text,
-.most-interested-icon,
 .mobile-home-ad {
   display: none;
 }
@@ -8241,20 +8240,11 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     white-space: nowrap !important;
   }
 
-  body[data-page="home"] .most-interested-icon {
-    display: inline-grid !important;
-    place-items: center !important;
-    width: 20px !important;
-    height: 20px !important;
-    color: #fff !important;
-    flex: 0 0 20px !important;
-  }
-
-  body[data-page="home"] .most-interested-icon svg {
-    width: 18px !important;
-    height: 18px !important;
-    display: block !important;
-    fill: currentColor !important;
+  body[data-page="home"] .most-interested-panel h2::before {
+    content: "♨";
+    color: #fff;
+    font-size: 1.45rem;
+    line-height: 1;
   }
 
   body[data-page="home"] .interest-window-select {
