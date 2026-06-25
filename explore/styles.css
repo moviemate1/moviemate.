@@ -9878,4 +9878,77 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] .install-banner {
     display: flex !important;
   }
+
+  body[data-page="home"] .mobile-dock {
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0 !important;
+  }
+
+  body[data-page="home"] .mobile-dock-link {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+
+  body[data-page="home"] .mobile-dock-link.active,
+  body[data-page="home"] .mobile-dock-link:hover {
+    color: #fff !important;
+  }
+
+  body[data-page="home"] .mobile-dock-link .mobile-dock-icon {
+    display: grid !important;
+    place-items: center !important;
+    opacity: 1 !important;
+    color: inherit !important;
+  }
+
+  body[data-page="home"] .mobile-dock-link .mobile-dock-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+    display: block !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 2.25 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account {
+    flex: 0 0 44px !important;
+    min-width: 44px !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account .mobile-dock-signin-icon,
+  body[data-page="home"] .mobile-dock-account .account-chip-avatar {
+    display: none !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account .dock-account-label {
+    display: none !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account::before {
+    content: "" !important;
+    display: block !important;
+    width: 22px !important;
+    height: 22px !important;
+    border: 2.25px solid currentColor !important;
+    border-radius: 50% !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account::after {
+    content: "" !important;
+    display: block !important;
+    width: 10px !important;
+    height: 5px !important;
+    border: 2.25px solid currentColor !important;
+    border-top: 0 !important;
+    border-radius: 0 0 999px 999px !important;
+    position: absolute !important;
+    bottom: 10px !important;
+    box-sizing: border-box !important;
+  }
 }
