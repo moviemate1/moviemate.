@@ -9517,6 +9517,77 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 }
 
+@media (max-width: 768px) {
+  body[data-page="home"] .explore-primary {
+    gap: 16px !important;
+  }
+
+  body[data-page="home"] .explore-showcase {
+    padding: 0 0 8px !important;
+  }
+
+  body[data-page="home"] .showcase-row-heading {
+    margin: 0 0 16px !important;
+  }
+
+  body[data-page="home"] .showcase-row-title {
+    gap: 10px !important;
+  }
+
+  body[data-page="home"] .showcase-row-icon {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 1rem !important;
+  }
+
+  body[data-page="home"] .showcase-row-title h2 {
+    font-size: 1.55rem !important;
+    line-height: 1 !important;
+  }
+
+  body[data-page="home"] .trend-section {
+    padding: 26px 16px 20px !important;
+  }
+
+  body[data-page="home"] .most-interested-panel {
+    padding-top: 30px !important;
+  }
+
+  body[data-page="home"] .most-interested-panel .explore-panel-header {
+    margin: 0 0 18px !important;
+  }
+
+  body[data-page="home"] .most-interested-panel h2 {
+    font-size: 1.62rem !important;
+    gap: 10px !important;
+  }
+
+  body[data-page="home"] .most-interested-panel .interest-window-select {
+    width: 122px !important;
+    height: 42px !important;
+    padding: 0 26px 0 12px !important;
+  }
+
+  body[data-page="home"] .most-interested-list {
+    gap: 18px !important;
+  }
+
+  body[data-page="home"] .interest-item {
+    flex-basis: calc(100vw - 42px) !important;
+    min-height: 88px !important;
+    padding: 10px 14px !important;
+  }
+
+  body[data-page="home"] .interest-rank {
+    font-size: 3.7rem !important;
+  }
+
+  body[data-page="home"] .interest-poster {
+    width: 56px !important;
+    height: 74px !important;
+  }
+}
+
 /* Final mobile shell: lock the header and dock to the Moctale-style treatment. */
 @media (max-width: 768px) {
   body[data-page="home"] {
