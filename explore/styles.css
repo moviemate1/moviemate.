@@ -9830,3 +9830,52 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     font-size: 1.55rem !important;
   }
 }
+
+/* Final mobile layout pass: keep the dock on, and lift the key content rows slightly. */
+@media (max-width: 768px) {
+  body[data-page="home"] .page-shell {
+    padding: 18px 16px calc(env(safe-area-inset-bottom, 0px) + 108px) !important;
+  }
+
+  body[data-page="home"] .explore-layout {
+    display: block !important;
+  }
+
+  body[data-page="home"] .explore-primary {
+    display: grid !important;
+    gap: 12px !important;
+  }
+
+  body[data-page="home"] .explore-sidebar {
+    display: block !important;
+    margin-top: 0 !important;
+  }
+
+  body[data-page="home"] .explore-showcase {
+    margin-top: 24px !important;
+    padding: 0 !important;
+  }
+
+  body[data-page="home"] .showcase-row-heading {
+    margin-bottom: 14px !important;
+  }
+
+  body[data-page="home"] .trend-section {
+    margin-top: 0 !important;
+    padding: 24px 16px 20px !important;
+  }
+
+  body[data-page="home"] .most-interested-panel {
+    padding-top: 26px !important;
+  }
+
+  body[data-page="home"] .mobile-dock {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  body[data-page="home"] .install-banner {
+    display: flex !important;
+  }
+}
