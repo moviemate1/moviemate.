@@ -8244,10 +8244,10 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] .most-interested-panel h2 {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 12px !important;
+    gap: 8px !important;
     margin: 0 !important;
     color: rgba(255, 255, 255, 0.88) !important;
-    font-size: 1.72rem !important;
+    font-size: 1.48rem !important;
     font-weight: 900 !important;
     line-height: 1 !important;
     letter-spacing: 0 !important;
@@ -8257,20 +8257,20 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] .most-interested-panel h2::before {
     content: "🔥";
     color: #fff;
-    font-size: 1.45rem;
+    font-size: 1.2rem;
     line-height: 1;
   }
 
   body[data-page="home"] .interest-window-select {
     min-width: 0 !important;
-    width: 128px !important;
+    width: 112px !important;
     height: 44px !important;
-    padding: 0 28px 0 13px !important;
+    padding: 0 22px 0 12px !important;
     border: 0 !important;
     border-radius: 10px !important;
     background: #17171d !important;
     color: #fff !important;
-    font-size: 1rem !important;
+    font-size: 0.86rem !important;
     font-weight: 600 !important;
   }
 
@@ -10232,12 +10232,27 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] .mobile-dock-account {
     flex: 0 0 44px !important;
     min-width: 44px !important;
+    display: grid !important;
+    place-items: center !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.045) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
   }
 
   body[data-page="home"] .mobile-dock-account .mobile-dock-signin-icon,
   body[data-page="home"] .mobile-dock-account .account-chip-avatar,
   body[data-page="home"] .mobile-dock-account .dock-account-label {
     display: none !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account .mobile-dock-signin-icon {
+    display: grid !important;
+    place-items: center !important;
+    width: 22px !important;
+    height: 22px !important;
+    color: currentColor !important;
   }
 
   body[data-page="home"] .mobile-dock-account::before,
@@ -10390,11 +10405,11 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] .trend-section .section-heading h2 {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 10px !important;
+    gap: 8px !important;
     margin: 0 !important;
     min-width: 0 !important;
     color: rgba(255, 255, 255, 0.9) !important;
-    font-size: 1.58rem !important;
+    font-size: 1.46rem !important;
     font-weight: 900 !important;
     line-height: 1 !important;
     letter-spacing: 0 !important;
@@ -10410,16 +10425,16 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] .trend-heading-icon {
     display: inline-grid !important;
     place-items: center !important;
-    width: 28px !important;
-    height: 28px !important;
-    flex: 0 0 28px !important;
+    width: 30px !important;
+    height: 30px !important;
+    flex: 0 0 30px !important;
     color: #fff !important;
   }
 
   body[data-page="home"] .trend-heading-icon svg {
     display: block !important;
-    width: 20px !important;
-    height: 20px !important;
+    width: 21px !important;
+    height: 21px !important;
     fill: currentColor !important;
   }
 
@@ -10442,15 +10457,15 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
-    width: 124px !important;
-    min-width: 124px !important;
+    width: 114px !important;
+    min-width: 114px !important;
     height: 42px !important;
-    padding: 0 28px 0 12px !important;
+    padding: 0 24px 0 12px !important;
     border: 0 !important;
     border-radius: 14px !important;
     background: #17171d !important;
     color: #fff !important;
-    font-size: 0.78rem !important;
+    font-size: 0.76rem !important;
     font-weight: 700 !important;
     box-shadow: none !important;
   }
@@ -10646,12 +10661,27 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] .mobile-dock-account {
     flex: 0 0 44px !important;
     min-width: 44px !important;
+    display: grid !important;
+    place-items: center !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.045) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
   }
 
   body[data-page="home"] .mobile-dock-account .mobile-dock-signin-icon,
   body[data-page="home"] .mobile-dock-account .account-chip-avatar,
   body[data-page="home"] .mobile-dock-account .dock-account-label {
     display: none !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account .mobile-dock-signin-icon {
+    display: grid !important;
+    place-items: center !important;
+    width: 22px !important;
+    height: 22px !important;
+    color: currentColor !important;
   }
 
   body[data-page="home"] .mobile-dock-account::before,
