@@ -10530,6 +10530,31 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     box-shadow: none !important;
   }
 
+  body[data-page="home"] #editorsRow {
+    order: 3 !important;
+  }
+
+  body[data-page="home"] #bollywoodRow,
+  body[data-page="home"] #southRow {
+    display: none !important;
+  }
+
+  body[data-page="home"] #netflixRow {
+    order: 4 !important;
+  }
+
+  body[data-page="home"] #hotstarRow {
+    order: 5 !important;
+  }
+
+  body[data-page="home"] #primeRow {
+    order: 6 !important;
+  }
+
+  body[data-page="home"] #crunchyrollRow {
+    order: 7 !important;
+  }
+
   body[data-page="home"] .explore-row-section .section-heading {
     display: flex !important;
     align-items: center !important;
