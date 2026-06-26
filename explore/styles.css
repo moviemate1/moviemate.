@@ -10755,26 +10755,26 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
 
   body[data-page="home"] .trend-section .section-heading h2,
   body[data-page="home"] .most-interested-panel h2 {
-    gap: 7px !important;
-    font-size: 1.34rem !important;
+    gap: 6px !important;
+    font-size: 1.26rem !important;
   }
 
   body[data-page="home"] .trend-heading-icon {
-    width: 28px !important;
-    height: 28px !important;
-    flex: 0 0 28px !important;
+    width: 30px !important;
+    height: 30px !important;
+    flex: 0 0 30px !important;
   }
 
   body[data-page="home"] .trend-heading-icon svg {
-    width: 20px !important;
-    height: 20px !important;
+    width: 21px !important;
+    height: 21px !important;
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select,
   body[data-page="home"] .interest-window-select {
-    width: 106px !important;
-    min-width: 106px !important;
-    padding: 0 22px 0 11px !important;
-    font-size: 0.74rem !important;
+    width: 100px !important;
+    min-width: 100px !important;
+    padding: 0 20px 0 10px !important;
+    font-size: 0.72rem !important;
   }
 }
