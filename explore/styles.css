@@ -10716,3 +10716,65 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     font-size: 1rem !important;
   }
 }
+
+@media (max-width: 768px) {
+  .mobile-dock-account {
+    display: grid !important;
+    place-items: center !important;
+    overflow: hidden !important;
+    border-radius: 50% !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    background: rgba(255, 255, 255, 0.045) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+  }
+
+  .mobile-dock-account .mobile-dock-signin-icon {
+    display: grid !important;
+    place-items: center !important;
+    width: 22px !important;
+    height: 22px !important;
+    color: currentColor !important;
+  }
+
+  .mobile-dock-account .mobile-dock-signin-icon svg {
+    width: 20px !important;
+    height: 20px !important;
+    display: block !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 1.9 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+  }
+
+  .mobile-dock-account .dock-account-label,
+  .mobile-dock-account .account-chip-avatar,
+  .mobile-dock-account .account-chip-avatar.hidden {
+    display: none !important;
+  }
+
+  body[data-page="home"] .trend-section .section-heading h2,
+  body[data-page="home"] .most-interested-panel h2 {
+    gap: 7px !important;
+    font-size: 1.34rem !important;
+  }
+
+  body[data-page="home"] .trend-heading-icon {
+    width: 28px !important;
+    height: 28px !important;
+    flex: 0 0 28px !important;
+  }
+
+  body[data-page="home"] .trend-heading-icon svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select,
+  body[data-page="home"] .interest-window-select {
+    width: 106px !important;
+    min-width: 106px !important;
+    padding: 0 22px 0 11px !important;
+    font-size: 0.74rem !important;
+  }
+}
