@@ -10390,11 +10390,11 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] .trend-section .section-heading h2 {
     display: inline-flex !important;
     align-items: center !important;
-    gap: 12px !important;
+    gap: 10px !important;
     margin: 0 !important;
     min-width: 0 !important;
     color: rgba(255, 255, 255, 0.9) !important;
-    font-size: 1.68rem !important;
+    font-size: 1.62rem !important;
     font-weight: 900 !important;
     line-height: 1 !important;
     letter-spacing: 0 !important;
@@ -10409,16 +10409,16 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] .trend-heading-icon {
     display: inline-grid !important;
     place-items: center !important;
-    width: 24px !important;
-    height: 24px !important;
-    flex: 0 0 24px !important;
+    width: 28px !important;
+    height: 28px !important;
+    flex: 0 0 28px !important;
     color: #fff !important;
   }
 
   body[data-page="home"] .trend-heading-icon svg {
     display: block !important;
-    width: 18px !important;
-    height: 18px !important;
+    width: 20px !important;
+    height: 20px !important;
     fill: currentColor !important;
   }
 
@@ -10432,15 +10432,15 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
-    width: 102px !important;
-    min-width: 102px !important;
+    width: 116px !important;
+    min-width: 116px !important;
     height: 42px !important;
-    padding: 0 24px 0 12px !important;
+    padding: 0 26px 0 12px !important;
     border: 0 !important;
     border-radius: 14px !important;
     background: #17171d !important;
     color: #fff !important;
-    font-size: 0.84rem !important;
+    font-size: 0.8rem !important;
     font-weight: 700 !important;
     box-shadow: none !important;
   }
@@ -10472,8 +10472,8 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   body[data-page="home"] #trendingGrid .interest-item {
     grid-template-columns: 54px 58px minmax(0, 1fr) !important;
     align-items: center !important;
-    min-height: 90px !important;
-    padding: 10px 14px !important;
+    min-height: 84px !important;
+    padding: 9px 12px !important;
     border: 0 !important;
     border-radius: 18px !important;
     background: #1a1a20 !important;
@@ -10489,15 +10489,15 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] #trendingGrid .interest-poster {
-    width: 58px !important;
-    height: 76px !important;
+    width: 56px !important;
+    height: 72px !important;
     border-radius: 7px !important;
   }
 
   body[data-page="home"] #trendingGrid .interest-copy h3 {
     margin-bottom: 7px !important;
     color: #f4f4f5 !important;
-    font-size: 1rem !important;
+    font-size: 0.96rem !important;
     font-weight: 900 !important;
     line-height: 1.1 !important;
     white-space: nowrap !important;
