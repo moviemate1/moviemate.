@@ -364,7 +364,9 @@ body[data-page="home"] #editorsRowHeading::before,
 body[data-page="home"] #netflixRowHeading::before,
 body[data-page="home"] #hotstarRowHeading::before,
 body[data-page="home"] #primeRowHeading::before,
-body[data-page="home"] #crunchyrollRowHeading::before {
+body[data-page="home"] #crunchyrollRowHeading::before,
+body[data-page="home"] #bollywoodRowHeading::before,
+body[data-page="home"] #southRowHeading::before {
   display: inline-grid;
   place-items: center;
   width: 32px;
@@ -408,6 +410,18 @@ body[data-page="home"] #primeRowHeading::before {
 body[data-page="home"] #crunchyrollRowHeading::before {
   content: "C";
   background: #f47521;
+  color: #fff;
+  font-weight: 900;
+}
+
+body[data-page="home"] #bollywoodRowHeading::before {
+  content: "🎬";
+  background: linear-gradient(135deg, rgba(255, 160, 64, 0.24), rgba(255, 83, 83, 0.18));
+}
+
+body[data-page="home"] #southRowHeading::before {
+  content: "◎";
+  background: linear-gradient(135deg, rgba(83, 207, 255, 0.24), rgba(88, 112, 255, 0.22));
   color: #fff;
   font-weight: 900;
 }
@@ -8241,7 +8255,7 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .most-interested-panel h2::before {
-    content: "♨";
+    content: "🔥";
     color: #fff;
     font-size: 1.45rem;
     line-height: 1;
@@ -10507,6 +10521,51 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
   }
 
   body[data-page="home"] .explore-row-section:not(.trend-section) {
+    display: block !important;
+    margin: 22px 16px 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  body[data-page="home"] .explore-row-section .section-heading {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    margin: 0 0 16px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  body[data-page="home"] .explore-row-section .section-heading > div {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  body[data-page="home"] .explore-row-section .section-heading h2 {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 1.28rem !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    letter-spacing: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+  }
+
+  body[data-page="home"] .explore-row-section .section-heading h2::before {
+    display: inline-grid !important;
+  }
+
+  body[data-page="home"] .explore-row-section .section-copy {
     display: none !important;
   }
 
