@@ -10394,11 +10394,12 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     margin: 0 !important;
     min-width: 0 !important;
     color: rgba(255, 255, 255, 0.9) !important;
-    font-size: 1.62rem !important;
+    font-size: 1.58rem !important;
     font-weight: 900 !important;
     line-height: 1 !important;
     letter-spacing: 0 !important;
     white-space: nowrap !important;
+    max-width: 100% !important;
   }
 
   body[data-page="home"] .trend-section .section-heading h2::before {
@@ -10426,21 +10427,30 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     color: inherit !important;
   }
 
+  body[data-page="home"] #trendingHeadingText::before {
+    display: none !important;
+    content: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    background: none !important;
+  }
+
   body[data-page="home"] .trend-mobile-interest-wrap {
     flex: 0 0 auto !important;
     margin-left: auto !important;
   }
 
   body[data-page="home"] .trend-mobile-interest-wrap .interest-window-select {
-    width: 116px !important;
-    min-width: 116px !important;
+    width: 124px !important;
+    min-width: 124px !important;
     height: 42px !important;
-    padding: 0 26px 0 12px !important;
+    padding: 0 28px 0 12px !important;
     border: 0 !important;
     border-radius: 14px !important;
     background: #17171d !important;
     color: #fff !important;
-    font-size: 0.8rem !important;
+    font-size: 0.78rem !important;
     font-weight: 700 !important;
     box-shadow: none !important;
   }
