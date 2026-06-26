@@ -10235,24 +10235,44 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     display: grid !important;
     place-items: center !important;
     overflow: hidden !important;
+    color: rgba(255, 255, 255, 0.88) !important;
     border: 1px solid rgba(255, 255, 255, 0.16) !important;
     border-radius: 50% !important;
     background: rgba(255, 255, 255, 0.045) !important;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
   }
 
-  body[data-page="home"] .mobile-dock-account .mobile-dock-signin-icon,
-  body[data-page="home"] .mobile-dock-account .account-chip-avatar,
   body[data-page="home"] .mobile-dock-account .dock-account-label {
     display: none !important;
   }
 
-  body[data-page="home"] .mobile-dock-account .mobile-dock-signin-icon {
+  body[data-page="home"] .mobile-dock-account:not(.signed-in) .mobile-dock-signin-icon {
     display: grid !important;
     place-items: center !important;
     width: 22px !important;
     height: 22px !important;
     color: currentColor !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account.signed-in .mobile-dock-signin-icon {
+    display: none !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account:not(.signed-in) .account-chip-avatar,
+  body[data-page="home"] .mobile-dock-account .account-chip-avatar.hidden {
+    display: none !important;
+  }
+
+  body[data-page="home"] .mobile-dock-account.signed-in .account-chip-avatar {
+    display: grid !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #7e46ff 0%, #e50914 100%) !important;
+    color: #fff !important;
+    font-size: 0.78rem !important;
+    font-weight: 800 !important;
+    flex-shrink: 0 !important;
   }
 
   body[data-page="home"] .mobile-dock-account::before,
@@ -10722,6 +10742,7 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     display: grid !important;
     place-items: center !important;
     overflow: hidden !important;
+    color: rgba(255, 255, 255, 0.88) !important;
     border-radius: 50% !important;
     border: 1px solid rgba(255, 255, 255, 0.16) !important;
     background: rgba(255, 255, 255, 0.045) !important;
@@ -10747,10 +10768,33 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     stroke-linejoin: round !important;
   }
 
-  .mobile-dock-account .dock-account-label,
-  .mobile-dock-account .account-chip-avatar,
+  .mobile-dock-account .dock-account-label {
+    display: none !important;
+  }
+
+  .mobile-dock-account:not(.signed-in) .mobile-dock-signin-icon {
+    display: grid !important;
+  }
+
+  .mobile-dock-account.signed-in .mobile-dock-signin-icon {
+    display: none !important;
+  }
+
+  .mobile-dock-account:not(.signed-in) .account-chip-avatar,
   .mobile-dock-account .account-chip-avatar.hidden {
     display: none !important;
+  }
+
+  .mobile-dock-account.signed-in .account-chip-avatar {
+    display: grid !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #7e46ff 0%, #e50914 100%) !important;
+    color: #fff !important;
+    font-size: 0.78rem !important;
+    font-weight: 800 !important;
+    flex-shrink: 0 !important;
   }
 
   body[data-page="home"] .trend-section .section-heading h2,
