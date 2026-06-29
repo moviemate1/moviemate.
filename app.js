@@ -3622,13 +3622,16 @@ function isInsideInterestWindow(title, windowKey) {
     return true;
   }
 
-  if (!title.releaseDate) {
+  const candidateDates = [title.updatedAt, title.createdAt, title.releaseDate]
+    .map((value) => getCreatedAtMs(value))
+    .filter((value) => value > 0);
+
+  if (!candidateDates.length) {
     return false;
   }
 
-  const today = new Date();
-  const releaseDate = new Date(title.releaseDate);
-  const diffMs = Math.abs(releaseDate.getTime() - today.getTime());
+  const latestActivityMs = Math.max(...candidateDates);
+  const diffMs = Math.abs(Date.now() - latestActivityMs);
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
   return diffDays <= days;
 }
@@ -4254,15 +4257,13 @@ function renderMostInterestedList(titles) {
   }
 
   const selectedWindow = windowSelect?.value || "week";
-  let filteredTitles = titles.filter((title) => isInsideInterestWindow(title, selectedWindow));
-
-  if (!filteredTitles.length) {
-    filteredTitles = [...titles];
-  }
+  const filteredTitles = titles.filter((title) => isInsideInterestWindow(title, selectedWindow));
 
   const items = [...filteredTitles].sort(compareMostInterestedTitles).slice(0, 10);
 
-  list.innerHTML = items.map(mostInterestedItemTemplate).join("");
+  list.innerHTML = items.length
+    ? items.map(mostInterestedItemTemplate).join("")
+    : '<p class="empty-state">No most-interested titles match this time window yet.</p>';
 }
 
 function scheduleCardTemplate(title) {
@@ -6173,7 +6174,7 @@ function focusBrowseTargetFromUrl() {
   }, 260);
 }
 
-const HOME_FULLSCREEN_SECTION_IDS = new Set(["browse", "schedule", "collections"]);
+const HOME_FULLSCREEN_SECTION_IDS = new Set(["browse", "schedule", "spaces", "collections"]);
 
 function isHomeFullscreenSectionHash(hash) {
   return HOME_FULLSCREEN_SECTION_IDS.has((hash || "").replace("#", ""));
