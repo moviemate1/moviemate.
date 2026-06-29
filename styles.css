@@ -12659,16 +12659,16 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
 @media (max-width: 720px) {
   body[data-page="details"] .detail-vibe-card,
   body[data-page="details"] .detail-mobile-vibe-section .detail-vibe-card {
-    padding-top: 34px !important;
-    padding-bottom: 34px !important;
+    padding-top: 32px !important;
+    padding-bottom: 32px !important;
   }
 
   body[data-page="details"] .detail-vibe-card .genre-chart,
   body[data-page="details"] .detail-mobile-vibe-section .genre-chart {
-    width: min(286px, calc(100vw - 96px)) !important;
-    max-width: calc(100vw - 96px) !important;
+    width: min(224px, calc(100vw - 132px)) !important;
+    max-width: calc(100vw - 132px) !important;
     aspect-ratio: 1 !important;
-    margin: 14px auto 30px !important;
+    margin: 12px auto 28px !important;
     border-radius: 50% !important;
     overflow: hidden !important;
     box-shadow:
@@ -12685,7 +12685,7 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
 
   body[data-page="details"] .detail-vibe-card .genre-chart::after,
   body[data-page="details"] .detail-mobile-vibe-section .genre-chart::after {
-    inset: 48px !important;
+    inset: 38px !important;
     border-radius: 50% !important;
     background: #030303 !important;
     border: 0 !important;
@@ -12699,14 +12699,14 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
 
   body[data-page="details"] .detail-vibe-card .genre-chart-core strong,
   body[data-page="details"] .detail-mobile-vibe-section .genre-chart-core strong {
-    font-size: 1.08rem !important;
+    font-size: 0.98rem !important;
     line-height: 1.08 !important;
   }
 
   body[data-page="details"] .detail-vibe-card .genre-chart-core span,
   body[data-page="details"] .detail-mobile-vibe-section .genre-chart-core span {
-    margin-top: 6px !important;
-    font-size: 1.28rem !important;
+    margin-top: 5px !important;
+    font-size: 1.18rem !important;
     font-weight: 800 !important;
     color: rgba(255, 255, 255, 0.92) !important;
   }
@@ -12733,16 +12733,16 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
   }
 
   body[data-page="details"] .detail-meter-section .detail-meter-card {
-    padding-top: 34px !important;
-    padding-bottom: 40px !important;
+    padding-top: 32px !important;
+    padding-bottom: 38px !important;
   }
 
   body[data-page="details"] .detail-meter-section .meter-visual {
-    width: min(304px, calc(100vw - 88px)) !important;
-    height: min(168px, calc((100vw - 88px) * 0.55)) !important;
-    max-width: calc(100vw - 88px) !important;
+    width: min(262px, calc(100vw - 124px)) !important;
+    height: min(144px, calc((100vw - 124px) * 0.55)) !important;
+    max-width: calc(100vw - 124px) !important;
     aspect-ratio: auto !important;
-    margin: 26px auto 34px !important;
+    margin: 24px auto 32px !important;
     border-radius: 999px 999px 0 0 !important;
     overflow: hidden !important;
     box-shadow: none !important;
@@ -12753,7 +12753,7 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
   }
 
   body[data-page="details"] .detail-meter-section .meter-visual::after {
-    inset: 30px 30px -70px !important;
+    inset: 25px 25px -58px !important;
     border-radius: 999px 999px 0 0 !important;
     background: #030303 !important;
     border: 0 !important;
@@ -12761,20 +12761,20 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
   }
 
   body[data-page="details"] .detail-meter-section .meter-core {
-    inset: 42px 0 0 !important;
+    inset: 36px 0 0 !important;
     z-index: 2 !important;
     align-content: center !important;
     place-items: center !important;
   }
 
   body[data-page="details"] .detail-meter-section .meter-core strong {
-    font-size: clamp(2.15rem, 11vw, 2.7rem) !important;
+    font-size: clamp(1.95rem, 10vw, 2.35rem) !important;
     line-height: 1 !important;
   }
 
   body[data-page="details"] .detail-meter-section .meter-core span {
-    margin-top: 8px !important;
-    font-size: 0.98rem !important;
+    margin-top: 7px !important;
+    font-size: 0.9rem !important;
     color: rgba(255, 255, 255, 0.84) !important;
   }
 }
