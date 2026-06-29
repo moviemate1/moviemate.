@@ -1,4 +1,4 @@
-const CACHE_NAME = "moviemate-shell-v68-mobile-chart-reference-size";
+const CACHE_NAME = "moviemate-shell-v70-shared-reference-charts";
 const SHELL_ASSETS = [
   "/",
   "/index.html",
