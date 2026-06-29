@@ -524,6 +524,16 @@ body[data-page="home"] .explore-sidebar {
   }
 }
 
+@media (max-width: 720px) {
+  body[data-page="home"] #schedule.home-section-panel-open,
+  body[data-page="home"] #spaces.home-section-panel-open,
+  body[data-page="home"] #collections.home-section-panel-open {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -7221,6 +7231,7 @@ body[data-page="home"] #collections.home-section-panel-open {
   inset: 65px 0 0;
   z-index: 1000;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: clamp(26px, 4vw, 54px) clamp(18px, 4vw, 56px) 72px;
   background: #050505 !important;
   background-image: none !important;
@@ -7593,11 +7604,25 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
 }
 
 @media (max-width: 720px) {
+  html,
+  body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.home-section-panel-active,
+  body.detail-header-panel-open {
+    overflow: hidden !important;
+  }
+
   body[data-page="home"] #schedule.home-section-panel-open,
   body[data-page="home"] #spaces.home-section-panel-open,
   body[data-page="home"] #collections.home-section-panel-open {
     inset: 72px 0 0;
-    padding: 20px 14px 36px;
+    max-height: calc(100dvh - 72px);
+    padding: 20px 14px calc(112px + env(safe-area-inset-bottom, 0px));
   }
 
   body[data-page="home"] #schedule.home-section-panel-open::before,
@@ -10944,5 +10969,15 @@ body[data-page="home"] #collections.home-section-panel-open .section-heading {
     font-size: 0.78rem !important;
     font-weight: 800 !important;
     flex-shrink: 0 !important;
+  }
+}
+
+@media (max-width: 720px) {
+  body[data-page="home"] #schedule.home-section-panel-open,
+  body[data-page="home"] #spaces.home-section-panel-open,
+  body[data-page="home"] #collections.home-section-panel-open {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
   }
 }

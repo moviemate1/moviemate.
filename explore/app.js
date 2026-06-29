@@ -2605,7 +2605,9 @@ function renderMostInterestedList(titles) {
 
   const items = [...filteredTitles].sort(compareMostInterestedTitles).slice(0, 10);
 
-  list.innerHTML = items.map(mostInterestedItemTemplate).join("");
+  list.innerHTML = items.length
+    ? items.map(mostInterestedItemTemplate).join("")
+    : '<p class="empty-state">No most-interested titles match this time window yet.</p>';
 }
 
 function scheduleCardTemplate(title) {
