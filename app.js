@@ -6292,6 +6292,7 @@ function openHomeFullscreenSection(hashOrId) {
   ensureHomeSectionCloseButton(section);
   section.classList.add("home-section-panel-open");
   section.setAttribute("aria-hidden", "false");
+  section.scrollTop = 0;
   document.body.classList.add("home-section-panel-active");
   window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
   setHomeNavActive(`#${id}`);
@@ -9342,12 +9343,14 @@ function setupSeasonControls() {
     return;
   }
 
+  const getSeasonScrollStep = () => Math.max(220, Math.round(grid.clientWidth * 0.88));
+
   buttons[0].addEventListener("click", () => {
-    grid.scrollBy({ left: -360, behavior: "smooth" });
+    grid.scrollBy({ left: -getSeasonScrollStep(), behavior: "smooth" });
   });
 
   buttons[1].addEventListener("click", () => {
-    grid.scrollBy({ left: 360, behavior: "smooth" });
+    grid.scrollBy({ left: getSeasonScrollStep(), behavior: "smooth" });
   });
 }
 

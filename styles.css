@@ -2984,18 +2984,31 @@ button.ghost-link {
     max-width: 100% !important;
     min-width: 0 !important;
     margin: 0 !important;
-    padding: 32px !important;
+    padding: 28px 32px !important;
     overflow: hidden !important;
     border-radius: 0 !important;
     background: #030303 !important;
   }
 
   body[data-page="details"] .detail-mobile-vibe-section .genre-chart {
-    width: min(292px, calc(100vw - 96px)) !important;
-    max-width: calc(100vw - 96px) !important;
+    width: min(252px, calc(100vw - 104px)) !important;
+    max-width: calc(100vw - 104px) !important;
     min-width: 0 !important;
-    margin: 14px auto 30px !important;
+    margin: 12px auto 24px !important;
     transform: none !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .genre-chart::after,
+  body[data-page="details"] .detail-meter-section .meter-visual::after {
+    inset: 17px !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .genre-chart-core strong {
+    font-size: 1.45rem !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .genre-chart-core span {
+    font-size: 0.86rem !important;
   }
 
   body[data-page="details"] .detail-mobile-vibe-section .vibe-list {
@@ -3027,6 +3040,27 @@ button.ghost-link {
     overflow: hidden !important;
   }
 
+  body[data-page="details"] .seasons-section,
+  body[data-page="details"] .people-section,
+  body[data-page="details"] .detail-meter-section,
+  body[data-page="details"] .comment-section,
+  body[data-page="details"] .detail-extra-section,
+  body[data-page="details"] .detail-mobile-availability-section {
+    padding: 28px 32px !important;
+  }
+
+  body[data-page="details"] .compact-heading,
+  body[data-page="details"] .section-heading {
+    gap: 14px !important;
+  }
+
+  body[data-page="details"] .compact-heading h2,
+  body[data-page="details"] .section-heading h2,
+  body[data-page="details"] .insight-header h3 {
+    font-size: clamp(1.55rem, 8vw, 2rem) !important;
+    line-height: 1.12 !important;
+  }
+
   body[data-page="details"] .seasons-grid,
   body[data-page="details"] .people-grid.people-rail,
   body[data-page="details"] .detail-news-grid {
@@ -3036,6 +3070,62 @@ button.ghost-link {
     overflow-x: auto !important;
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x !important;
+    overscroll-behavior-x: contain !important;
+    scroll-snap-type: x mandatory !important;
+  }
+
+  body[data-page="details"] .seasons-grid {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: minmax(min(286px, calc(100vw - 64px)), min(328px, calc(100vw - 64px))) !important;
+    grid-template-columns: none !important;
+    gap: 14px !important;
+    padding: 4px 0 12px !important;
+    scroll-padding-inline: 0 !important;
+  }
+
+  body[data-page="details"] .season-card {
+    width: 100% !important;
+    grid-template-columns: 112px minmax(0, 1fr) !important;
+    gap: 14px !important;
+    min-height: 196px !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+    scroll-snap-align: start !important;
+    box-shadow: none !important;
+  }
+
+  body[data-page="details"] .season-poster {
+    border-radius: 12px !important;
+  }
+
+  body[data-page="details"] .season-copy {
+    gap: 10px !important;
+  }
+
+  body[data-page="details"] .season-copy h3 {
+    font-size: 1.35rem !important;
+    line-height: 1.12 !important;
+  }
+
+  body[data-page="details"] .season-card-meta p,
+  body[data-page="details"] .season-card-meta small {
+    font-size: 0.96rem !important;
+    line-height: 1.3 !important;
+  }
+
+  body[data-page="details"] .season-view-btn {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 1rem !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: transparent !important;
+    color: rgba(255, 255, 255, 0.72) !important;
+  }
+
+  body[data-page="details"] .season-score-strip {
+    height: 8px !important;
   }
 
   body[data-page="details"] .people-grid.people-rail {
@@ -3052,6 +3142,36 @@ button.ghost-link {
   body[data-page="details"] .person-avatar {
     width: 88px !important;
     height: 88px !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-visual {
+    width: min(276px, calc(100vw - 92px)) !important;
+    max-width: calc(100vw - 92px) !important;
+    margin: 22px auto 28px !important;
+  }
+
+  body[data-page="details"] .meter-core strong {
+    font-size: 2.45rem !important;
+  }
+
+  body[data-page="details"] .meter-core span {
+    font-size: 0.96rem !important;
+  }
+
+  body[data-page="details"] .meter-list {
+    max-width: 260px !important;
+    margin: 0 auto !important;
+    gap: 12px !important;
+  }
+
+  body[data-page="details"] .meter-row {
+    min-height: 28px !important;
+    font-size: 1rem !important;
+  }
+
+  body[data-page="details"] .comment-form {
+    padding: 24px !important;
+    border-radius: 20px !important;
   }
 }
 
@@ -11466,5 +11586,401 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
   body[data-page="details"] .person-avatar {
     width: 88px !important;
     height: 88px !important;
+  }
+}
+
+/* Last-mile mobile details scale: this must stay after older mobile overrides. */
+@media (max-width: 720px) {
+  body[data-page="details"],
+  body[data-page="details"] .page-shell.detail-shell,
+  body[data-page="details"] .detail-page,
+  body[data-page="details"] #movieDetails {
+    overflow-x: hidden !important;
+  }
+
+  body[data-page="details"] .detail-mobile-flow-only > .detail-vibe-card,
+  body[data-page="details"] .detail-mobile-flow-only > .detail-availability-card,
+  body[data-page="details"] .seasons-section,
+  body[data-page="details"] .people-section,
+  body[data-page="details"] .detail-meter-section,
+  body[data-page="details"] .comment-section,
+  body[data-page="details"] .detail-extra-section {
+    padding: 28px 32px !important;
+  }
+
+  body[data-page="details"] .compact-heading h2,
+  body[data-page="details"] .section-heading h2,
+  body[data-page="details"] .insight-header h3 {
+    font-size: clamp(1.55rem, 8vw, 2rem) !important;
+    line-height: 1.12 !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .genre-chart {
+    width: min(252px, calc(100vw - 104px)) !important;
+    max-width: calc(100vw - 104px) !important;
+    margin: 12px auto 24px !important;
+    transform: none !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .genre-chart::after,
+  body[data-page="details"] .detail-meter-section .meter-visual::after {
+    inset: 17px !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .vibe-list {
+    width: min(360px, 100%) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px 18px !important;
+  }
+
+  body[data-page="details"] .seasons-grid {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: minmax(min(286px, calc(100vw - 64px)), min(328px, calc(100vw - 64px))) !important;
+    grid-template-columns: none !important;
+    gap: 14px !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+    overscroll-behavior-x: contain !important;
+    scroll-snap-type: x mandatory !important;
+    padding: 4px 0 12px !important;
+  }
+
+  body[data-page="details"] .season-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    grid-template-columns: 112px minmax(0, 1fr) !important;
+    gap: 14px !important;
+    min-height: 196px !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+    box-shadow: none !important;
+    scroll-snap-align: start !important;
+  }
+
+  body[data-page="details"] .season-copy h3 {
+    font-size: 1.35rem !important;
+    line-height: 1.12 !important;
+  }
+
+  body[data-page="details"] .season-card-meta p,
+  body[data-page="details"] .season-card-meta small {
+    font-size: 0.96rem !important;
+    line-height: 1.3 !important;
+  }
+
+  body[data-page="details"] .season-view-btn {
+    width: 42px !important;
+    height: 42px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: transparent !important;
+    color: rgba(255, 255, 255, 0.72) !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-visual {
+    width: min(276px, calc(100vw - 92px)) !important;
+    max-width: calc(100vw - 92px) !important;
+    margin: 22px auto 28px !important;
+  }
+
+  body[data-page="details"] .meter-list {
+    max-width: 260px !important;
+    margin: 0 auto !important;
+    gap: 12px !important;
+  }
+}
+
+/* Mobile dock panels and compact detail content: keep this at EOF. */
+@media (max-width: 720px) {
+  body[data-page="home"].home-section-panel-active {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="home"] #browse.home-section-panel-open,
+  body[data-page="home"] #schedule.home-section-panel-open,
+  body[data-page="home"] #spaces.home-section-panel-open,
+  body[data-page="home"] #collections.home-section-panel-open {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 460 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 24px 16px calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+    background: #030303 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  body[data-page="home"] #browse.home-section-panel-open::before,
+  body[data-page="home"] #schedule.home-section-panel-open::before,
+  body[data-page="home"] #spaces.home-section-panel-open::before,
+  body[data-page="home"] #collections.home-section-panel-open::before {
+    inset: 0 !important;
+    background: #030303 !important;
+  }
+
+  body[data-page="home"] .home-section-panel-open .section-heading {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    margin: 0 0 18px !important;
+    padding: 0 !important;
+  }
+
+  body[data-page="home"] .home-section-panel-open .section-heading h2 {
+    font-size: clamp(2rem, 10vw, 2.6rem) !important;
+    line-height: 1.05 !important;
+    letter-spacing: 0 !important;
+  }
+
+  body[data-page="home"] .home-section-panel-open .section-heading .section-copy,
+  body[data-page="home"] .home-section-panel-open .eyebrow,
+  body[data-page="home"] .home-section-panel-open .schedule-note-card {
+    display: none !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-layout,
+  body[data-page="home"] #spaces.home-section-panel-open .home-spaces-shell,
+  body[data-page="home"] #collections.home-section-panel-open .collection-grid,
+  body[data-page="home"] #browse.home-section-panel-open .browse-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 16px !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-sidebar,
+  body[data-page="home"] #spaces.home-section-panel-open .home-spaces-sidebar {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-menu,
+  body[data-page="home"] #spaces.home-section-panel-open .home-spaces-sidebar > .schedule-menu-btn {
+    width: 100% !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-menu {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-menu-btn,
+  body[data-page="home"] #spaces.home-section-panel-open .schedule-menu-btn {
+    min-height: 56px !important;
+    padding: 0 18px !important;
+    border-radius: 14px !important;
+    font-size: 1rem !important;
+    text-align: left !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-content,
+  body[data-page="home"] #spaces.home-section-panel-open .home-spaces-feed,
+  body[data-page="home"] #collections.home-section-panel-open .collection-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-type-pills,
+  body[data-page="home"] #collections.home-section-panel-open .collection-tabs,
+  body[data-page="home"] #spaces.home-section-panel-open .home-spaces-topic-list {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 10px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 4px !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-type-pill,
+  body[data-page="home"] #collections.home-section-panel-open .collection-tab,
+  body[data-page="home"] #spaces.home-section-panel-open .home-spaces-topic {
+    flex: 0 0 auto !important;
+    min-height: 44px !important;
+    padding: 0 18px !important;
+    border-radius: 999px !important;
+    font-size: 0.95rem !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-grid,
+  body[data-page="home"] #collections.home-section-panel-open .collection-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-card,
+  body[data-page="home"] #collections.home-section-panel-open .collection-card,
+  body[data-page="home"] #spaces.home-section-panel-open .home-space-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-card {
+    display: grid !important;
+    grid-template-columns: 72px minmax(0, 1fr) !important;
+    gap: 12px !important;
+    min-height: 122px !important;
+    padding: 12px !important;
+  }
+
+  body[data-page="home"] #schedule.home-section-panel-open .schedule-poster {
+    width: 72px !important;
+    height: 98px !important;
+    border-radius: 12px !important;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]).detail-header-panel-open {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 460 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    background: #030303 !important;
+  }
+
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface,
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-floating,
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-spaces,
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-browse,
+  body:is([data-page="details"], [data-page="person"], [data-page="season"], [data-page="collection"]) .detail-header-panel-surface-notifications {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 24px 16px calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #030303 !important;
+    box-shadow: none !important;
+    pointer-events: auto !important;
+  }
+
+  body[data-page="details"] .detail-mobile-overview,
+  body[data-page="details"] .detail-mobile-flow-only > .detail-vibe-card,
+  body[data-page="details"] .detail-mobile-flow-only > .detail-availability-card,
+  body[data-page="details"] .seasons-section,
+  body[data-page="details"] .people-section,
+  body[data-page="details"] .detail-meter-section,
+  body[data-page="details"] .comment-section,
+  body[data-page="details"] .detail-extra-section {
+    padding: 22px 24px !important;
+  }
+
+  body[data-page="details"] .detail-mobile-overview h2,
+  body[data-page="details"] .compact-heading h2,
+  body[data-page="details"] .section-heading h2,
+  body[data-page="details"] .insight-header h3 {
+    font-size: clamp(1.35rem, 7vw, 1.75rem) !important;
+    line-height: 1.12 !important;
+  }
+
+  body[data-page="details"] .detail-mobile-overview p,
+  body[data-page="details"] .section-copy,
+  body[data-page="details"] .season-card-meta p,
+  body[data-page="details"] .season-card-meta small,
+  body[data-page="details"] .person-card p,
+  body[data-page="details"] .meter-row {
+    font-size: 0.88rem !important;
+    line-height: 1.4 !important;
+  }
+
+  body[data-page="details"] .detail-mobile-tags {
+    gap: 8px !important;
+  }
+
+  body[data-page="details"] .detail-mobile-tags span {
+    padding: 8px 12px !important;
+    border-radius: 12px !important;
+    font-size: 0.82rem !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .genre-chart {
+    width: min(224px, calc(100vw - 96px)) !important;
+    max-width: calc(100vw - 96px) !important;
+    margin: 8px auto 20px !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-visual {
+    width: min(242px, calc(100vw - 92px)) !important;
+    max-width: calc(100vw - 92px) !important;
+    margin: 18px auto 24px !important;
+  }
+
+  body[data-page="details"] .seasons-grid {
+    grid-auto-columns: minmax(min(250px, calc(100vw - 48px)), min(292px, calc(100vw - 48px))) !important;
+    gap: 12px !important;
+  }
+
+  body[data-page="details"] .season-card {
+    grid-template-columns: 86px minmax(0, 1fr) !important;
+    min-height: 154px !important;
+    padding: 12px !important;
+    gap: 12px !important;
+    border-radius: 16px !important;
+  }
+
+  body[data-page="details"] .season-copy h3,
+  body[data-page="details"] .person-card h4 {
+    font-size: 1rem !important;
+    line-height: 1.15 !important;
+  }
+
+  body[data-page="details"] .season-view-btn {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  body[data-page="details"] .people-grid.people-rail {
+    grid-auto-columns: 86px !important;
+    gap: 18px !important;
+  }
+
+  body[data-page="details"] .person-avatar {
+    width: 74px !important;
+    height: 74px !important;
+  }
+
+  body[data-page="details"] .person-card {
+    gap: 8px !important;
   }
 }
