@@ -2740,6 +2740,460 @@ button.ghost-link {
   }
 }
 
+@media (max-width: 720px) {
+  body[data-page="details"] .detail-page-grid {
+    width: 100% !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  body[data-page="details"] .detail-main-column,
+  body[data-page="details"] .detail-side-column {
+    display: contents !important;
+  }
+
+  body[data-page="details"] .detail-overview-section { order: 1; }
+  body[data-page="details"] .detail-vibe-card { order: 2; }
+  body[data-page="details"] .seasons-section { order: 3; }
+  body[data-page="details"] .people-section { order: 4; }
+  body[data-page="details"] .detail-availability-card { order: 5; }
+  body[data-page="details"] .detail-meter-section { order: 6; }
+  body[data-page="details"] .comment-section { order: 7; }
+  body[data-page="details"] .detail-extra-section { order: 8; }
+  body[data-page="details"] .detail-owner-section { order: 9; }
+
+  body[data-page="details"] .detail-overview-section,
+  body[data-page="details"] .detail-vibe-card,
+  body[data-page="details"] .seasons-section,
+  body[data-page="details"] .people-section,
+  body[data-page="details"] .detail-availability-card,
+  body[data-page="details"] .detail-meter-section,
+  body[data-page="details"] .comment-section,
+  body[data-page="details"] .detail-extra-section,
+  body[data-page="details"] .detail-owner-section {
+    width: 100% !important;
+    padding: 32px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
+    border-bottom: 0 !important;
+    border-radius: 0 !important;
+    background: #030303 !important;
+    box-shadow: none !important;
+  }
+
+  body[data-page="details"] .detail-overview-section {
+    border-top: 0 !important;
+  }
+
+  body[data-page="details"] .detail-overview-section h2 {
+    display: none !important;
+  }
+
+  body[data-page="details"] .detail-overview-section p {
+    margin: 0 !important;
+    color: rgba(255, 255, 255, 0.68) !important;
+    font-size: 1.02rem !important;
+    line-height: 1.72 !important;
+  }
+
+  body[data-page="details"] .detail-mobile-tags {
+    gap: 14px !important;
+    margin-top: 28px !important;
+  }
+
+  body[data-page="details"] .detail-mobile-tags span {
+    min-height: 44px !important;
+    padding: 0 18px !important;
+    border-radius: 12px !important;
+    background: #171717 !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 0.92rem !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .insight-header h3,
+  body[data-page="details"] .detail-meter-card .insight-header h3,
+  body[data-page="details"] .section-heading h2,
+  body[data-page="details"] .compact-heading h2,
+  body[data-page="details"] .detail-availability-card h3 {
+    font-size: 1.72rem !important;
+    font-weight: 800 !important;
+    line-height: 1.05 !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .genre-chart {
+    width: min(292px, 78vw) !important;
+    margin: 12px auto 32px !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-list {
+    width: min(480px, 100%) !important;
+    margin: 0 auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 18px 24px !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-row {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    gap: 10px !important;
+    font-size: 0.96rem !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-row strong {
+    display: none !important;
+  }
+
+  body[data-page="details"] .detail-platform-row {
+    width: min(322px, 100%) !important;
+    min-height: 72px !important;
+    padding: 14px 16px !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.28) !important;
+  }
+
+  body[data-page="details"] .detail-report-link {
+    width: auto !important;
+    margin-top: 12px !important;
+    text-align: left !important;
+  }
+
+  body[data-page="details"] .seasons-grid,
+  body[data-page="details"] .people-grid.people-rail,
+  body[data-page="details"] .detail-news-grid {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  body[data-page="details"] .seasons-grid {
+    grid-auto-columns: minmax(292px, 88vw) !important;
+  }
+
+  body[data-page="details"] .season-card {
+    min-height: 190px !important;
+    grid-template-columns: 128px minmax(0, 1fr) !important;
+    padding: 18px !important;
+    border-radius: 16px !important;
+    background: #050505 !important;
+  }
+
+  body[data-page="details"] .people-grid.people-rail {
+    grid-auto-columns: 118px !important;
+    gap: 26px !important;
+  }
+
+  body[data-page="details"] .person-avatar {
+    width: 96px !important;
+    height: 96px !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-visual {
+    width: min(500px, 78vw) !important;
+    margin: 36px auto 58px !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-list {
+    width: min(420px, 100%) !important;
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-row {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+  }
+
+  body[data-page="details"] .detail-review-tools {
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+  }
+
+  body[data-page="details"] .comment-form {
+    padding: 24px !important;
+    border-radius: 20px !important;
+    background: #171717 !important;
+  }
+
+  body[data-page="details"] .comment-reaction-picker {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  body[data-page="details"] .detail-news-grid {
+    grid-auto-columns: minmax(244px, 72vw) !important;
+    grid-template-columns: none !important;
+    gap: 28px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  body[data-page="details"] .detail-page-grid {
+    width: 100% !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  body[data-page="details"] .detail-main-column,
+  body[data-page="details"] .detail-side-column {
+    display: contents !important;
+  }
+
+  body[data-page="details"] .detail-overview-section {
+    order: 1;
+  }
+
+  body[data-page="details"] .detail-vibe-card {
+    order: 2;
+  }
+
+  body[data-page="details"] .seasons-section {
+    order: 3;
+  }
+
+  body[data-page="details"] .people-section {
+    order: 4;
+  }
+
+  body[data-page="details"] .detail-availability-card {
+    order: 5;
+  }
+
+  body[data-page="details"] .detail-meter-section {
+    order: 6;
+  }
+
+  body[data-page="details"] .comment-section {
+    order: 7;
+  }
+
+  body[data-page="details"] .detail-extra-section {
+    order: 8;
+  }
+
+  body[data-page="details"] .detail-owner-section {
+    order: 9;
+  }
+
+  body[data-page="details"] .detail-overview-section,
+  body[data-page="details"] .detail-vibe-card,
+  body[data-page="details"] .seasons-section,
+  body[data-page="details"] .people-section,
+  body[data-page="details"] .detail-availability-card,
+  body[data-page="details"] .detail-meter-section,
+  body[data-page="details"] .comment-section,
+  body[data-page="details"] .detail-extra-section,
+  body[data-page="details"] .detail-owner-section {
+    width: 100% !important;
+    padding: 32px 32px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
+    border-bottom: 0 !important;
+    border-radius: 0 !important;
+    background: #030303 !important;
+    box-shadow: none !important;
+  }
+
+  body[data-page="details"] .detail-overview-section {
+    border-top: 0 !important;
+  }
+
+  body[data-page="details"] .detail-overview-section h2 {
+    display: none !important;
+  }
+
+  body[data-page="details"] .detail-overview-section p {
+    margin: 0 !important;
+    color: rgba(255, 255, 255, 0.68) !important;
+    font-size: 1.02rem !important;
+    line-height: 1.72 !important;
+  }
+
+  body[data-page="details"] .detail-mobile-tags {
+    gap: 14px !important;
+    margin-top: 28px !important;
+  }
+
+  body[data-page="details"] .detail-mobile-tags span {
+    min-height: 44px !important;
+    padding: 0 18px !important;
+    border-radius: 12px !important;
+    background: #171717 !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 0.92rem !important;
+    font-weight: 800 !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .insight-header,
+  body[data-page="details"] .detail-meter-card .insight-header,
+  body[data-page="details"] .section-heading,
+  body[data-page="details"] .compact-heading {
+    margin-bottom: 28px !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .insight-header h3,
+  body[data-page="details"] .detail-meter-card .insight-header h3,
+  body[data-page="details"] .section-heading h2,
+  body[data-page="details"] .compact-heading h2,
+  body[data-page="details"] .detail-availability-card h3 {
+    font-size: 1.72rem !important;
+    font-weight: 800 !important;
+    line-height: 1.05 !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .genre-chart {
+    width: min(292px, 78vw) !important;
+    margin: 12px auto 32px !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-list {
+    width: min(480px, 100%) !important;
+    margin: 0 auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 18px 24px !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-row {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    gap: 10px !important;
+    font-size: 0.96rem !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-row strong {
+    display: none !important;
+  }
+
+  body[data-page="details"] .detail-availability-card {
+    display: grid !important;
+    gap: 20px !important;
+  }
+
+  body[data-page="details"] .detail-platform-row {
+    width: min(322px, 100%) !important;
+    min-height: 72px !important;
+    padding: 14px 16px !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.28) !important;
+  }
+
+  body[data-page="details"] .detail-platform-logo {
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 12px !important;
+  }
+
+  body[data-page="details"] .detail-report-link {
+    width: auto !important;
+    margin-top: 12px !important;
+    color: rgba(255, 255, 255, 0.36) !important;
+    text-align: left !important;
+  }
+
+  body[data-page="details"] .seasons-grid,
+  body[data-page="details"] .people-grid.people-rail,
+  body[data-page="details"] .detail-news-grid {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  body[data-page="details"] .seasons-grid::-webkit-scrollbar,
+  body[data-page="details"] .people-grid.people-rail::-webkit-scrollbar,
+  body[data-page="details"] .detail-news-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  body[data-page="details"] .seasons-grid {
+    grid-auto-columns: minmax(292px, 88vw) !important;
+    gap: 16px !important;
+  }
+
+  body[data-page="details"] .season-card {
+    min-height: 190px !important;
+    grid-template-columns: 128px minmax(0, 1fr) !important;
+    padding: 18px !important;
+    border-radius: 16px !important;
+    background: #050505 !important;
+  }
+
+  body[data-page="details"] .people-grid.people-rail {
+    grid-auto-columns: 118px !important;
+    gap: 26px !important;
+  }
+
+  body[data-page="details"] .person-avatar {
+    width: 96px !important;
+    height: 96px !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-visual {
+    width: min(500px, 78vw) !important;
+    margin: 36px auto 58px !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-list {
+    width: min(420px, 100%) !important;
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-row {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    font-size: 1rem !important;
+  }
+
+  body[data-page="details"] .detail-review-heading {
+    align-items: flex-start !important;
+    gap: 22px !important;
+  }
+
+  body[data-page="details"] .detail-review-tools {
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    padding-bottom: 2px !important;
+  }
+
+  body[data-page="details"] .comment-form {
+    padding: 24px !important;
+    border-radius: 20px !important;
+    background: #171717 !important;
+  }
+
+  body[data-page="details"] .comment-reaction-picker {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  body[data-page="details"] .comment-reaction-option {
+    min-width: max-content !important;
+  }
+
+  body[data-page="details"] .comment-card {
+    padding: 28px 0 !important;
+  }
+
+  body[data-page="details"] .detail-news-grid {
+    grid-auto-columns: minmax(244px, 72vw) !important;
+    grid-template-columns: none !important;
+    gap: 28px !important;
+  }
+}
+
 .movie-description {
   margin: 0;
   font-size: 0.95rem;
@@ -10418,5 +10872,198 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
     overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 720px) {
+  body[data-page="details"] .detail-page-grid {
+    width: 100% !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  body[data-page="details"] .detail-main-column,
+  body[data-page="details"] .detail-side-column {
+    display: contents !important;
+  }
+
+  body[data-page="details"] .detail-overview-section { order: 1; }
+  body[data-page="details"] .detail-vibe-card { order: 2; }
+  body[data-page="details"] .seasons-section { order: 3; }
+  body[data-page="details"] .people-section { order: 4; }
+  body[data-page="details"] .detail-availability-card { order: 5; }
+  body[data-page="details"] .detail-meter-section { order: 6; }
+  body[data-page="details"] .comment-section { order: 7; }
+  body[data-page="details"] .detail-extra-section { order: 8; }
+  body[data-page="details"] .detail-owner-section { order: 9; }
+
+  body[data-page="details"] .detail-overview-section,
+  body[data-page="details"] .detail-vibe-card,
+  body[data-page="details"] .seasons-section,
+  body[data-page="details"] .people-section,
+  body[data-page="details"] .detail-availability-card,
+  body[data-page="details"] .detail-meter-section,
+  body[data-page="details"] .comment-section,
+  body[data-page="details"] .detail-extra-section,
+  body[data-page="details"] .detail-owner-section {
+    width: 100% !important;
+    padding: 32px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
+    border-bottom: 0 !important;
+    border-radius: 0 !important;
+    background: #030303 !important;
+    box-shadow: none !important;
+  }
+
+  body[data-page="details"] .detail-overview-section {
+    border-top: 0 !important;
+  }
+
+  body[data-page="details"] .detail-overview-section h2 {
+    display: none !important;
+  }
+
+  body[data-page="details"] .detail-overview-section p {
+    margin: 0 !important;
+    color: rgba(255, 255, 255, 0.68) !important;
+    font-size: 1.02rem !important;
+    line-height: 1.72 !important;
+  }
+
+  body[data-page="details"] .detail-mobile-tags {
+    gap: 14px !important;
+    margin-top: 28px !important;
+  }
+
+  body[data-page="details"] .detail-mobile-tags span {
+    min-height: 44px !important;
+    padding: 0 18px !important;
+    border-radius: 12px !important;
+    background: #171717 !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 0.92rem !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .insight-header h3,
+  body[data-page="details"] .detail-meter-card .insight-header h3,
+  body[data-page="details"] .section-heading h2,
+  body[data-page="details"] .compact-heading h2,
+  body[data-page="details"] .detail-availability-card h3 {
+    font-size: 1.72rem !important;
+    font-weight: 800 !important;
+    line-height: 1.05 !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .genre-chart {
+    width: min(292px, 78vw) !important;
+    margin: 12px auto 32px !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-list {
+    width: min(480px, 100%) !important;
+    margin: 0 auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 18px 24px !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-row {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    gap: 10px !important;
+    font-size: 0.96rem !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-row strong {
+    display: none !important;
+  }
+
+  body[data-page="details"] .detail-platform-row {
+    width: min(322px, 100%) !important;
+    min-height: 72px !important;
+    padding: 14px 16px !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.28) !important;
+  }
+
+  body[data-page="details"] .detail-report-link {
+    width: auto !important;
+    margin-top: 12px !important;
+    text-align: left !important;
+  }
+
+  body[data-page="details"] .seasons-grid,
+  body[data-page="details"] .people-grid.people-rail,
+  body[data-page="details"] .detail-news-grid {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  body[data-page="details"] .seasons-grid {
+    grid-auto-columns: minmax(292px, 88vw) !important;
+  }
+
+  body[data-page="details"] .season-card {
+    min-height: 190px !important;
+    grid-template-columns: 128px minmax(0, 1fr) !important;
+    padding: 18px !important;
+    border-radius: 16px !important;
+    background: #050505 !important;
+  }
+
+  body[data-page="details"] .people-grid.people-rail {
+    grid-auto-columns: 118px !important;
+    gap: 26px !important;
+  }
+
+  body[data-page="details"] .person-avatar {
+    width: 96px !important;
+    height: 96px !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-visual {
+    width: min(500px, 78vw) !important;
+    margin: 36px auto 58px !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-list {
+    width: min(420px, 100%) !important;
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  body[data-page="details"] .detail-meter-section .meter-row {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+  }
+
+  body[data-page="details"] .detail-review-tools {
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+  }
+
+  body[data-page="details"] .comment-form {
+    padding: 24px !important;
+    border-radius: 20px !important;
+    background: #171717 !important;
+  }
+
+  body[data-page="details"] .comment-reaction-picker {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  body[data-page="details"] .detail-news-grid {
+    grid-auto-columns: minmax(244px, 72vw) !important;
+    grid-template-columns: none !important;
+    gap: 28px !important;
   }
 }

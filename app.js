@@ -2971,7 +2971,7 @@ function peopleSectionTemplate(title) {
               <div class="section-heading compact-heading">
                 <div>
                   <p class="eyebrow">Cast</p>
-                  <h2>Actors and characters</h2>
+                  <h2>Cast</h2>
                 </div>
               </div>
               <div class="people-grid people-rail">
@@ -3636,6 +3636,71 @@ function isInsideInterestWindow(title, windowKey) {
   return diffDays <= days;
 }
 
+function getInterestActivityMs(title) {
+  const candidateDates = [title.updatedAt, title.createdAt, title.releaseDate]
+    .map((value) => getCreatedAtMs(value))
+    .filter((value) => value > 0);
+
+  return candidateDates.length ? Math.max(...candidateDates) : 0;
+}
+
+function getStableWindowSeed(title, windowKey) {
+  const source = `${title.id || title.title || "title"}:${windowKey}`;
+  let hash = 0;
+
+  for (let index = 0; index < source.length; index += 1) {
+    hash = (hash * 31 + source.charCodeAt(index)) % 9973;
+  }
+
+  return hash / 9973;
+}
+
+function getWindowInterestScore(title, windowKey) {
+  if (windowKey === "all") {
+    return getInterestScore(title);
+  }
+
+  const days = getInterestWindowDays(windowKey) || 366;
+  const activityMs = getInterestActivityMs(title);
+  const ageDays = activityMs ? Math.abs(Date.now() - activityMs) / (1000 * 60 * 60 * 24) : days;
+  const recencyFactor = Math.max(0, 1 - Math.min(ageDays, days) / days);
+  const interested = getInterestedCount(title);
+  const stats = getReactionStats(title);
+  const windowSeed = getStableWindowSeed(title, windowKey);
+
+  return (
+    interested * (18 + recencyFactor * 28) +
+    getInterestScore(title) * (0.22 + recencyFactor * 0.38) +
+    stats.total * 3 +
+    recencyFactor * 90 +
+    windowSeed * 24
+  );
+}
+
+function compareMostInterestedTitlesForWindow(windowKey) {
+  if (windowKey === "all") {
+    return compareMostInterestedTitles;
+  }
+
+  return (left, right) => {
+    const scoreDiff = getWindowInterestScore(right, windowKey) - getWindowInterestScore(left, windowKey);
+
+    if (scoreDiff) {
+      return scoreDiff;
+    }
+
+    return compareMostInterestedTitles(left, right);
+  };
+}
+
+function getMostInterestedWindowTitles(titles, windowKey, limit = 10) {
+  const selectedWindow = windowKey || "week";
+  const filteredTitles = titles.filter((title) => isInsideInterestWindow(title, selectedWindow));
+  const pool = filteredTitles.length ? filteredTitles : [...titles];
+
+  return [...pool].sort(compareMostInterestedTitlesForWindow(selectedWindow)).slice(0, limit);
+}
+
 function getInterestScore(title) {
   const stats = getReactionStats(title);
   const popularity = Number(title.tmdbPopularity || 0);
@@ -3939,11 +4004,14 @@ function ensureMobileTrendingFilter() {
 }
 
 function renderCuratedExploreRows(titles) {
+  const selectedWindow = document.querySelector("#interestWindowSelect")?.value || "week";
+  const useMobileInterestLayout = window.matchMedia("(max-width: 768px)").matches;
   const watchWithDistrict = getCuratedTitles(
     titles,
     (title) => title.trending || title.importBuckets.includes("trending") || getInterestScore(title) > 140,
     (a, b) => getInterestScore(b) - getInterestScore(a)
   );
+  const mobileMostInterested = getMostInterestedWindowTitles(titles, selectedWindow, 10);
 
   const editorsPick = getCuratedTitles(
     titles,
@@ -4016,8 +4084,11 @@ function renderCuratedExploreRows(titles) {
   ensureMobileTrendingFilter();
 
   if (trendingGrid && trendingEmptyState) {
-    trendingGrid.innerHTML = watchWithDistrict.map(featuredCardTemplate).join("");
-    trendingEmptyState.classList.toggle("hidden", watchWithDistrict.length > 0);
+    const trendingItems = useMobileInterestLayout ? mobileMostInterested : watchWithDistrict;
+    trendingGrid.innerHTML = trendingItems
+      .map((title, index) => (useMobileInterestLayout ? mostInterestedItemTemplate(title, index) : featuredCardTemplate(title)))
+      .join("");
+    trendingEmptyState.classList.toggle("hidden", trendingItems.length > 0);
   }
 
   renderNamedExploreRow(
@@ -4257,9 +4328,7 @@ function renderMostInterestedList(titles) {
   }
 
   const selectedWindow = windowSelect?.value || "week";
-  const filteredTitles = titles.filter((title) => isInsideInterestWindow(title, selectedWindow));
-
-  const items = [...filteredTitles].sort(compareMostInterestedTitles).slice(0, 10);
+  const items = getMostInterestedWindowTitles(titles, selectedWindow, 10);
 
   list.innerHTML = items.length
     ? items.map(mostInterestedItemTemplate).join("")
@@ -9313,7 +9382,9 @@ function setupInterestWindow() {
   }
 
   select.addEventListener("change", () => {
-    renderMostInterestedList(getVisibleTitles(titlesCache));
+    const visibleTitles = getVisibleTitles(titlesCache);
+    renderMostInterestedList(visibleTitles);
+    renderCuratedExploreRows(visibleTitles);
   });
 }
 
