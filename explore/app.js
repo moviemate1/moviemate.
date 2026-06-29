@@ -5859,6 +5859,7 @@ function openHomeFullscreenSection(hashOrId) {
   ensureHomeSectionCloseButton(section);
   section.classList.add("home-section-panel-open");
   section.setAttribute("aria-hidden", "false");
+  section.scrollTop = 0;
   document.body.classList.add("home-section-panel-active");
   window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
   setExploreHeaderActive(`#${id}`);
