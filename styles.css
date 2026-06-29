@@ -10131,7 +10131,7 @@ body[data-page="details"] .detail-vibe-card .genre-chart::before {
 }
 
 body[data-page="details"] .detail-vibe-card .genre-chart::after {
-  inset: 52px;
+  inset: 42px;
   background: #151519;
   border-color: rgba(255, 255, 255, 0.06);
   box-shadow: none;
@@ -10201,7 +10201,7 @@ body[data-page="details"] .meter-share-btn {
 body[data-page="details"] .detail-meter-section .meter-visual {
   width: min(430px, 74vw);
   aspect-ratio: 2 / 1;
-  margin: 30px auto 58px;
+  margin: 28px auto 54px;
   overflow: visible;
   border-radius: 999px 999px 0 0;
   box-shadow: none;
@@ -10212,7 +10212,7 @@ body[data-page="details"] .detail-meter-section .meter-visual::before {
 }
 
 body[data-page="details"] .detail-meter-section .meter-visual::after {
-  inset: 36px 44px 0;
+  inset: 34px 42px 0;
   border: 0;
   border-radius: 999px 999px 0 0;
   background: #030303;
@@ -12685,7 +12685,7 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
 
   body[data-page="details"] .detail-vibe-card .genre-chart::after,
   body[data-page="details"] .detail-mobile-vibe-section .genre-chart::after {
-    inset: 52px !important;
+    inset: 42px !important;
     border-radius: 50% !important;
     background: #030303 !important;
     border: 0 !important;
@@ -12738,11 +12738,11 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
   }
 
   body[data-page="details"] .detail-meter-section .meter-visual {
-    width: min(430px, calc(100vw - 72px)) !important;
-    height: min(215px, calc((100vw - 72px) * 0.5)) !important;
-    max-width: calc(100vw - 72px) !important;
+    width: min(300px, calc(100vw - 76px)) !important;
+    height: min(150px, calc((100vw - 76px) * 0.5)) !important;
+    max-width: calc(100vw - 76px) !important;
     aspect-ratio: auto !important;
-    margin: 28px auto 38px !important;
+    margin: 24px auto 34px !important;
     border-radius: 999px 999px 0 0 !important;
     overflow: visible !important;
     box-shadow: none !important;
@@ -12753,7 +12753,7 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
   }
 
   body[data-page="details"] .detail-meter-section .meter-visual::after {
-    inset: 36px 44px 0 !important;
+    inset: 24px 30px 0 !important;
     border-radius: 999px 999px 0 0 !important;
     background: #030303 !important;
     border: 0 !important;
@@ -12769,13 +12769,13 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
   }
 
   body[data-page="details"] .detail-meter-section .meter-core strong {
-    font-size: clamp(2.15rem, 11vw, 2.75rem) !important;
+    font-size: clamp(2rem, 10vw, 2.45rem) !important;
     line-height: 1 !important;
   }
 
   body[data-page="details"] .detail-meter-section .meter-core span {
     margin-top: 7px !important;
-    font-size: 0.98rem !important;
+    font-size: 0.92rem !important;
     color: rgba(255, 255, 255, 0.84) !important;
   }
 }
