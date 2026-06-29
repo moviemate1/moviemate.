@@ -1,12 +1,12 @@
-const CACHE_NAME = "moviemate-shell-v61-mobile-detail-overflow";
+const CACHE_NAME = "moviemate-shell-v63-mobile-review-season";
 const SHELL_ASSETS = [
   "/",
   "/index.html",
   "/offline.html",
   "/explore/",
   "/explore/index.html",
-  "/explore/styles.css?v=149-interest-window",
-  "/explore/app.js?v=57-interest-window",
+  "/explore/styles.css?v=150-mobile-dock-fullscreen",
+  "/explore/app.js?v=58-mobile-dock-fullscreen",
   "/explore/firebase-config.js",
   "/manifest.webmanifest",
   "/favicon.svg"

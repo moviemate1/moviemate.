@@ -1377,7 +1377,8 @@ function buildSeasonCards(title) {
     return [];
   }
 
-  const seasonCount = Math.max(1, Number(title.seasonsCount || 0));
+  const fallbackSeasonCount = title.episodesCount ? Math.max(2, Math.ceil(Number(title.episodesCount || 0) / 10)) : 2;
+  const seasonCount = Math.max(1, Number(title.seasonsCount || fallbackSeasonCount || 0));
 
   return Array.from({ length: seasonCount }, (_, index) => ({
     number: index + 1,
@@ -7249,6 +7250,10 @@ async function addComment(titleId, form, options = {}) {
   };
   const commentRef = doc(db, TITLES_COLLECTION, titleId, TITLE_COMMENTS_SUBCOLLECTION, commentId);
 
+  if (reaction && reaction !== getReaction(titleId)) {
+    await reactToTitle(titleId, reaction);
+  }
+
   await withActionTimeout(
     setDoc(commentRef, comment),
     "comment post"
@@ -7256,7 +7261,7 @@ async function addComment(titleId, form, options = {}) {
 
   insertTitleCommentInCache(titleId, comment);
 
-  return true;
+  return comment;
 }
 
 function getCommentErrorMessage(error) {
@@ -9275,6 +9280,11 @@ function setupCommentForm(titleId, options = {}) {
       const refreshedTitle = snapshot.exists() ? normalizeTitle(snapshot) : null;
       const successLabel = refreshedTitle ? getCommentSectionCopy(refreshedTitle).successLabel : "Your comment is now live.";
       showMessage("#commentMessage", successLabel);
+      const postedCard = document.querySelector(`#comment-${CSS.escape(added.id || "")}`);
+      if (postedCard) {
+        postedCard.classList.add("comment-card-new");
+        postedCard.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     } catch (error) {
       console.error(error);
       showMessage("#commentMessage", "Your post was saved. Refresh once if you do not see it yet.");
