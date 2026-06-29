@@ -2010,15 +2010,17 @@ function isInsideInterestWindow(title, windowKey) {
     return true;
   }
 
-  if (!title.releaseDate) {
+  const anchorMs =
+    getCreatedAtMs(title.updatedAt) ||
+    getCreatedAtMs(title.createdAt) ||
+    (title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).getTime() : 0);
+
+  if (!anchorMs) {
     return false;
   }
 
-  const today = new Date();
-  const releaseDate = new Date(title.releaseDate);
-  const diffMs = Math.abs(releaseDate.getTime() - today.getTime());
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  return diffDays <= days;
+  const diffMs = Math.abs(Date.now() - anchorMs);
+  return diffMs <= days * 24 * 60 * 60 * 1000;
 }
 
 function getInterestScore(title) {
