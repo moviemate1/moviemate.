@@ -2955,8 +2955,8 @@ function peopleSectionTemplate(title) {
             <div class="people-block">
               <div class="section-heading compact-heading">
                 <div>
-                  <p class="eyebrow">Main team</p>
-                  <h2>Key credits</h2>
+                  <p class="eyebrow">Key characters</p>
+                  <h2>Key Characters</h2>
                 </div>
               </div>
               <div class="people-grid people-rail">
@@ -2990,7 +2990,7 @@ function peopleSectionTemplate(title) {
               <div class="section-heading compact-heading">
                 <div>
                   <p class="eyebrow">Crew</p>
-                  <h2>Behind the scenes</h2>
+                  <h2>Crew</h2>
                 </div>
               </div>
               <div class="people-grid people-rail">
@@ -3801,6 +3801,8 @@ function commentTemplate(comment) {
   const canEditOwn = Boolean(viewerUid && comment.userId === viewerUid);
   const likedHelpful = Boolean(viewerUid && Array.isArray(comment.helpfulBy) && comment.helpfulBy.includes(viewerUid));
   const reactionOption = comment.reaction && REACTION_OPTIONS[comment.reaction] ? REACTION_OPTIONS[comment.reaction] : null;
+  const authorName = comment.name || "Anonymous";
+  const authorInitial = authorName.trim().charAt(0).toUpperCase() || "M";
   const managementControls =
     canEditOwn
       ? `
@@ -3828,10 +3830,13 @@ function commentTemplate(comment) {
   return `
     <article class="comment-card" id="comment-${escapeHtml(comment.id || "")}">
       <div class="comment-header-row">
-        <div>
+        <a class="comment-author-avatar" href="/profile.html?uid=${encodeURIComponent(comment.userId || "")}" aria-label="Open ${escapeHtml(authorName)} profile">
+          <span>${escapeHtml(authorInitial)}</span>
+        </a>
+        <div class="comment-header-copy">
           <div class="comment-meta">
             <a class="comment-author-link" href="/profile.html?uid=${encodeURIComponent(comment.userId || "")}">
-              ${escapeHtml(comment.name || "Anonymous")}
+              ${escapeHtml(authorName)}
             </a>
             <span>${escapeHtml(formatDate(comment.createdAt))}</span>
           </div>
@@ -3855,8 +3860,13 @@ function commentTemplate(comment) {
       </div>
       ${spoilerBody}
       <div class="comment-footer-row">
-        <button class="ghost-link comment-helpful-btn ${likedHelpful ? "active" : ""}" data-comment-helpful="${escapeHtml(comment.id || "")}" type="button">
-          ${likedHelpful ? "Helpful ✓" : "Helpful"} ${comment.helpfulCount ? `(${comment.helpfulCount})` : ""}
+        <button class="comment-action-btn comment-helpful-btn ${likedHelpful ? "active" : ""}" data-comment-helpful="${escapeHtml(comment.id || "")}" type="button" aria-label="Like review">
+          <span aria-hidden="true">♡</span>
+          <strong>${comment.helpfulCount || 0}</strong>
+        </button>
+        <button class="comment-action-btn" type="button" aria-label="Open conversation">
+          <span aria-hidden="true">◯</span>
+          <strong>${Array.isArray(comment.replies) ? comment.replies.length : 0}</strong>
         </button>
         ${managementControls}
       </div>
@@ -5223,6 +5233,7 @@ async function renderDetailHeaderPanel() {
   root.classList.remove("hidden");
   root.setAttribute("aria-hidden", "false");
   root.dataset.detailPanelMode = mode;
+  root.scrollTop = 0;
   document.body.classList.add("detail-header-panel-open");
   document.body.classList.toggle("detail-header-browse-panel-open", mode === "browse");
   setActiveDetailHeaderTrigger(mode);
@@ -6292,7 +6303,6 @@ function openHomeFullscreenSection(hashOrId) {
   ensureHomeSectionCloseButton(section);
   section.classList.add("home-section-panel-open");
   section.setAttribute("aria-hidden", "false");
-  section.scrollTop = 0;
   document.body.classList.add("home-section-panel-active");
   window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${id}`);
   setHomeNavActive(`#${id}`);
