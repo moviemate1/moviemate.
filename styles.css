@@ -2933,6 +2933,281 @@ button.ghost-link {
   }
 }
 
+/* Final mobile details containment: keep charts and rails inside the phone viewport. */
+@media (max-width: 720px) {
+  html,
+  body[data-page="details"],
+  body[data-page="details"] .page-shell.detail-shell,
+  body[data-page="details"] .detail-page,
+  body[data-page="details"] #movieDetails {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  body[data-page="details"] .detail-page-grid,
+  body[data-page="details"] .detail-main-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  body[data-page="details"] .detail-side-column {
+    display: none !important;
+  }
+
+  body[data-page="details"] .detail-mobile-flow-only {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="details"] .detail-overview-section { order: 1 !important; }
+  body[data-page="details"] .detail-mobile-vibe-section { order: 2 !important; }
+  body[data-page="details"] .seasons-section { order: 3 !important; }
+  body[data-page="details"] .people-section { order: 4 !important; }
+  body[data-page="details"] .detail-mobile-availability-section { order: 5 !important; }
+  body[data-page="details"] .detail-meter-section { order: 6 !important; }
+  body[data-page="details"] .comment-section { order: 7 !important; }
+  body[data-page="details"] .detail-extra-section { order: 8 !important; }
+
+  body[data-page="details"] .detail-mobile-flow-only > .detail-vibe-card,
+  body[data-page="details"] .detail-mobile-flow-only > .detail-availability-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 32px !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+    background: #030303 !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .genre-chart {
+    width: min(292px, calc(100vw - 96px)) !important;
+    max-width: calc(100vw - 96px) !important;
+    min-width: 0 !important;
+    margin: 14px auto 30px !important;
+    transform: none !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .vibe-list {
+    width: min(360px, 100%) !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px 18px !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .vibe-row {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .vibe-row span:nth-child(2) {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  body[data-page="details"] .seasons-section,
+  body[data-page="details"] .people-section,
+  body[data-page="details"] .detail-meter-section,
+  body[data-page="details"] .comment-section,
+  body[data-page="details"] .detail-extra-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="details"] .seasons-grid,
+  body[data-page="details"] .people-grid.people-rail,
+  body[data-page="details"] .detail-news-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body[data-page="details"] .people-grid.people-rail {
+    grid-auto-columns: minmax(104px, 118px) !important;
+    gap: 22px !important;
+  }
+
+  body[data-page="details"] .person-card,
+  body[data-page="details"] .season-card {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  body[data-page="details"] .person-avatar {
+    width: 88px !important;
+    height: 88px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  html,
+  body[data-page="details"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  body[data-page="details"] .page-shell.detail-shell,
+  body[data-page="details"] .detail-page,
+  body[data-page="details"] #movieDetails,
+  body[data-page="details"] .detail-hero-card,
+  body[data-page="details"] .detail-page-grid,
+  body[data-page="details"] .detail-main-column,
+  body[data-page="details"] .detail-mobile-flow-only,
+  body[data-page="details"] .detail-mobile-flow-only > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    transform: none !important;
+  }
+
+  body[data-page="details"] .detail-page-grid,
+  body[data-page="details"] .detail-main-column {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  body[data-page="details"] .detail-side-column {
+    display: none !important;
+  }
+
+  body[data-page="details"] .detail-mobile-flow-only {
+    display: block !important;
+  }
+
+  body[data-page="details"] .detail-overview-section { order: 1 !important; }
+  body[data-page="details"] .detail-mobile-vibe-section { order: 2 !important; }
+  body[data-page="details"] .seasons-section { order: 3 !important; }
+  body[data-page="details"] .people-section { order: 4 !important; }
+  body[data-page="details"] .detail-mobile-availability-section { order: 5 !important; }
+  body[data-page="details"] .detail-meter-section { order: 6 !important; }
+  body[data-page="details"] .comment-section { order: 7 !important; }
+  body[data-page="details"] .detail-extra-section { order: 8 !important; }
+
+  body[data-page="details"] .detail-mobile-flow-only > .insight-card,
+  body[data-page="details"] .detail-mobile-flow-only > .detail-availability-card {
+    padding: 32px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
+    border-bottom: 0 !important;
+    border-radius: 0 !important;
+    background: #030303 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card {
+    overflow: hidden !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .genre-chart,
+  body[data-page="details"] .detail-mobile-vibe-section .genre-chart {
+    width: min(292px, calc(100vw - 96px)) !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 96px) !important;
+    margin: 14px auto 30px !important;
+    inset: auto !important;
+    transform: none !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .genre-chart::before {
+    inset: -6px !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .genre-chart::after {
+    inset: 34px !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-list,
+  body[data-page="details"] .detail-mobile-vibe-section .vibe-list {
+    width: 100% !important;
+    max-width: 360px !important;
+    margin: 0 auto !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px 18px !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-row {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="details"] .detail-vibe-card .vibe-row span:nth-child(2) {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  body[data-page="details"] .seasons-section,
+  body[data-page="details"] .people-section,
+  body[data-page="details"] .detail-meter-section,
+  body[data-page="details"] .comment-section,
+  body[data-page="details"] .detail-extra-section {
+    overflow: hidden !important;
+  }
+
+  body[data-page="details"] .seasons-grid,
+  body[data-page="details"] .people-grid.people-rail,
+  body[data-page="details"] .detail-news-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    overscroll-behavior-x: contain;
+  }
+
+  body[data-page="details"] .people-grid.people-rail {
+    grid-auto-columns: minmax(104px, 118px) !important;
+    gap: 22px !important;
+  }
+
+  body[data-page="details"] .person-card {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body[data-page="details"] .person-avatar {
+    width: 88px !important;
+    height: 88px !important;
+  }
+
+  body[data-page="details"] .person-card h4,
+  body[data-page="details"] .person-card p {
+    overflow-wrap: anywhere !important;
+  }
+
+  body[data-page="details"] .season-card {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  body[data-page="details"] .season-card-meta h3,
+  body[data-page="details"] .season-card-meta p,
+  body[data-page="details"] .season-card-meta small {
+    white-space: normal !important;
+  }
+}
+
 @media (max-width: 720px) {
   body[data-page="details"] .detail-page-grid {
     width: 100% !important;
@@ -8628,6 +8903,10 @@ body[data-page="details"] .detail-page {
   width: 100%;
 }
 
+body[data-page="details"] .detail-mobile-flow-only {
+  display: none;
+}
+
 body[data-page="details"] .detail-hero-card {
   display: grid;
   gap: 0;
@@ -11065,5 +11344,127 @@ body:is([data-page="details"], [data-page="person"], [data-page="season"], [data
     grid-auto-columns: minmax(244px, 72vw) !important;
     grid-template-columns: none !important;
     gap: 28px !important;
+  }
+}
+
+/* Final mobile details containment: keep charts and rails inside the phone viewport. */
+@media (max-width: 720px) {
+  html,
+  body[data-page="details"],
+  body[data-page="details"] .page-shell.detail-shell,
+  body[data-page="details"] .detail-page,
+  body[data-page="details"] #movieDetails {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  body[data-page="details"] .detail-page-grid,
+  body[data-page="details"] .detail-main-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  body[data-page="details"] .detail-side-column {
+    display: none !important;
+  }
+
+  body[data-page="details"] .detail-mobile-flow-only {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="details"] .detail-overview-section { order: 1 !important; }
+  body[data-page="details"] .detail-mobile-vibe-section { order: 2 !important; }
+  body[data-page="details"] .seasons-section { order: 3 !important; }
+  body[data-page="details"] .people-section { order: 4 !important; }
+  body[data-page="details"] .detail-mobile-availability-section { order: 5 !important; }
+  body[data-page="details"] .detail-meter-section { order: 6 !important; }
+  body[data-page="details"] .comment-section { order: 7 !important; }
+  body[data-page="details"] .detail-extra-section { order: 8 !important; }
+
+  body[data-page="details"] .detail-mobile-flow-only > .detail-vibe-card,
+  body[data-page="details"] .detail-mobile-flow-only > .detail-availability-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 32px !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+    background: #030303 !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .genre-chart {
+    width: min(292px, calc(100vw - 96px)) !important;
+    max-width: calc(100vw - 96px) !important;
+    min-width: 0 !important;
+    margin: 14px auto 30px !important;
+    transform: none !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .vibe-list {
+    width: min(360px, 100%) !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px 18px !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .vibe-row {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="details"] .detail-mobile-vibe-section .vibe-row span:nth-child(2) {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  body[data-page="details"] .seasons-section,
+  body[data-page="details"] .people-section,
+  body[data-page="details"] .detail-meter-section,
+  body[data-page="details"] .comment-section,
+  body[data-page="details"] .detail-extra-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body[data-page="details"] .seasons-grid,
+  body[data-page="details"] .people-grid.people-rail,
+  body[data-page="details"] .detail-news-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body[data-page="details"] .people-grid.people-rail {
+    grid-auto-columns: minmax(104px, 118px) !important;
+    gap: 22px !important;
+  }
+
+  body[data-page="details"] .person-card,
+  body[data-page="details"] .season-card {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  body[data-page="details"] .person-avatar {
+    width: 88px !important;
+    height: 88px !important;
   }
 }

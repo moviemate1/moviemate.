@@ -1373,11 +1373,13 @@ function buildSeasonCards(title) {
     return title.seasons;
   }
 
-  if (title.type !== "Series" || title.seasonsCount <= 1) {
+  if (title.type !== "Series") {
     return [];
   }
 
-  return Array.from({ length: title.seasonsCount }, (_, index) => ({
+  const seasonCount = Math.max(1, Number(title.seasonsCount || 0));
+
+  return Array.from({ length: seasonCount }, (_, index) => ({
     number: index + 1,
     title: `Season ${index + 1}`,
     year: title.releaseDate ? new Date(`${title.releaseDate}T00:00:00`).getFullYear() + index : "",
@@ -7615,9 +7617,17 @@ async function renderDetailsPage() {
           ${genreTagsMarkup ? `<div class="detail-mobile-tags">${genreTagsMarkup}</div>` : ""}
         </section>
 
+        <div class="detail-mobile-flow-only detail-mobile-vibe-section">
+          ${vibeChartTemplate(title)}
+        </div>
+
         ${seasonsSectionTemplate(title)}
 
         ${peopleSectionTemplate(title)}
+
+        <div class="detail-mobile-flow-only detail-mobile-availability-section">
+          ${availabilityCard}
+        </div>
 
         <section class="detail-meter-section">
           ${reactionMeterTemplate(title)}

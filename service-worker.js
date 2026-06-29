@@ -1,4 +1,4 @@
-const CACHE_NAME = "moviemate-shell-v60-interest-detail-sequence";
+const CACHE_NAME = "moviemate-shell-v61-mobile-detail-overflow";
 const SHELL_ASSETS = [
   "/",
   "/index.html",
