@@ -2544,13 +2544,27 @@ function buildGenreSegments(title) {
     return [{ label: "Drama", percent: 100, color: "#d09a7b" }];
   }
 
-  const colors = ["#d09a7b", "#7e46ff", "#1f5fff", "#18cf9b", "#ff8a38"];
+  const genreColorMap = {
+    action: "#d10016",
+    adventure: "#1f5fff",
+    comedy: "#ffbf47",
+    drama: "#9a654f",
+    family: "#18cf9b",
+    fantasy: "#7e46ff",
+    horror: "#2b2b2b",
+    mystery: "#5a19b8",
+    romance: "#ff4f7d",
+    "sci-fi": "#1f5fff",
+    "science fiction": "#1f5fff",
+    thriller: "#0069d8"
+  };
+  const fallbackColors = ["#9a654f", "#0069d8", "#5a19b8", "#2b2b2b", "#ff4f7d", "#18cf9b"];
   const basePercent = Math.floor(100 / genres.length);
 
   return genres.map((genre, index) => ({
     label: genre,
     percent: index === genres.length - 1 ? 100 - basePercent * (genres.length - 1) : basePercent,
-    color: colors[index % colors.length]
+    color: genreColorMap[genre.toLowerCase()] || fallbackColors[index % fallbackColors.length]
   }));
 }
 

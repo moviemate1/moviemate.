@@ -1,4 +1,4 @@
-const CACHE_NAME = "moviemate-shell-v65-mobile-dock-review-final";
+const CACHE_NAME = "moviemate-shell-v67-mobile-chart-thickness";
 const SHELL_ASSETS = [
   "/",
   "/index.html",
